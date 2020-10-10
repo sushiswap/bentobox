@@ -1,20 +1,30 @@
-const Vault = artifacts.require("Vault");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
+const SushiSwapFactory = artifacts.require("UniswapV2Factory");
+
+const Vault = artifacts.require("Vault");
 const Pair = artifacts.require("Pair");
 const PeggedOracle = artifacts.require("PeggedOracle");
 
 module.exports = async function (deployer) {
-  await deployer.deploy(Vault);
   await deployer.deploy(TokenA);
   await deployer.deploy(TokenB);
+  await deployer.deploy(SushiSwapFactory);
+
+  let a = await TokenA.deployed();
+  let b = await TokenB.deployed();
+  let factory = await SushiSwapFactory.deployed();
+  await a.mint("100000000000000000000000");
+  await b.mint("200000000000000000000000");
+  await factory.createPair(a.address, b.address);
+
+
+  await deployer.deploy(Vault);
   await deployer.deploy(Pair);
   await deployer.deploy(PeggedOracle);
 
   // Get the contracts
   let vault = await Vault.deployed();
-  let a = await TokenA.deployed();
-  let b = await TokenB.deployed();
   let pairMaster = await Pair.deployed();
   let oracle = await PeggedOracle.deployed();
 
