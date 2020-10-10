@@ -20,7 +20,12 @@ contract('PeggedOracle', (accounts) => {
     before(async () => {
         vault = await Vault.deployed();
         oracle = await PeggedOracle.deployed();
-        pair_address = await vault.pairs(0);
+        let raw_logs = await web3.eth.getPastLogs({
+            fromBlock: 1,
+            address: vault.address,
+            topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
+        });
+        pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
     });
 
     it('should return 0 on rate request for non-existant pair', async () => {

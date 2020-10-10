@@ -13,6 +13,7 @@ function e18(amount) {
 contract('Pair', (accounts) => {
   let a;
   let b;
+  let pair_address;
   let pair;
   let vault;
   const alice = accounts[1];
@@ -27,7 +28,13 @@ contract('Pair', (accounts) => {
     b.transfer(bob, e18(1000));
 
     vault = await Vault.deployed();
-    pair = await Pair.at(await vault.pairs(0));
+    let raw_logs = await web3.eth.getPastLogs({
+      fromBlock: 1,
+      address: vault.address,
+      topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
+    });
+    pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
+    pair = await Pair.at(pair_address);
     oracle = await PeggedOracle.at(await pair.oracle());
     await pair.updateRate();
   });
@@ -37,13 +44,8 @@ contract('Pair', (accounts) => {
     await truffleAssert.reverts(pair.removeB(e18(1), bob), 'BoringMath: Div by 0');
   });
 
-  it('should fail on remove with no totalSupply due to div by 0', async () => {
-    await truffleAssert.reverts(pair.removeA(bob), 'BentoBox: nothing to remove');
-    await truffleAssert.reverts(pair.removeB(bob), 'BentoBox: nothing to remove');
-  });
-
   it('should not allow borrowing without any supply', async () => {
-    await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
+    await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
   });
 
   it('should take a deposit of token B', async () => {

@@ -5,7 +5,7 @@ contract TokenA {
     string public constant symbol = "A";
     string public constant name = "Token A";
     uint8 public constant decimals = 18;
-    uint256 public totalSupply = 1e22;
+    uint256 public totalSupply = 1e25;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping (address => uint256)) allowance;
 
