@@ -14,7 +14,6 @@ function e18(amount) {
 }
 
 module.exports = async function (deployer, network, accounts) {
-  console.log("Network:", network);
   await deployer.deploy(TokenA);
   await deployer.deploy(TokenB);
   await deployer.deploy(SushiSwapFactory, accounts[0]);
@@ -27,7 +26,6 @@ module.exports = async function (deployer, network, accounts) {
   a.transfer(sushiswappair.address, e18("5000"));
   b.transfer(sushiswappair.address, e18("5000"));
   await sushiswappair.mint(accounts[0]);
-  console.log((await sushiswappair.balanceOf(accounts[0])).toString());
 
   await deployer.deploy(Vault);
   await deployer.deploy(Pair);

@@ -200,8 +200,8 @@ contract Pair {
 
         uint256 newBorrowShare = totalBorrowShare == 0 ? amountB : amountB.mul(totalBorrowShare).div(totalBorrow);
         totalBorrow = totalBorrow.add(amountB);
-        u.borrowShare = u.borrowShare.add(newBorrowShare);
         totalBorrowShare = totalBorrowShare.add(newBorrowShare);
+        u.borrowShare = u.borrowShare.add(newBorrowShare);
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
         vault.transfer(tokenB, to, amountB);
@@ -217,6 +217,34 @@ contract Pair {
         u.borrowShare = u.borrowShare.sub(shareB);
         totalBorrow = totalBorrow.sub(amountB);
         totalSupplyB = totalSupplyB.add(amountB);
+    }
+
+    function short(address swapper, uint256 amountB, uint256 minAmountA) public {
+        require(amountB <= totalSupplyB.sub(totalBorrow), 'BentoBox: not enough liquidity');
+        
+        // Shorting using a pre-approved swapper
+        require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
+        User storage u = users[msg.sender];
+        accrue();
+
+        uint256 newBorrowShare = totalBorrowShare == 0 ? amountB : amountB.mul(totalBorrowShare).div(totalBorrow);
+        totalBorrow = totalBorrow.add(amountB);
+        totalBorrowShare = totalBorrowShare.add(newBorrowShare);
+        u.borrowShare = u.borrowShare.add(newBorrowShare);
+
+        // solium-disable-next-line security/no-low-level-calls
+        (bool success, bytes memory result) = swapper.delegatecall(
+            abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenB, tokenA, amountB, minAmountA));
+        require(success, 'BentoBox: Swap failed');
+        uint256 amountA = abi.decode(result, (uint256));
+
+        uint256 newShare = totalShareA == 0 ? amountA : amountA.mul(totalShareA).div(totalSupplyA);
+
+        totalShareA = totalShareA.add(newShare);
+        totalSupplyA = totalSupplyA.add(amountA);
+        u.shareA = u.shareA.add(newShare);
+
+        require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
     function liquidate(address[] calldata userlist, uint256[] calldata shareBlist, address to, address swapper, bool open) public {
@@ -258,8 +286,9 @@ contract Pair {
             require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
 
             // solium-disable-next-line security/no-low-level-calls
-            (bool success, bytes memory result) = swapper.delegatecall(abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenA, tokenB, amountA, amountB));
-            require(success, 'BentoBox: Liquidation failed');
+            (bool success, bytes memory result) = swapper.delegatecall(
+                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenA, tokenB, amountA, amountB));
+            require(success, 'BentoBox: Swap failed');
             uint256 swappedAmountB = abi.decode(result, (uint256));
             uint256 extraAmountB = swappedAmountB.sub(amountB);
             totalSupplyB = totalSupplyB.add(extraAmountB);
