@@ -5,8 +5,10 @@ const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const Vault = artifacts.require("Vault");
 const Pair = artifacts.require("Pair");
 const PeggedOracle = artifacts.require("PeggedOracle");
+const TestOracle = artifacts.require("TestOracle");
 
 module.exports = async function (deployer, network, accounts) {
+  console.log("Network:", network);
   await deployer.deploy(TokenA);
   await deployer.deploy(TokenB);
   await deployer.deploy(SushiSwapFactory, accounts[0]);
@@ -19,21 +21,18 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(Vault);
   await deployer.deploy(Pair);
   await deployer.deploy(PeggedOracle);
+  await deployer.deploy(TestOracle);
 
   // Get the contracts
   let vault = await Vault.deployed();
   let pairMaster = await Pair.deployed();
-  let oracle = await PeggedOracle.deployed();
+  let pegged_oracle = await PeggedOracle.deployed();
+  let test_oracle = await TestOracle.deployed();
 
   // Deploy new pair
   await vault.setPairContract(pairMaster.address, true);
-  let tx = await vault.deploy(pairMaster.address, a.address, b.address, oracle.address);
-  let raw_logs = await web3.eth.getPastLogs({
-    fromBlock: 1,
-    address: vault.address,
-    topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
-  });
-
+  let tx = await vault.deploy(pairMaster.address, a.address, b.address, test_oracle.address);
   let pair_address = tx.logs[0].args[4];
-  await oracle.set(pair_address, "1000000000000000000");
+  await pegged_oracle.set(pair_address, "1000000000000000000");
+  await test_oracle.set(pair_address, "1000000000000000000");
 };

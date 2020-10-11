@@ -5,7 +5,7 @@ const Vault = artifacts.require("Vault");
 const A = artifacts.require("TokenA");
 const B = artifacts.require("TokenB");
 const Pair = artifacts.require("Pair");
-const PeggedOracle = artifacts.require("PeggedOracle");
+const TestOracle = artifacts.require("TestOracle");
 function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
 }
@@ -35,7 +35,7 @@ contract('Pair', (accounts) => {
     });
     pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
     pair = await Pair.at(pair_address);
-    oracle = await PeggedOracle.at(await pair.oracle());
+    oracle = await TestOracle.at(await pair.oracle());
     await pair.updateRate();
   });
 
@@ -85,27 +85,43 @@ contract('Pair', (accounts) => {
     assert.equal(await pair.isSolvent(alice, false), false);
   })
 
-  /*it('should allow liquidate', async () => {
+  it('should not report open insolvency due to interest', async () => {
+    await pair.accrue();
+    assert.equal(await pair.isSolvent(alice, true), true);
+  })
+
+  it('should report open insolvency after oracle rate is updated', async () => {
+    await oracle.set(pair_address, "1030000000000000000");
+    await pair.updateRate();
+    assert.equal(await pair.isSolvent(alice, true), false);
+  })
+
+  it('should allow liquidate', async () => {
     await b.approve(vault.address, e18(25), { from: bob });
-    await pair.liquidate([alice], [e18(20)], "0x0000000000000000000000000000000000000000", true, { from: bob });
+    await pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
   });
 
   it('should allow repay', async () => {
-    await b.approve(vault.address, e18(50), { from: alice });
+    await b.approve(vault.address, e18(100), { from: alice });
     await pair.repay(e18(50), { from: alice });
   });
 
   it('should allow full repay with funds', async () => {
-    await b.approve(vault.address, e18(25), { from: alice });
-    await pair.methods['repay()']({ from: alice });
+    let borrowShareLeft = (await pair.users(alice)).borrowShare;
+    await pair.repay(borrowShareLeft, { from: alice });
   });
 
   it('should allow partial withdrawal of collateral', async () => {
     await pair.removeA(e18(60), alice, { from: alice });
   });
 
+  it('should not allow withdrawal of more than collateral', async () => {
+    await truffleAssert.reverts(pair.removeA(e18(100), alice, { from: alice }), "BoringMath: Underflow");
+  });
+
   it('should allow full withdrawal of collateral', async () => {
-    await pair.methods['removeA(address)'].call(alice, { from: alice });
+    let shareALeft = (await pair.users(alice)).shareA;
+    await pair.removeA(shareALeft, alice, { from: alice });
   });
 
   it('should update the interest rate', async () => {
@@ -113,6 +129,5 @@ contract('Pair', (accounts) => {
       await timeWarp.advanceBlock()
     }
     await pair.updateInterestRate({ from: alice });
-    //console.log((await pair.interestPerBlock()).toString());
-  });*/
+  });
 });

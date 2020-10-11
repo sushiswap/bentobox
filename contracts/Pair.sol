@@ -33,6 +33,8 @@ interface ILiquidator {
 contract Pair {
     using BoringMath for uint256;
 
+    event Debug(uint256 nr, uint256 val);
+
     struct User {
         uint256 shareA;    // Shares in the tokenA pool.
         uint256 shareB;    // Shares in the tokenB pool.
@@ -103,7 +105,7 @@ contract Pair {
 
         uint256 supplyA = u.shareA.mul(totalSupplyA).div(totalShareA);
         uint256 borrowB = u.borrowShare.mul(totalBorrow).div(totalBorrowShare);
-        uint256 borrowA = borrowB.mul(1e18).div(exchangeRate);
+        uint256 borrowA = borrowB.mul(exchangeRate).div(1e18);
 
         return supplyA.mul(open ? openColRate : colRate).div(1e5) >= borrowA;
     }
@@ -171,7 +173,7 @@ contract Pair {
         accrue();
 
         uint256 amountA = shareA.mul(totalSupplyA).div(totalShareA);
-        totalShareA = totalShareA.sub(u.shareA);
+        totalShareA = totalShareA.sub(shareA);
         totalSupplyA = totalSupplyA.sub(amountA);
         u.shareA = u.shareA.sub(shareA);
 
@@ -184,7 +186,7 @@ contract Pair {
         accrue();
 
         uint256 amountB = u.shareB.mul(totalSupplyB).div(totalShareB);
-        totalShareB = totalShareB.sub(u.shareB);
+        totalShareB = totalShareB.sub(shareB);
         totalSupplyA = totalSupplyA.sub(amountB);
         u.shareB = u.shareB.sub(shareB);
 
@@ -210,8 +212,9 @@ contract Pair {
         accrue();
 
         uint256 amountB = shareB.mul(totalBorrow).div(totalBorrowShare);
+        emit Debug(0, amountB);
         vault.transferFrom(tokenB, msg.sender, amountB);
-        totalBorrowShare = totalBorrowShare.sub(u.borrowShare);
+        totalBorrowShare = totalBorrowShare.sub(shareB);
         u.borrowShare = u.borrowShare.sub(shareB);
         totalBorrow = totalBorrow.sub(amountB);
         totalSupplyB = totalSupplyB.add(amountB);
