@@ -6,6 +6,8 @@ const A = artifacts.require("TokenA");
 const B = artifacts.require("TokenB");
 const Pair = artifacts.require("Pair");
 const TestOracle = artifacts.require("TestOracle");
+const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
+
 function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
 }
@@ -16,6 +18,7 @@ contract('Pair', (accounts) => {
   let pair_address;
   let pair;
   let vault;
+  let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
   const dummy = accounts[4];
@@ -36,7 +39,8 @@ contract('Pair', (accounts) => {
     pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
     pair = await Pair.at(pair_address);
     oracle = await TestOracle.at(await pair.oracle());
-    await pair.updateRate();
+    await pair.updateExchangeRate();
+    swapper = await SushiSwapDelegateSwapper.deployed();
   });
 
   it('should not allow any remove without supply', async () => {
@@ -90,15 +94,24 @@ contract('Pair', (accounts) => {
     assert.equal(await pair.isSolvent(alice, true), true);
   })
 
+  it('should not allow open liquidate yet', async () => {
+    await b.approve(vault.address, e18(25), { from: bob });
+    await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+  });
+
+  it('should allow closed liquidate', async () => {
+    let tx = await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
+  });
+
   it('should report open insolvency after oracle rate is updated', async () => {
-    await oracle.set(pair_address, "1030000000000000000");
-    await pair.updateRate();
+    await oracle.set(pair_address, "1100000000000000000");
+    await pair.updateExchangeRate();
     assert.equal(await pair.isSolvent(alice, true), false);
   })
 
-  it('should allow liquidate', async () => {
+  it('should allow open liquidate', async () => {
     await b.approve(vault.address, e18(25), { from: bob });
-    await pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+    await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
   });
 
   it('should allow repay', async () => {

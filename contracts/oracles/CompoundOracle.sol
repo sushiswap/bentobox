@@ -2,7 +2,7 @@
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
-import "./IOracle.sol";
+import "../interfaces/IOracle.sol";
 
 interface IUniswapAnchoredView {
     function price(string memory symbol) external view returns (uint256);

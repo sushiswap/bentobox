@@ -2,7 +2,7 @@
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
-import "./IOracle.sol";
+import "../interfaces/IOracle.sol";
 
 // WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle
 contract TestOracle is IOracle, Ownable {

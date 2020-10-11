@@ -7,19 +7,16 @@
 // https://twitter.com/burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
-import "./oracles/IOracle.sol";
+import "./interfaces/IOracle.sol";
+import "./interfaces/IVault.sol";
 
-interface IVault {
-    function liquidationContracts(address liquidator) external returns (bool);
-    function transfer(address token, address to, uint256 amount) external returns (bool);
-    function transferFrom(address token, address from, uint256 amount) external returns (bool);
+interface IDelegateSwapper {
+    // Withdraws amountFrom 'from tokens' from the vault, turns it into at least amountToMin 'to tokens' and transfers those into the vault.
+    // Returns amount of tokens added to the vault.
+    function swap(address swapper, address from, address to, uint256 amountFrom, uint256 amountToMin) external returns (uint256);
 }
 
-interface IClosedLiquidator {
-    function swap(address from, address to, uint256 amountFrom, uint256 amountTo) external returns (uint256);
-}
-
-interface ILiquidator {
+interface ISwapper {
     function swap(address from, address to, uint256 amountFrom, uint256 amountTo, address profitTo) external;
 }
 
@@ -33,7 +30,13 @@ interface ILiquidator {
 contract Pair {
     using BoringMath for uint256;
 
-    event Debug(uint256 nr, uint256 val);
+    // Keep at the top in this order for delegate calls to be able to access them
+    IVault public vault;
+    address public tokenA;
+    address public tokenB;
+
+    //event Debug(uint256 nr, uint256 val);
+    event DebugPair(uint256 nr, address val);
 
     struct User {
         uint256 shareA;    // Shares in the tokenA pool.
@@ -41,9 +44,6 @@ contract Pair {
         uint256 borrowShare;    // Borrowed tokenB units.
     }
 
-    IVault public vault;
-    address public tokenA;
-    address public tokenB;
     IOracle public oracle;
 
     mapping(address => User) public users;
@@ -111,7 +111,7 @@ contract Pair {
     }
 
     // Gets the exchange rate. How much tokenA to buy 1e18 tokenB.
-    function updateRate() public returns (uint256) {
+    function updateExchangeRate() public returns (uint256) {
         (bool success, uint256 rate) = oracle.get(address(this));
 
         // TODO: How to deal with unsuccesful fetch
@@ -212,7 +212,6 @@ contract Pair {
         accrue();
 
         uint256 amountB = shareB.mul(totalBorrow).div(totalBorrowShare);
-        emit Debug(0, amountB);
         vault.transferFrom(tokenB, msg.sender, amountB);
         totalBorrowShare = totalBorrowShare.sub(shareB);
         u.borrowShare = u.borrowShare.sub(shareB);
@@ -220,8 +219,8 @@ contract Pair {
         totalSupplyB = totalSupplyB.add(amountB);
     }
 
-    function liquidate(address[] calldata userlist, uint256[] calldata shareBlist, address to, address liquidator, bool open) public {
-        updateRate();
+    function liquidate(address[] calldata userlist, uint256[] calldata shareBlist, address to, address swapper, bool open) public {
+        updateExchangeRate();
 
         uint256 amountA;
         uint256 amountB;
@@ -255,15 +254,16 @@ contract Pair {
             totalShareA = totalShareA.sub(shareA);
             totalShareB = totalShareB.add(shareB);
 
-            // Closed liquidation using a pre-approved liquidator for the benefit of the LPs
-            require(vault.liquidationContracts(liquidator), 'BentoBox: Invalid liquidator');
+            // Closed liquidation using a pre-approved swapper for the benefit of the LPs
+            require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
+
             // solium-disable-next-line security/no-low-level-calls
-            (bool success, bytes memory result) = liquidator.delegatecall(abi.encodeWithSignature("swap(address,address,uint256,uint256)", tokenA, tokenB, amountA, amountB));
+            (bool success, bytes memory result) = swapper.delegatecall(abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenA, tokenB, amountA, amountB));
             require(success, 'BentoBox: Liquidation failed');
             uint256 swappedAmountB = abi.decode(result, (uint256));
             uint256 extraAmountB = swappedAmountB.sub(amountB);
             totalSupplyB = totalSupplyB.add(extraAmountB);
-        } else if (liquidator == address(1)) {
+        } else if (swapper == address(1)) {
             // Open liquidation using vault balances
             User storage u = users[msg.sender];
             u.shareA = u.shareA.add(shareA);
@@ -274,10 +274,10 @@ contract Pair {
             totalShareB = totalShareB.add(shareB);
 
             // Open flash liquidation: get proceeds first and provide the borrow after
-            if (liquidator != address(0)) {
-                vault.transfer(tokenA, liquidator, amountA);
-                ILiquidator(liquidator).swap(tokenA, tokenB, amountA, amountB, to);
-                vault.transferFrom(tokenB, liquidator, amountB);
+            if (swapper != address(0)) {
+                vault.transfer(tokenA, swapper, amountA);
+                ISwapper(swapper).swap(tokenA, tokenB, amountA, amountB, to);
+                vault.transferFrom(tokenB, swapper, amountB);
             }
             else
             {

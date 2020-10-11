@@ -2,7 +2,7 @@
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
-import "./IOracle.sol";
+import "../interfaces/IOracle.sol";
 
 contract SLPOracle is IOracle, Ownable {
     struct PairInfo {

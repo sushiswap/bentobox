@@ -13,7 +13,7 @@ contract Vault is Ownable {
     event PairCreated(address indexed pairContract, address indexed tokenA, address indexed tokenB, address oracle, address clone_address);
 
     mapping(address => bool) public pairContracts;
-    mapping(address => bool) public liquidationContracts;
+    mapping(address => bool) public swappers;
     mapping(address => bool) public isPair;
 
     function setPairContract(address pairContract, bool enabled) public {
@@ -22,10 +22,10 @@ contract Vault is Ownable {
         pairContracts[pairContract] = enabled;
     }
 
-    function setLiquidationContract(address liquidationContract, bool enabled) public {
+    function setSwapper(address swapper, bool enabled) public {
         require(owner == msg.sender, "BentoBox: caller is not the owner");
 
-        liquidationContracts[liquidationContract] = enabled;
+        swappers[swapper] = enabled;
     }
 
     function deploy(address pairContract, address tokenA, address tokenB, address oracle) public returns (address) {
@@ -51,7 +51,6 @@ contract Vault is Ownable {
     function transfer(address token, address to, uint256 amount) public returns (bool) {
         require(isPair[msg.sender], "BentoBox: Only pair contracts can transfer");
 
-        // 0xa9059cbb = bytes4(keccak256("transferFrom(address,address,uint256)"))
         // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, amount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
@@ -62,7 +61,6 @@ contract Vault is Ownable {
     function transferFrom(address token, address from, uint256 amount) public returns (bool) {
         require(isPair[msg.sender], "BentoBox: Only pair contracts can transferFrom");
 
-        // 0x23b872dd = bytes4(keccak256("transferFrom(address,address,uint256)"))
         // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
