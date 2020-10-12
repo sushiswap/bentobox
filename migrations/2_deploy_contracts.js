@@ -16,7 +16,7 @@ function e18(amount) {
 module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(TokenA);
   await deployer.deploy(TokenB);
-  await deployer.deploy(SushiSwapFactory, accounts[0]);
+  await deployer.deploy(SushiSwapFactory, network == "ropsten" ? "0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E" : accounts[0]);
 
   let a = await TokenA.deployed();
   let b = await TokenB.deployed();
@@ -25,7 +25,7 @@ module.exports = async function (deployer, network, accounts) {
   let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
   a.transfer(sushiswappair.address, e18("5000"));
   b.transfer(sushiswappair.address, e18("5000"));
-  await sushiswappair.mint(accounts[0]);
+  await sushiswappair.mint(network == "ropsten" ? "0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E" : accounts[0]);
 
   await deployer.deploy(Vault);
   await deployer.deploy(Pair);
