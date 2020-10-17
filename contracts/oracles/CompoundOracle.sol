@@ -21,6 +21,7 @@ contract CompoundOracle is IOracle, Ownable {
 
     mapping(address => PairInfo) pairs;
 
+    // Ropsten: 0xc629C26dcED4277419CDe234012F8160A0278a79
     constructor(IUniswapAnchoredView oracle_) public {
         oracle = oracle_;
     }
@@ -35,18 +36,24 @@ contract CompoundOracle is IOracle, Ownable {
         }
     }
 
+    function _get(string memory collateralSymbol, string memory supplySymbol) private view returns (uint256) {
+        return uint256(1e18)
+            .mul(oracle.price(collateralSymbol))
+            .div(oracle.price(supplySymbol));
+    }
+
     // Get the latest exchange rate
     function get(address pair) public override returns (bool, uint256) {
-        pairs[pair].rate = uint256(1e18)
-            .mul(oracle.price(pairs[pair].collateralSymbol))
-            .div(oracle.price(pairs[pair].supplySymbol));
+        pairs[pair].rate = _get(pairs[pair].collateralSymbol, pairs[pair].supplySymbol);
         return (true, pairs[pair].rate);
     }
 
     // Check the last exchange rate without any state changes
     function peek(address pair) public view override returns (uint256) {
-        return uint256(1e18)
-            .mul(oracle.price(pairs[pair].collateralSymbol))
-            .div(oracle.price(pairs[pair].supplySymbol));
+        return _get(pairs[pair].collateralSymbol, pairs[pair].supplySymbol);
+    }
+
+    function test(string calldata collateralSymbol, string calldata supplySymbol) public view returns(uint256) {
+        return _get(collateralSymbol, supplySymbol);
     }
 }

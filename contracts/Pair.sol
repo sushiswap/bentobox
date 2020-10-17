@@ -22,7 +22,6 @@ interface ISwapper {
 
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
-// TODO: add minimum supply when borrowing, maybe not needed
 // TODO: add events
 // TODO: remove unnecassary checks to safe gas
 // TODO: ensure BoringMath is always used
@@ -32,31 +31,25 @@ contract Pair {
 
     // Keep at the top in this order for delegate calls to be able to access them
     IVault public vault;
-    address public tokenA;
-    address public tokenB;
+    address public tokenCollateral;
+    address public tokenSupply;
 
-    //event Debug(uint256 nr, uint256 val);
-    event DebugPair(uint256 nr, address val);
-
-    struct User {
-        uint256 shareA;    // Shares in the tokenA pool.
-        uint256 shareB;    // Shares in the tokenB pool.
-        uint256 borrowShare;    // Borrowed tokenB units.
-    }
+    mapping(address => uint256) userCollateralShare;
+    mapping(address => uint256) userSupplyShare; // balanceOf
+    mapping(address => uint256) userBorrowShare;
 
     IOracle public oracle;
-
-    mapping(address => User) public users;
 
     uint256 exchangeRate;
 
     uint256 public lastBlockAccrued;
 
-    uint256 public totalShareA; // Total amount of shares in the tokenA pool
-    uint256 public totalShareB; // Total amount of shares in the tokenB pool
-    uint256 public totalSupplyA;
-    uint256 public totalSupplyB; // Includes totalBorrow
+    uint256 public totalCollateral;
+    uint256 public totalSupply; // Includes totalBorrow
     uint256 public totalBorrow; // Total units of tokenB borrowed
+
+    uint256 public totalCollateralShare; // Total amount of shares in the tokenA pool
+    uint256 public totalSupplyShare; // Total amount of shares in the tokenB pool
     uint256 public totalBorrowShare;
 
     uint256 public interestPerBlock;
@@ -72,11 +65,11 @@ contract Pair {
     uint256 public fee;
     uint256 public feesPending;
 
-    function init(IVault vault_, address tokenA_, address tokenB_, IOracle oracle_) public {
+    function init(IVault vault_, address collateral_address, address supply_address, IOracle oracle_address) public {
         vault = vault_;
-        tokenA = tokenA_;
-        tokenB = tokenB_;
-        oracle = oracle_;
+        tokenCollateral = collateral_address;
+        tokenSupply = supply_address;
+        oracle = oracle_address;
         lastInterestBlock = block.number;
 
         interestPerBlock = 4566210045;  // 1% APR, with 1e18 being 100%
@@ -99,24 +92,32 @@ contract Pair {
 
     function isSolvent(address user, bool open) public view returns (bool) {
         // accrue must have already been called!
-        User storage u = users[user];
-        if (u.borrowShare == 0) return true;
-        if (totalShareA == 0) return false;
+        if (userBorrowShare[user] == 0) return true;
+        if (totalCollateralShare == 0) return false;
 
-        uint256 supplyA = u.shareA.mul(totalSupplyA).div(totalShareA);
-        uint256 borrowB = u.borrowShare.mul(totalBorrow).div(totalBorrowShare);
-        uint256 borrowA = borrowB.mul(exchangeRate).div(1e18);
+        uint256 collateral = userCollateralShare[user].mul(totalCollateral).div(totalCollateralShare);
+        uint256 borrow = userBorrowShare[user].mul(totalBorrow).div(totalBorrowShare);
 
-        return supplyA.mul(open ? openColRate : colRate).div(1e5) >= borrowA;
+        return collateral.mul(open ? openColRate : colRate).div(1e5) >= borrow.mul(exchangeRate).div(1e18);
     }
 
-    // Gets the exchange rate. How much tokenA to buy 1e18 tokenB.
+    event NewExchangeRate(uint256 rate);
+    event NewInterestRate(uint256 rate);
+    event AddCollateral(address indexed user, uint256 amount, uint256 share);
+    event AddSupply(address indexed user, uint256 amount, uint256 share);
+    event AddBorrow(address indexed user, uint256 amount, uint256 share);
+    event RemoveCollateral(address indexed user, uint256 amount, uint256 share);
+    event RemoveSupply(address indexed user, uint256 amount, uint256 share);
+    event RemoveBorrow(address indexed user, uint256 amount, uint256 share);
+
+    // Gets the exchange rate. How much collateral to buy 1e18 supply.
     function updateExchangeRate() public returns (uint256) {
         (bool success, uint256 rate) = oracle.get(address(this));
 
         // TODO: How to deal with unsuccesful fetch
         if (success) {
             exchangeRate = rate;
+            emit NewExchangeRate(rate);
         }
         return exchangeRate;
     }
@@ -125,194 +126,222 @@ contract Pair {
     function updateInterestRate() public {
         uint256 blocks = block.number - lastInterestBlock;
         if (blocks == 0) {return;}
-        uint256 utilization = totalBorrow.mul(1e18).div(totalSupplyB);
+        uint256 utilization = totalBorrow.mul(1e18).div(totalSupply);
+        uint256 newInterestPerBlock;
         if (utilization < targetMinUse) {
             uint256 underFactor = targetMinUse.sub(utilization).mul(1e18).div(targetMinUse);
             uint256 scale = uint256(2000e36).add(underFactor.mul(underFactor).mul(blocks));
-            interestPerBlock = interestPerBlock.mul(2000e36).div(scale);
-            if (interestPerBlock < minimumInterest) {
-                interestPerBlock = minimumInterest;
+            newInterestPerBlock = interestPerBlock.mul(2000e36).div(scale);
+            if (newInterestPerBlock < minimumInterest) {
+                newInterestPerBlock = minimumInterest;
             }
         } else if (utilization > targetMaxUse) {
             uint256 overFactor = utilization.sub(targetMaxUse).mul(1e18).div(uint256(1e18).sub(targetMaxUse));
             uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
 
-            interestPerBlock = interestPerBlock.mul(scale).div(2000e36);
-            if (interestPerBlock > maximumInterest) {
-                interestPerBlock = maximumInterest;
+            newInterestPerBlock = interestPerBlock.mul(scale).div(2000e36);
+            if (newInterestPerBlock > maximumInterest) {
+                newInterestPerBlock = maximumInterest;
             }
-        }
+        } else {return;}
+
+        interestPerBlock = newInterestPerBlock;
+        lastInterestBlock = block.number;
+        emit NewInterestRate(newInterestPerBlock);
     }
 
-    function addA(uint256 amountA) public {
-        User storage u = users[msg.sender];
-        uint256 newShare = totalShareA == 0 ? amountA : amountA.mul(totalShareA).div(totalSupplyA);
-
-        totalShareA = totalShareA.add(newShare);
-        totalSupplyA = totalSupplyA.add(amountA);
-        u.shareA = u.shareA.add(newShare);
-
-        vault.transferFrom(tokenA, msg.sender, amountA);
+    function _addCollateral(address user, uint256 amount) private {
+        uint256 newShare = totalCollateralShare == 0 ? amount : amount.mul(totalCollateralShare).div(totalCollateral);
+        userCollateralShare[user] = userCollateralShare[user].add(newShare);
+        totalCollateralShare = totalCollateralShare.add(newShare);
+        totalCollateral = totalCollateral.add(amount);
+        emit AddCollateral(msg.sender, amount, newShare);
     }
 
-    function addB(uint256 amountB) public {
-        User storage u = users[msg.sender];
+    function _addSupply(address user, uint256 amount) private {
+        uint256 newShare = totalSupplyShare == 0 ? amount : amount.mul(totalSupplyShare).div(totalSupply);
+        userSupplyShare[user] = userSupplyShare[user].add(newShare);
+        totalSupplyShare = totalSupplyShare.add(newShare);
+        totalSupply = totalSupply.add(amount);
+        emit AddSupply(msg.sender, amount, newShare);
+    }
+
+    function _addBorrow(address user, uint256 amount) private {
+        uint256 newShare = totalBorrowShare == 0 ? amount : amount.mul(totalBorrowShare).div(totalBorrow);
+        userBorrowShare[user] = userBorrowShare[user].add(newShare);
+        totalBorrowShare = totalBorrowShare.add(newShare);
+        totalBorrow = totalBorrow.add(amount);
+        emit AddBorrow(msg.sender, amount, newShare);
+    }
+
+    function _removeCollateralShare(address user, uint256 share) private returns (uint256) {
+        userCollateralShare[user] = userCollateralShare[user].sub(share);
+        uint256 amount = share.mul(totalCollateral).div(totalCollateralShare);
+        totalCollateralShare = totalCollateralShare.sub(share);
+        totalCollateral = totalCollateral.sub(amount);
+        emit RemoveCollateral(msg.sender, amount, share);
+        return amount;
+    }
+
+    function _removeSupplyShare(address user, uint256 share) private returns (uint256) {
+        userSupplyShare[user] = userSupplyShare[user].sub(share);
+        uint256 amount = share.mul(totalSupply).div(totalSupplyShare);
+        totalSupplyShare = totalSupplyShare.sub(share);
+        totalSupply = totalSupply.sub(amount);
+        emit RemoveSupply(msg.sender, amount, share);
+        return amount;
+    }
+
+    function _removeBorrowShare(address user, uint256 share) private returns (uint256) {
+        userBorrowShare[user] = userBorrowShare[user].sub(share);
+        uint256 amount = share.mul(totalBorrow).div(totalBorrowShare);
+        totalBorrowShare = totalBorrowShare.sub(share);
+        totalBorrow = totalBorrow.sub(amount);
+        emit RemoveBorrow(msg.sender, amount, share);
+        return amount;
+    }
+
+    function addCollateral(uint256 amount) public {
+        // Checks and effects
+        _addCollateral(msg.sender, amount);
+
+        // Interactions
+        vault.transferFrom(tokenCollateral, msg.sender, amount);
+    }
+
+    function addSupply(uint256 amount) public {
+        // Checks and effects
         accrue();
+        _addSupply(msg.sender, amount);
 
-        uint256 newShare = totalShareB == 0 ? amountB : amountB.mul(totalShareB).div(totalSupplyB);
-
-        totalShareB = totalShareB.add(newShare);
-        totalSupplyB = totalSupplyB.add(amountB);
-        u.shareB = u.shareB.add(newShare);
-
-        vault.transferFrom(tokenB, msg.sender, amountB);
+        // Interactions
+        vault.transferFrom(tokenSupply, msg.sender, amount);
     }
 
-    function removeA(uint256 shareA, address to) public {
-        User storage u = users[msg.sender];
+    function removeCollateral(uint256 share, address to) public {
+        // Checks and effects
         accrue();
-
-        uint256 amountA = shareA.mul(totalSupplyA).div(totalShareA);
-        totalShareA = totalShareA.sub(shareA);
-        totalSupplyA = totalSupplyA.sub(amountA);
-        u.shareA = u.shareA.sub(shareA);
-
+        uint256 amount = _removeCollateralShare(msg.sender, share);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        vault.transfer(tokenA, to, amountA);
+
+        // Interactions
+        vault.transfer(tokenCollateral, to, amount);
     }
 
-    function removeB(uint256 shareB, address to) public {
-        User storage u = users[msg.sender];
+    function removeSupply(uint256 share, address to) public {
+        // Checks and effects
         accrue();
+        uint256 amount = _removeSupplyShare(msg.sender, share);
 
-        uint256 amountB = u.shareB.mul(totalSupplyB).div(totalShareB);
-        totalShareB = totalShareB.sub(shareB);
-        totalSupplyA = totalSupplyA.sub(amountB);
-        u.shareB = u.shareB.sub(shareB);
-
-        vault.transfer(tokenB, to, amountB);
+        // Interactions
+        vault.transfer(tokenSupply, to, amount);
     }
 
-    function borrow(uint256 amountB, address to) public {
-        require(amountB <= totalSupplyB.sub(totalBorrow), 'BentoBox: not enough liquidity');
-        User storage u = users[msg.sender];
+    function borrow(uint256 amount, address to) public {
+        // Checks and effects
+        require(amount <= totalSupply.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
-
-        uint256 newBorrowShare = totalBorrowShare == 0 ? amountB : amountB.mul(totalBorrowShare).div(totalBorrow);
-        totalBorrow = totalBorrow.add(amountB);
-        totalBorrowShare = totalBorrowShare.add(newBorrowShare);
-        u.borrowShare = u.borrowShare.add(newBorrowShare);
-
+        _addBorrow(msg.sender, amount);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        vault.transfer(tokenB, to, amountB);
+
+        // Interactions
+        vault.transfer(tokenSupply, to, amount);
     }
 
-    function repay(uint256 shareB) public {
-        User storage u = users[msg.sender];
+    function repay(uint256 share) public {
+        // Checks and effects
         accrue();
+        uint256 amount = _removeBorrowShare(msg.sender, share);
 
-        uint256 amountB = shareB.mul(totalBorrow).div(totalBorrowShare);
-        vault.transferFrom(tokenB, msg.sender, amountB);
-        totalBorrowShare = totalBorrowShare.sub(shareB);
-        u.borrowShare = u.borrowShare.sub(shareB);
-        totalBorrow = totalBorrow.sub(amountB);
-        totalSupplyB = totalSupplyB.add(amountB);
+        // Interactions
+        vault.transferFrom(tokenSupply, msg.sender, amount);
     }
 
-    function short(address swapper, uint256 amountB, uint256 minAmountA) public {
-        require(amountB <= totalSupplyB.sub(totalBorrow), 'BentoBox: not enough liquidity');
-        
+    function short(address swapper, uint256 amountSupply, uint256 minAmountCollateral) public {
+        require(amountSupply <= totalSupply.sub(totalBorrow), 'BentoBox: not enough liquidity');
+
         // Shorting using a pre-approved swapper
         require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
-        User storage u = users[msg.sender];
         accrue();
-
-        uint256 newBorrowShare = totalBorrowShare == 0 ? amountB : amountB.mul(totalBorrowShare).div(totalBorrow);
-        totalBorrow = totalBorrow.add(amountB);
-        totalBorrowShare = totalBorrowShare.add(newBorrowShare);
-        u.borrowShare = u.borrowShare.add(newBorrowShare);
+        _addBorrow(msg.sender, amountSupply);
 
         // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory result) = swapper.delegatecall(
-            abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenB, tokenA, amountB, minAmountA));
+            abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenSupply, tokenCollateral, amountSupply, minAmountCollateral));
         require(success, 'BentoBox: Swap failed');
-        uint256 amountA = abi.decode(result, (uint256));
-
-        uint256 newShare = totalShareA == 0 ? amountA : amountA.mul(totalShareA).div(totalSupplyA);
-
-        totalShareA = totalShareA.add(newShare);
-        totalSupplyA = totalSupplyA.add(amountA);
-        u.shareA = u.shareA.add(newShare);
+        uint256 amountCollateral = abi.decode(result, (uint256));
+        _addCollateral(msg.sender, amountCollateral);
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
-    function liquidate(address[] calldata userlist, uint256[] calldata shareBlist, address to, address swapper, bool open) public {
+    function unwind(address swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
+        // Unwind using a pre-approved swapper
+        require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
+        accrue();
+
+        uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
+
+        // solium-disable-next-line security/no-low-level-calls
+        (bool success, bytes memory result) = swapper.delegatecall(
+            abi.encodeWithSignature("swapExact(address,address,address,uint256,uint256)", swapper, tokenCollateral, tokenSupply, maxAmountCollateral, borrowAmount));
+        require(success, 'BentoBox: Swap failed');
+        _removeCollateralShare(msg.sender, abi.decode(result, (uint256)).mul(totalCollateralShare).div(totalCollateral));
+
+        require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
+    }
+
+    function liquidate(address[] calldata users, uint256[] calldata borrowShares, address to, address swapper, bool open) public {
         updateExchangeRate();
 
-        uint256 amountA;
-        uint256 amountB;
-        uint256 shareA;
-        uint256 shareB;
-        for (uint256 i = 0; i < userlist.length; i++) {
-            address user = userlist[i];
+        uint256 allCollateralAmount;
+        uint256 allCollateralShare;
+        uint256 allBorrowAmount;
+        uint256 allBorrowShare;
+        for (uint256 i = 0; i < users.length; i++) {
+            address user = users[i];
             if (!isSolvent(user, open)) {
-                User storage u = users[user];
+                uint256 borrowShare = borrowShares[i];
+                uint256 borrowAmount = borrowShare.mul(totalBorrow).div(totalBorrowShare);
+                uint256 collateralAmount = borrowAmount.mul(1e13).mul(liqMultiplier).div(exchangeRate);
+                uint256 collateralShare = collateralAmount.mul(totalCollateralShare).div(totalCollateral);
 
-                uint256 userShareB = shareBlist[i];
-                uint256 userAmountB = userShareB.mul(totalBorrow).div(totalBorrowShare);
-                uint256 userAmountA = userAmountB.mul(1e13).mul(liqMultiplier).div(exchangeRate);
-                uint256 userShareA = userAmountA.mul(totalShareA).div(totalSupplyA);
+                userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
+                userBorrowShare[user] = userBorrowShare[user].sub(borrowShare);
+                emit RemoveCollateral(user, collateralAmount, collateralShare);
+                emit RemoveBorrow(user, borrowAmount, borrowShare);
 
-                u.shareA = u.shareA.sub(userShareA);
-                u.borrowShare = u.borrowShare.sub(userShareB);
-
-                amountA = amountA.add(userAmountA);
-                amountB = amountB.add(userAmountB);
-                shareA = shareA.add(userShareA);
-                shareB = shareB.add(userShareB);
+                // Keep totals
+                allCollateralAmount = allCollateralAmount.add(collateralAmount);
+                allCollateralShare = allCollateralShare.add(collateralShare);
+                allBorrowAmount = allBorrowAmount.add(borrowAmount);
+                allBorrowShare = allBorrowShare.add(borrowShare);
             }
         }
-        require(amountA != 0, 'BentoBox: all users are solvent');
-        totalBorrow = totalBorrow.sub(amountB);
-        totalBorrowShare = totalBorrowShare.sub(shareB);
+        require(allBorrowAmount != 0, 'BentoBox: all users are solvent');
+        totalBorrow = totalBorrow.sub(allBorrowAmount);
+        totalBorrowShare = totalBorrowShare.sub(allBorrowShare);
+        totalCollateral = totalCollateral.sub(allCollateralAmount);
+        totalCollateralShare = totalCollateralShare.add(allCollateralShare);
 
         if (!open) {
-            totalSupplyA = totalSupplyA.sub(amountA);
-            totalShareA = totalShareA.sub(shareA);
-            totalShareB = totalShareB.add(shareB);
-
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
             require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
 
             // solium-disable-next-line security/no-low-level-calls
             (bool success, bytes memory result) = swapper.delegatecall(
-                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenA, tokenB, amountA, amountB));
+                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenCollateral, tokenSupply, totalCollateral, totalBorrow));
             require(success, 'BentoBox: Swap failed');
-            uint256 swappedAmountB = abi.decode(result, (uint256));
-            uint256 extraAmountB = swappedAmountB.sub(amountB);
-            totalSupplyB = totalSupplyB.add(extraAmountB);
-        } else if (swapper == address(1)) {
-            // Open liquidation using vault balances
-            User storage u = users[msg.sender];
-            u.shareA = u.shareA.add(shareA);
-            u.shareB = u.shareB.sub(shareB);
-        } else {
-            totalSupplyA = totalSupplyA.sub(amountA);
-            totalShareA = totalShareA.sub(shareA);
-            totalShareB = totalShareB.add(shareB);
+            uint256 extraSupply = abi.decode(result, (uint256)).sub(totalBorrow);
 
+            // The extra supply gets added to the pool
+            totalSupply = totalSupply.add(extraSupply);
+            emit AddSupply(address(0), extraSupply, 0);
+        } else {
             // Open flash liquidation: get proceeds first and provide the borrow after
-            if (swapper != address(0)) {
-                vault.transfer(tokenA, swapper, amountA);
-                ISwapper(swapper).swap(tokenA, tokenB, amountA, amountB, to);
-                vault.transferFrom(tokenB, swapper, amountB);
-            }
-            else
-            {
-                vault.transferFrom(tokenB, msg.sender, amountB);
-                vault.transfer(tokenA, msg.sender, amountA);
-            }
+            vault.transfer(tokenCollateral, swapper, totalCollateral);
+            if (swapper != address(0)) {ISwapper(swapper).swap(tokenCollateral, tokenSupply, totalCollateral, totalBorrow, to);}
+            vault.transferFrom(tokenSupply, swapper, totalBorrow);
         }
     }
 }

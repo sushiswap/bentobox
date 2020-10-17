@@ -27,19 +27,19 @@ contract SushiSwapDelegateSwapper {
         amountOut = numerator / denominator;
     }
 
-    event Debug(address val);
+    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
+    function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) internal pure returns (uint amountIn) {
+        uint numerator = reserveIn.mul(amountOut).mul(1000);
+        uint denominator = reserveOut.sub(amountOut).mul(997);
+        amountIn = (numerator / denominator).add(1);
+    }
 
     function swap(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFrom, uint256 amountToMin) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
-        emit Debug(address(vault));
-        emit Debug(address(pair));
-        emit Debug(address(from));
         vault.transfer(from, address(pair), amountFrom);
 
-        uint256 reserve0;
-        uint256 reserve1;
-        (reserve0, reserve1,) = pair.getReserves();
+        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
         uint256 amountTo;
         if (pair.token0() == from) {
             amountTo = getAmountOut(amountFrom, reserve0, reserve1);
@@ -51,5 +51,26 @@ contract SushiSwapDelegateSwapper {
             pair.swap(amountTo, 0, address(vault), new bytes(0));
         }
         return amountTo;
+    }
+
+    function swapExact(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFromMax, uint256 exactAmountTo) public returns (uint256) {
+        UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
+
+        (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+
+        uint256 amountFrom;
+        if (pair.token0() == from) {
+            amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
+            require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
+            vault.transfer(from, address(pair), amountFrom);
+            pair.swap(0, exactAmountTo, address(vault), new bytes(0));
+        } else {
+            amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
+            require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
+            vault.transfer(from, address(pair), amountFrom);
+            pair.swap(exactAmountTo, 0, address(vault), new bytes(0));
+        }
+
+        return amountFrom;
     }
 }
