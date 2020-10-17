@@ -1,10 +1,11 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
-const AssertionError = require('./helpers/assertion-error');
 
 const Vault = artifacts.require("Vault");
-const A = artifacts.require("TokenA");
-const B = artifacts.require("TokenB");
+const TokenA = artifacts.require("TokenA");
+const TokenB = artifacts.require("TokenB");
+const SushiSwapFactory = artifacts.require("UniswapV2Factory");
+const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("Pair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
@@ -25,31 +26,41 @@ contract('Pair (Shorting)', (accounts) => {
   const dummy = accounts[4];
 
   before(async () => {
-    a = await A.deployed();
-    b = await B.deployed();
-
-    a.transfer(alice, e18(1000));
-    b.transfer(bob, e18(1000));
-
     vault = await Vault.deployed();
-    let raw_logs = await web3.eth.getPastLogs({
-      fromBlock: 1,
-      address: vault.address,
-      topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
-    });
-    pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
+    pairMaster = await Pair.deployed();
+
+    a = await TokenA.new({ from: accounts[0] });
+    b = await TokenB.new({ from: accounts[0] });
+
+    let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
+    swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
+    await vault.setSwapper(swapper.address, true);
+
+    let tx = await factory.createPair(a.address, b.address);
+    let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
+    await a.transfer(sushiswappair.address, e18("5000"));
+    await b.transfer(sushiswappair.address, e18("5000"));
+    await sushiswappair.mint(accounts[0]);
+
+    await a.transfer(alice, e18(1000));
+    await b.transfer(bob, e18(1000));
+
+    oracle = await TestOracle.new({ from: accounts[0] });
+    let oracleData = await oracle.getInitData("1000000000000000000");
+
+    tx = await vault.deploy(pairMaster.address, a.address, b.address, oracle.address, oracleData);
+    let pair_address = tx.logs[0].args[4];
     pair = await Pair.at(pair_address);
-    oracle = await TestOracle.at(await pair.oracle());
+
     await pair.updateExchangeRate();
-    swapper = await SushiSwapDelegateSwapper.deployed();
   });
 
   it('should take deposits', async () => {
     await a.approve(vault.address, e18(100), { from: alice });
-    await pair.addA(e18(100), { from: alice });
+    await pair.addCollateral(e18(100), { from: alice });
 
     await b.approve(vault.address, e18(1000), { from: bob });
-    await pair.addB(e18(1000), { from: bob });
+    await pair.addSupply(e18(1000), { from: bob });
   });
 
   it("should not allow shorting if it doesn't return enough of token A", async () => {
@@ -65,8 +76,8 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it('should have correct balances after short', async () => {
-    assert.equal((await pair.users(alice)).shareA.toString(), "337414868790779635185");
-    assert.equal((await pair.users(alice)).shareB.toString(), "0");
-    assert.equal((await pair.users(alice)).borrowShare.toString(), "250000000000000000000");
+    assert.equal((await pair.userCollateralShare(alice)).toString(), "337414868790779635185");
+    assert.equal((await pair.userSupplyShare(alice)).toString(), "0");
+    assert.equal((await pair.userBorrowShare(alice)).toString(), "250000000000000000000");
   })
 });

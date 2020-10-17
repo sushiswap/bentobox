@@ -21,7 +21,7 @@ contract ChainlinkOracle is Ownable, IOracle {
 
     mapping(address => SymbolPair) symbols;
 
-    function set(address pair, address multiply, address divide, uint256 decimals) public {
+    function init(address multiply, address divide, uint256 decimals, address pair) public {
         require(msg.sender == owner, "ChainlinkOracle: not owner");
 
         // The rate can only be set once. It cannot be changed.
@@ -32,13 +32,12 @@ contract ChainlinkOracle is Ownable, IOracle {
         }
     }
 
-    // Get the latest exchange rate
-    function get(address pair) public override returns (bool, uint256) {
-        uint256 price = uint256(1e18);
-        SymbolPair storage s = symbols[pair];
-        address multiply = s.multiply;
-        address divide = s.divide;
+    function getInitData(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
+        return abi.encode(multiply, divide, decimals);
+    }
 
+    function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
+        uint256 price = uint256(1e18);
         if (multiply != address(0)) {
             (, int256 priceC,,,) = IAggregator(multiply).latestRoundData();
             price = price.mul(uint256(priceC));
@@ -51,39 +50,24 @@ contract ChainlinkOracle is Ownable, IOracle {
             price = price.div(uint256(priceC));
         }
 
-        if (multiply != address(0)) {
-            price = price.div(1e18);
-        }
+        return price.div(decimals);
+    }
 
-        price = price.div(s.decimals);
-        s.rate = price;
-        return (true, price);
+    // Get the latest exchange rate
+    function get(address pair) public override returns (bool, uint256) {
+        SymbolPair storage s = symbols[pair];
+        uint256 rate = _get(s.multiply, s.divide, s.decimals);
+        s.rate = rate;
+        return (true, rate);
     }
 
     // Check the last exchange rate without any state changes
     function peek(address pair) public override view returns (uint256) {
-        uint256 price = uint256(1e18);
         SymbolPair storage s = symbols[pair];
-        address multiply = s.multiply;
-        address divide = s.divide;
+        return _get(s.multiply, s.divide, s.decimals);
+    }
 
-        if (multiply != address(0)) {
-            (, int256 priceC,,,) = IAggregator(multiply).latestRoundData();
-            price = price.mul(uint256(priceC));
-        } else {
-            price = price.mul(1e18);
-        }
-
-        if (divide != address(0)) {
-            (, int256 priceC,,,) = IAggregator(divide).latestRoundData();
-            price = price.div(uint256(priceC));
-        }
-
-        if (multiply != address(0)) {
-            price = price.div(1e18);
-        }
-
-        price = price.div(s.decimals);
-        return price;
+    function test(address multiply, address divide, uint256 decimals) public view returns(uint256) {
+        return _get(multiply, divide, decimals);
     }
 }

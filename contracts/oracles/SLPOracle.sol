@@ -13,8 +13,12 @@ contract SLPOracle is IOracle, Ownable {
 
     mapping(address => PairInfo) pairs;
 
-    function set(address pair, uint256 rate_) public {
+    function init(uint256 rate_, address pair) public {
         require(msg.sender == owner, "SLPOracle: not owner");
+    }
+
+    function getInitData(uint256 rate_) public pure returns (bytes memory) {
+        return abi.encode(rate_);
     }
 
     // Get the latest exchange rate

@@ -9,13 +9,17 @@ contract PeggedOracle is IOracle, Ownable {
 
     mapping(address => uint256) rate;
 
-    function set(address pair, uint256 rate_) public {
+    function init(uint256 rate_, address pair) public {
         require(msg.sender == owner, "PeggedOracle: not owner");
 
         // The rate can only be set once. It cannot be changed.
         if (rate[pair] == 0) {
             rate[pair] = rate_;
         }
+    }
+
+    function getInitData(uint256 rate_) public pure returns (bytes memory) {
+        return abi.encodeWithSignature("init(uint256,address)", rate_);
     }
 
     // Get the latest exchange rate

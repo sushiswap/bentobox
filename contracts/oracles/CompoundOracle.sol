@@ -11,8 +11,6 @@ interface IUniswapAnchoredView {
 contract CompoundOracle is IOracle, Ownable {
     using BoringMath for uint256;
 
-    IUniswapAnchoredView oracle;
-
     struct PairInfo {
         string collateralSymbol;
         string supplySymbol;
@@ -21,12 +19,7 @@ contract CompoundOracle is IOracle, Ownable {
 
     mapping(address => PairInfo) pairs;
 
-    // Ropsten: 0xc629C26dcED4277419CDe234012F8160A0278a79
-    constructor(IUniswapAnchoredView oracle_) public {
-        oracle = oracle_;
-    }
-
-    function set(address pair, string calldata collateralSymbol, string calldata supplySymbol) public {
+    function init(string calldata collateralSymbol, string calldata supplySymbol, address pair) public {
         require(msg.sender == owner, "CompoundOracle: not owner");
 
         // The rate can only be set once. It cannot be changed.
@@ -36,10 +29,14 @@ contract CompoundOracle is IOracle, Ownable {
         }
     }
 
+    function getInitData(string calldata collateralSymbol, string calldata supplySymbol) public pure returns (bytes memory) {
+        return abi.encode(collateralSymbol, supplySymbol);
+    }
+
     function _get(string memory collateralSymbol, string memory supplySymbol) private view returns (uint256) {
         return uint256(1e18)
-            .mul(oracle.price(collateralSymbol))
-            .div(oracle.price(supplySymbol));
+            .mul(IUniswapAnchoredView(0xc629C26dcED4277419CDe234012F8160A0278a79).price(collateralSymbol))
+            .div(IUniswapAnchoredView(0xc629C26dcED4277419CDe234012F8160A0278a79).price(supplySymbol));
     }
 
     // Get the latest exchange rate

@@ -10,22 +10,11 @@ function e18(amount) {
 }
 
 contract('PeggedOracle', (accounts) => {
-    let vault;
     let oracle;
-    let pair_address;
-    const alice = accounts[1];
-    const bob = accounts[2];
-    const dummy = accounts[4];
 
     before(async () => {
-        vault = await Vault.deployed();
-        oracle = await PeggedOracle.deployed();
-        let raw_logs = await web3.eth.getPastLogs({
-            fromBlock: 1,
-            address: vault.address,
-            topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
-        });
-        pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
+        oracle = await PeggedOracle.new({ from: accounts[0] });
+        await oracle.init("1000000000000000000", "0x30a0911731f6eC80c87C4b99f27c254639A3Abcd");
     });
 
     it('should return 0 on rate request for non-existant pair', async () => {
@@ -34,7 +23,7 @@ contract('PeggedOracle', (accounts) => {
     });
 
     it('should return 1e18 on rate request for deployed pair', async () => {
-        let result = await oracle.peek(pair_address);
+        let result = await oracle.peek("0x30a0911731f6eC80c87C4b99f27c254639A3Abcd");
         assert.equal(result.toString(), "1000000000000000000");
     });
 

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
+// Copyright 2020 BoringCrypto - All rights reserved
 
 // WARNING!!! DO NOT USE!!! NOT YET TESTED + NOT YET SECURITY CONSIDERED + DEF. NOT YET AUDITED!!!
 // FOR CONCEPT TESTING ONLY!
 
-// Special thanks to:
-// https://twitter.com/burger_crypto - for the idea of trying to let the LPs benefit from liquidations
+// solium-disable security/no-low-level-calls
+
 pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
@@ -20,10 +21,10 @@ interface ISwapper {
     function swap(address from, address to, uint256 amountFrom, uint256 amountTo, address profitTo) external;
 }
 
+// Special thanks to:
+// https://twitter.com/burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
-// TODO: add events
-// TODO: remove unnecassary checks to safe gas
 // TODO: ensure BoringMath is always used
 // We do allow supplying B and borrowing, but the supply does NOT provide collateral as it's just silly and no UI should allow this
 contract Pair {
@@ -34,9 +35,9 @@ contract Pair {
     address public tokenCollateral;
     address public tokenSupply;
 
-    mapping(address => uint256) userCollateralShare;
-    mapping(address => uint256) userSupplyShare; // balanceOf
-    mapping(address => uint256) userBorrowShare;
+    mapping(address => uint256) public userCollateralShare;
+    mapping(address => uint256) public userSupplyShare; // balanceOf
+    mapping(address => uint256) public userBorrowShare;
 
     IOracle public oracle;
 
@@ -202,70 +203,50 @@ contract Pair {
     }
 
     function addCollateral(uint256 amount) public {
-        // Checks and effects
         _addCollateral(msg.sender, amount);
-
-        // Interactions
         vault.transferFrom(tokenCollateral, msg.sender, amount);
     }
 
     function addSupply(uint256 amount) public {
-        // Checks and effects
         accrue();
         _addSupply(msg.sender, amount);
-
-        // Interactions
         vault.transferFrom(tokenSupply, msg.sender, amount);
     }
 
     function removeCollateral(uint256 share, address to) public {
-        // Checks and effects
         accrue();
         uint256 amount = _removeCollateralShare(msg.sender, share);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-
-        // Interactions
         vault.transfer(tokenCollateral, to, amount);
     }
 
     function removeSupply(uint256 share, address to) public {
-        // Checks and effects
         accrue();
         uint256 amount = _removeSupplyShare(msg.sender, share);
-
-        // Interactions
         vault.transfer(tokenSupply, to, amount);
     }
 
     function borrow(uint256 amount, address to) public {
-        // Checks and effects
         require(amount <= totalSupply.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
         _addBorrow(msg.sender, amount);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-
-        // Interactions
         vault.transfer(tokenSupply, to, amount);
     }
 
     function repay(uint256 share) public {
-        // Checks and effects
         accrue();
         uint256 amount = _removeBorrowShare(msg.sender, share);
-
-        // Interactions
         vault.transferFrom(tokenSupply, msg.sender, amount);
     }
 
     function short(address swapper, uint256 amountSupply, uint256 minAmountCollateral) public {
         require(amountSupply <= totalSupply.sub(totalBorrow), 'BentoBox: not enough liquidity');
 
-        // Shorting using a pre-approved swapper
         require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
         _addBorrow(msg.sender, amountSupply);
 
-        // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory result) = swapper.delegatecall(
             abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenSupply, tokenCollateral, amountSupply, minAmountCollateral));
         require(success, 'BentoBox: Swap failed');
@@ -276,13 +257,11 @@ contract Pair {
     }
 
     function unwind(address swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
-        // Unwind using a pre-approved swapper
         require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
 
         uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
 
-        // solium-disable-next-line security/no-low-level-calls
         (bool success, bytes memory result) = swapper.delegatecall(
             abi.encodeWithSignature("swapExact(address,address,address,uint256,uint256)", swapper, tokenCollateral, tokenSupply, maxAmountCollateral, borrowAmount));
         require(success, 'BentoBox: Swap failed');
@@ -328,20 +307,20 @@ contract Pair {
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
             require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
 
-            // solium-disable-next-line security/no-low-level-calls
             (bool success, bytes memory result) = swapper.delegatecall(
-                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenCollateral, tokenSupply, totalCollateral, totalBorrow));
+                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, tokenCollateral, tokenSupply, allCollateralAmount, allBorrowAmount));
             require(success, 'BentoBox: Swap failed');
-            uint256 extraSupply = abi.decode(result, (uint256)).sub(totalBorrow);
+            uint256 extraSupply = abi.decode(result, (uint256)).sub(allBorrowAmount);
 
             // The extra supply gets added to the pool
             totalSupply = totalSupply.add(extraSupply);
             emit AddSupply(address(0), extraSupply, 0);
         } else {
-            // Open flash liquidation: get proceeds first and provide the borrow after
-            vault.transfer(tokenCollateral, swapper, totalCollateral);
-            if (swapper != address(0)) {ISwapper(swapper).swap(tokenCollateral, tokenSupply, totalCollateral, totalBorrow, to);}
-            vault.transferFrom(tokenSupply, swapper, totalBorrow);
+            // Open (flash) liquidation: get proceeds first and provide the borrow after
+            if (swapper != address(0)) {to = swapper;}
+            vault.transfer(tokenCollateral, to, allCollateralAmount);
+            if (swapper != address(0)) {ISwapper(swapper).swap(tokenCollateral, tokenSupply, allCollateralAmount, allBorrowAmount, to);}
+            vault.transferFrom(tokenSupply, to, allBorrowAmount);
         }
     }
 }

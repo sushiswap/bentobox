@@ -33,4 +33,9 @@ contract Ownable {
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
+
+    modifier onlyOwner() {
+        require(owner == msg.sender, "Ownable: caller is not the owner");
+        _;
+    }
 }

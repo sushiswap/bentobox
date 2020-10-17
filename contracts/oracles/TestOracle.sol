@@ -10,11 +10,13 @@ contract TestOracle is IOracle, Ownable {
 
     mapping(address => uint256) rate;
 
-    function set(address pair, uint256 rate_) public {
-        require(msg.sender == owner, "PeggedOracle: not owner");
-
+    function init(uint256 rate_, address pair) public {
         // The rate can be updated.
         rate[pair] = rate_;
+    }
+
+    function getInitData(uint256 rate_) public pure returns (bytes memory) {
+        return abi.encodeWithSignature("init(uint256,address)", rate_);
     }
 
     // Get the latest exchange rate

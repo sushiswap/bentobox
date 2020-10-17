@@ -2,8 +2,10 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 
 const Vault = artifacts.require("Vault");
-const A = artifacts.require("TokenA");
-const B = artifacts.require("TokenB");
+const TokenA = artifacts.require("TokenA");
+const TokenB = artifacts.require("TokenB");
+const SushiSwapFactory = artifacts.require("UniswapV2Factory");
+const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("Pair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
@@ -24,28 +26,38 @@ contract('Pair', (accounts) => {
   const dummy = accounts[4];
 
   before(async () => {
-    a = await A.deployed();
-    b = await B.deployed();
-
-    a.transfer(alice, e18(1000));
-    b.transfer(bob, e18(1000));
-
     vault = await Vault.deployed();
-    let raw_logs = await web3.eth.getPastLogs({
-      fromBlock: 1,
-      address: vault.address,
-      topics: ['0xbb3432dd011e3a520780a665a087a29ccda830ea796ec3d85f051c7340a59c7f']
-    });
-    pair_address = "0x" + raw_logs[0].data.slice(raw_logs[0].data.length - 40);
+    pairMaster = await Pair.deployed();
+
+    a = await TokenA.new({ from: accounts[0] });
+    b = await TokenB.new({ from: accounts[0] });
+
+    let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
+    swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
+    await vault.setSwapper(swapper.address, true);
+
+    let tx = await factory.createPair(a.address, b.address);
+    let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
+    await a.transfer(sushiswappair.address, e18("5000"));
+    await b.transfer(sushiswappair.address, e18("5000"));
+    await sushiswappair.mint(accounts[0]);
+
+    await a.transfer(alice, e18(1000));
+    await b.transfer(bob, e18(1000));
+
+    oracle = await TestOracle.new({ from: accounts[0] });
+    let oracleData = await oracle.getInitData("1000000000000000000");
+
+    tx = await vault.deploy(pairMaster.address, a.address, b.address, oracle.address, oracleData);
+    let pair_address = tx.logs[0].args[4];
     pair = await Pair.at(pair_address);
-    oracle = await TestOracle.at(await pair.oracle());
+
     await pair.updateExchangeRate();
-    swapper = await SushiSwapDelegateSwapper.deployed();
   });
 
   it('should not allow any remove without supply', async () => {
-    await truffleAssert.reverts(pair.removeA(e18(1), bob), 'BoringMath: Div by 0');
-    await truffleAssert.reverts(pair.removeB(e18(1), bob), 'BoringMath: Div by 0');
+    await truffleAssert.reverts(pair.removeCollateral(e18(1), bob), 'BoringMath: Underflow');
+    await truffleAssert.reverts(pair.removeSupply(e18(1), bob), 'BoringMath: Underflow');
   });
 
   it('should not allow borrowing without any supply', async () => {
@@ -54,12 +66,12 @@ contract('Pair', (accounts) => {
 
   it('should take a deposit of token B', async () => {
     await b.approve(vault.address, e18(300), { from: bob });
-    await pair.addB(e18(300), { from: bob });
+    await pair.addSupply(e18(300), { from: bob });
   });
 
   it('should have correct balances after supply of token B', async () => {
-    assert.equal((await pair.totalShareB()).toString(), e18(300).toString());
-    assert.equal((await pair.users(bob)).shareB.toString(), e18(300).toString());
+    assert.equal((await pair.totalSupplyShare()).toString(), e18(300).toString());
+    assert.equal((await pair.userSupplyShare(bob)).toString(), e18(300).toString());
   })
 
   it('should not allow borrowing without any collateral', async () => {
@@ -68,12 +80,12 @@ contract('Pair', (accounts) => {
 
   it('should take a deposit of token A', async () => {
     await a.approve(vault.address, e18(100), { from: alice });
-    await pair.addA(e18(100), { from: alice });
+    await pair.addCollateral(e18(100), { from: alice });
   });
 
   it('should have correct balances after supply of token A', async () => {
-    assert.equal((await pair.totalShareA()).toString(), e18(100).toString());
-    assert.equal((await pair.users(alice)).shareA.toString(), e18(100).toString());
+    assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
+    assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
   })
 
   it('should allow borrowing with collateral up to 75%', async () => {
@@ -104,7 +116,7 @@ contract('Pair', (accounts) => {
   });
 
   it('should report open insolvency after oracle rate is updated', async () => {
-    await oracle.set(pair_address, "1100000000000000000");
+    await oracle.init("1100000000000000000", pair.address);
     await pair.updateExchangeRate();
     assert.equal(await pair.isSolvent(alice, true), false);
   })
@@ -120,21 +132,21 @@ contract('Pair', (accounts) => {
   });
 
   it('should allow full repay with funds', async () => {
-    let borrowShareLeft = (await pair.users(alice)).borrowShare;
+    let borrowShareLeft = await pair.userBorrowShare(alice);
     await pair.repay(borrowShareLeft, { from: alice });
   });
 
   it('should allow partial withdrawal of collateral', async () => {
-    await pair.removeA(e18(60), alice, { from: alice });
+    await pair.removeCollateral(e18(60), alice, { from: alice });
   });
 
   it('should not allow withdrawal of more than collateral', async () => {
-    await truffleAssert.reverts(pair.removeA(e18(100), alice, { from: alice }), "BoringMath: Underflow");
+    await truffleAssert.reverts(pair.removeCollateral(e18(100), alice, { from: alice }), "BoringMath: Underflow");
   });
 
   it('should allow full withdrawal of collateral', async () => {
-    let shareALeft = (await pair.users(alice)).shareA;
-    await pair.removeA(shareALeft, alice, { from: alice });
+    let shareALeft = await pair.userCollateralShare(alice);
+    await pair.removeCollateral(shareALeft, alice, { from: alice });
   });
 
   it('should update the interest rate', async () => {
