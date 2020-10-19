@@ -80,4 +80,9 @@ contract('Pair (Shorting)', (accounts) => {
     assert.equal((await pair.userSupplyShare(alice)).toString(), "0");
     assert.equal((await pair.userBorrowShare(alice)).toString(), "250000000000000000000");
   })
+
+  it('should allow unwinding the short', async () => {
+    await pair.unwind(swapper.address, e18(250), e18(230), { from: alice });
+  });
+
 });

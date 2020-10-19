@@ -24,7 +24,8 @@ contract Vault is Ownable {
     mapping(address => bool) public pairContracts;
     mapping(address => bool) public swappers;
     mapping(address => bool) public isPair;
-    mapping(address => uint256) public fees;
+    mapping(address => uint256) public feesPending;
+    address feeTo;
 
     function setPairContract(address pairContract, bool enabled) public onlyOwner() {
         pairContracts[pairContract] = enabled;
@@ -79,11 +80,14 @@ contract Vault is Ownable {
 
         IFlashLoaner(user).executeOperation(token, amount, fee, params);
 
-        transferFrom(token, user, amount);
+        transferFrom(token, user, amount.add(fee));
+        feesPending[token] = feesPending[token].add(fee);
         emit FlashLoan(user, token, amount, fee);
     }
 
-    function harvestFees(address token) public {
-
+    function withdrawFees(address token) public {
+        uint256 fees = feesPending[token];
+        feesPending[token] = 0;
+        transfer(token, feeTo, fees);
     }
 }
