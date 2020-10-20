@@ -9,7 +9,7 @@
 pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
-import "./interfaces/IVault.sol";
+import "./Vault.sol";
 
 interface IDelegateSwapper {
     // Withdraws amountFrom 'from tokens' from the vault, turns it into at least amountToMin 'to tokens' and transfers those into the vault.
@@ -74,7 +74,7 @@ contract Pair is ERC20 {
     using BoringMath for uint256;
 
     // Keep at the top in this order for delegate calls to be able to access them
-    IVault public vault;
+    Vault public vault;
     address public tokenCollateral;
     address public tokenAsset;
 
@@ -103,8 +103,6 @@ contract Pair is ERC20 {
     uint256 public openColRate; // Collateral rate used to calculate if ANYONE can liquidate
     uint256 public liqMultiplier;
     uint256 public feesPending;
-    address public feeTo;
-    address public boring;
 
     string public constant symbol = "BENTO LP";
     string public constant name = "Bento LP";
@@ -119,7 +117,7 @@ contract Pair is ERC20 {
     event RemoveAsset(address indexed user, uint256 amount, uint256 share);
     event RemoveBorrow(address indexed user, uint256 amount, uint256 share);
 
-    function init(IVault vault_, address collateral_address, address asset_address, IOracle oracle_address) public {
+    function init(Vault vault_, address collateral_address, address asset_address, IOracle oracle_address) public {
         vault = vault_;
         tokenCollateral = collateral_address;
         tokenAsset = asset_address;
@@ -136,6 +134,8 @@ contract Pair is ERC20 {
     }
 
     function accrue() public {
+        uint256 blocks = block.number - lastBlockAccrued;
+        if (blocks == 0) {return;}
         // The first time lastBlockAccrued will be 0, but also borrowed will be 0, so all good
         uint256 extraAmount = totalBorrow.mul(interestPerBlock).mul(block.number - lastBlockAccrued).div(1e18);
         uint256 feeAmount = extraAmount.div(10); // 10% of interest paid goes to fee
@@ -147,11 +147,11 @@ contract Pair is ERC20 {
 
     function withdrawFees() public {
         accrue();
-        uint256 fees = feesPending;
-        uint256 boringFee = fees.div(10);
-        feesPending = 0;
-        vault.transfer(tokenAsset, feeTo, fees.sub(boringFee));
-        vault.transfer(tokenAsset, boring, boringFee);
+        uint256 fees = feesPending.sub(1);
+        uint256 devFee = fees.div(10);
+        feesPending = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
+        vault.transfer(tokenAsset, vault.feeTo(), fees.sub(devFee));
+        vault.transfer(tokenAsset, vault.dev(), devFee);
     }
 
     function isSolvent(address user, bool open) public view returns (bool) {
@@ -267,8 +267,8 @@ contract Pair is ERC20 {
 
     function addAsset(uint256 amount) public {
         accrue();
-        _addAsset(msg.sender, amount);
         updateInterestRate();
+        _addAsset(msg.sender, amount);
         vault.transferFrom(tokenAsset, msg.sender, amount);
     }
 
@@ -281,24 +281,24 @@ contract Pair is ERC20 {
 
     function removeAsset(uint256 share, address to) public {
         accrue();
-        uint256 amount = _removeAssetShare(msg.sender, share);
         updateInterestRate();
+        uint256 amount = _removeAssetShare(msg.sender, share);
         vault.transfer(tokenAsset, to, amount);
     }
 
     function borrow(uint256 amount, address to) public {
         require(amount <= totalAsset.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
+        updateInterestRate();
         _addBorrow(msg.sender, amount);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        updateInterestRate();
         vault.transfer(tokenAsset, to, amount);
     }
 
     function repay(uint256 share) public {
         accrue();
-        uint256 amount = _removeBorrowShare(msg.sender, share);
         updateInterestRate();
+        uint256 amount = _removeBorrowShare(msg.sender, share);
         vault.transferFrom(tokenAsset, msg.sender, amount);
     }
 
@@ -307,6 +307,7 @@ contract Pair is ERC20 {
 
         require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
+        updateInterestRate();
         _addBorrow(msg.sender, amountAsset);
 
         (bool success, bytes memory result) = swapper.delegatecall(
@@ -316,12 +317,12 @@ contract Pair is ERC20 {
         _addCollateral(msg.sender, amountCollateral);
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        updateInterestRate();
     }
 
     function unwind(address swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(vault.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
+        updateInterestRate();
 
         uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
 
@@ -331,11 +332,12 @@ contract Pair is ERC20 {
         _removeCollateralShare(msg.sender, abi.decode(result, (uint256)).mul(totalCollateralShare).div(totalCollateral));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        updateInterestRate();
     }
 
     function liquidate(address[] calldata users, uint256[] calldata borrowShares, address to, address swapper, bool open) public {
+        accrue();
         updateExchangeRate();
+        updateInterestRate();
 
         uint256 allCollateralAmount;
         uint256 allCollateralShare;
@@ -377,15 +379,15 @@ contract Pair is ERC20 {
             uint256 extraAsset = abi.decode(result, (uint256)).sub(allBorrowAmount);
 
             // The extra asset gets added to the pool
-            totalAsset = totalAsset.add(extraAsset);
-            updateInterestRate();
+            uint256 feeAmount = extraAsset.div(10); // 10% of profit goes to fee
+            feesPending = feesPending.add(feeAmount);
+
+            totalAsset = totalAsset.add(extraAsset.sub(feeAmount));
             emit AddAsset(address(0), extraAsset, 0);
         } else if (swapper != address(0)) {
-            updateInterestRate();
             vault.transferFrom(tokenAsset, to, allBorrowAmount);
             vault.transfer(tokenCollateral, to, allCollateralAmount);
         } else {
-            updateInterestRate();
             // Open (flash) liquidation: get proceeds first and provide the borrow after
             vault.transfer(tokenCollateral, swapper, allCollateralAmount);
             if (swapper != address(0)) {ISwapper(swapper).swap(tokenCollateral, tokenAsset, allCollateralAmount, allBorrowAmount, to);}

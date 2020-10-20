@@ -25,7 +25,8 @@ contract Vault is Ownable {
     mapping(address => bool) public swappers;
     mapping(address => bool) public isPair;
     mapping(address => uint256) public feesPending;
-    address feeTo;
+    address public feeTo;
+    address public dev = 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E;
 
     function setPairContract(address pairContract, bool enabled) public onlyOwner() {
         pairContracts[pairContract] = enabled;
@@ -35,6 +36,15 @@ contract Vault is Ownable {
     function setSwapper(address swapper, bool enabled) public onlyOwner() {
         swappers[swapper] = enabled;
         emit SwapperSet(swapper, enabled);
+    }
+
+    function setFeeTo(address newFeeTo) public onlyOwner {
+        feeTo = newFeeTo;
+    }
+
+    function setDev(address newDev) public {
+        require(msg.sender == dev, 'BentoBox: Not dev');
+        dev = newDev;
     }
 
     function deploy(address pairContract, address tokenA, address tokenB, address oracle, bytes calldata oracleData) public {
@@ -86,8 +96,10 @@ contract Vault is Ownable {
     }
 
     function withdrawFees(address token) public {
-        uint256 fees = feesPending[token];
-        feesPending[token] = 0;
-        transfer(token, feeTo, fees);
+        uint256 fees = feesPending[token].sub(1);
+        uint256 devFee = fees.div(10);
+        feesPending[token] = 1;  // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
+        transfer(token, feeTo, fees.sub(devFee));
+        transfer(token, dev, devFee);
     }
 }
