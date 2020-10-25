@@ -19,8 +19,9 @@ contract ChainlinkOracle is Ownable, IOracle {
         uint256 rate;
     }
 
-    mapping(address => SymbolPair) symbols;
+    mapping(address => SymbolPair) symbols; // Map of pairs and their info
 
+    // Adds a pair and it's data to the pair map
     function init(address multiply, address divide, uint256 decimals, address pair) public {
         require(msg.sender == owner, "ChainlinkOracle: not owner");
 
@@ -32,13 +33,17 @@ contract ChainlinkOracle is Ownable, IOracle {
         }
     }
 
+    // Encodes the initialization data
     function getInitData(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
         return abi.encode(multiply, divide, decimals);
     }
 
+    // Calculates the lastest exchange rate
+    // Uses both divide and multiply only for tokens not supported directly by ChainLink, for example MKR/USD
     function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
         uint256 price = uint256(1e18);
         if (multiply != address(0)) {
+            // We only care about the second value - the price
             (, int256 priceC,,,) = IAggregator(multiply).latestRoundData();
             price = price.mul(uint256(priceC));
         } else {
@@ -46,6 +51,7 @@ contract ChainlinkOracle is Ownable, IOracle {
         }
 
         if (divide != address(0)) {
+            // We only care about the second value - the price
             (, int256 priceC,,,) = IAggregator(divide).latestRoundData();
             price = price.div(uint256(priceC));
         }
