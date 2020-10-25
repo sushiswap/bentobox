@@ -4,13 +4,14 @@
 pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
 import "./libraries/Ownable.sol";
+import "./interfaces/IERC20.sol";
 
 interface IPair {
-    function init(address vault_, address tokenA_, address tokenB_, address oracle_) external;
+    function init(address vault_, IERC20 tokenCollateral, IERC20 tokenAsset, address oracle_, bytes calldata oracleData) external;
 }
 
 interface IFlashLoaner {
-    function executeOperation(address token, uint256 amount, uint256 fee, bytes calldata params) external;
+    function executeOperation(IERC20 token, uint256 amount, uint256 fee, bytes calldata params) external;
 }
 
 contract Vault is Ownable {
@@ -18,13 +19,13 @@ contract Vault is Ownable {
 
     event PairContractSet(address indexed pairContract, bool enabled);
     event SwapperSet(address swapper, bool enabled);
-    event PairCreated(address indexed pairContract, address indexed tokenA, address indexed tokenB, address oracle, address clone_address);
-    event FlashLoan(address indexed user, address indexed token, uint256 amount, uint256 fee);
+    event PairCreated(address indexed pairContract, IERC20 indexed tokenCollateral, IERC20 indexed tokenAsset, address oracle, address clone_address);
+    event FlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
 
     mapping(address => bool) public pairContracts;
     mapping(address => bool) public swappers;
     mapping(address => bool) public isPair;
-    mapping(address => uint256) public feesPending;
+    mapping(IERC20 => uint256) public feesPending;
     address public feeTo;
     address public dev = 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E;
 
@@ -47,7 +48,7 @@ contract Vault is Ownable {
         dev = newDev;
     }
 
-    function deploy(address pairContract, address tokenA, address tokenB, address oracle, bytes calldata oracleData) public {
+    function deploy(address pairContract, IERC20 tokenCollateral, IERC20 tokenAsset, address oracle, bytes calldata oracleData) public {
         require(pairContracts[pairContract], 'BentoBox: Pair Contract not whitelisted');
         bytes20 targetBytes = bytes20(pairContract);
         address clone_address;
@@ -60,33 +61,30 @@ contract Vault is Ownable {
             clone_address := create(0, clone, 0x37)
         }
 
-        (bool success,) = oracle.call(abi.encodePacked(oracleData, abi.encode(clone_address)));
-        require(success, 'BentoBox Vault: oracle init failed.');
-
-        IPair(clone_address).init(address(this), tokenA, tokenB, oracle);
+        IPair(clone_address).init(address(this), tokenCollateral, tokenAsset, oracle, oracleData);
         isPair[clone_address] = true;
 
-        emit PairCreated(pairContract, tokenA, tokenB, oracle, clone_address);
+        emit PairCreated(pairContract, tokenCollateral, tokenAsset, oracle, clone_address);
     }
 
-    function transfer(address token, address to, uint256 amount) public {
+    function transfer(IERC20 token, address to, uint256 amount) public {
         require(isPair[msg.sender], "BentoBox: Only pair contracts can transfer");
 
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, amount));
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
     }
 
-    function transferFrom(address token, address from, uint256 amount) public {
+    function transferFrom(IERC20 token, address from, uint256 amount) public {
         require(isPair[msg.sender], "BentoBox: Only pair contracts can transferFrom");
 
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
     }
 
-    function flashLoan(address user, address token, uint256 amount, bytes calldata params) public {
+    function flashLoan(address user, IERC20 token, uint256 amount, bytes calldata params) public {
         transfer(token, user, amount);
 
-        uint256 fee = amount.mul(8).div(10000);
+        uint256 fee = amount.mul(8) / 10000;
 
         IFlashLoaner(user).executeOperation(token, amount, fee, params);
 
@@ -95,9 +93,9 @@ contract Vault is Ownable {
         emit FlashLoan(user, token, amount, fee);
     }
 
-    function withdrawFees(address token) public {
+    function withdrawFees(IERC20 token) public {
         uint256 fees = feesPending[token].sub(1);
-        uint256 devFee = fees.div(10);
+        uint256 devFee = fees / 10;
         feesPending[token] = 1;  // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
         transfer(token, feeTo, fees.sub(devFee));
         transfer(token, dev, devFee);

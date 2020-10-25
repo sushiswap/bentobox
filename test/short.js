@@ -60,7 +60,7 @@ contract('Pair (Shorting)', (accounts) => {
     await pair.addCollateral(e18(100), { from: alice });
 
     await b.approve(vault.address, e18(1000), { from: bob });
-    await pair.addSupply(e18(1000), { from: bob });
+    await pair.addAsset(e18(1000), { from: bob });
   });
 
   it("should not allow shorting if it doesn't return enough of token A", async () => {
@@ -77,12 +77,12 @@ contract('Pair (Shorting)', (accounts) => {
 
   it('should have correct balances after short', async () => {
     assert.equal((await pair.userCollateralShare(alice)).toString(), "337414868790779635185");
-    assert.equal((await pair.userSupplyShare(alice)).toString(), "0");
+    assert.equal((await pair.balanceOf(alice)).toString(), "0");
     assert.equal((await pair.userBorrowShare(alice)).toString(), "250000000000000000000");
   })
 
   it('should allow unwinding the short', async () => {
-    await pair.unwind(swapper.address, e18(250), e18(230), { from: alice });
+    await pair.unwind(swapper.address, e18(250), e18(337), { from: alice });
   });
 
 });

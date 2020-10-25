@@ -8,6 +8,16 @@ module.exports = {
     etherscan: etherscanKey
   },
   networks: {
+    mainnet: {
+      provider: function () {
+        return new HDWalletProvider({
+          privateKeys: [private_key],
+          providerOrUrl: "https://mainnet.infura.io/v3/" + infuraKey
+        });
+      },
+      gasPrice: 60 * 1000000000,
+      network_id: 1
+    },
     ropsten: {
       provider: function () {
         return new HDWalletProvider({

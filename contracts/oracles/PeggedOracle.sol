@@ -4,22 +4,20 @@ import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 
-contract PeggedOracle is IOracle, Ownable {
+contract PeggedOracle is IOracle {
     using BoringMath for uint256;
 
     mapping(address => uint256) rate;
 
-    function init(uint256 rate_, address pair) public {
-        require(msg.sender == owner, "PeggedOracle: not owner");
-
+    function init(uint256 rate_) public {
         // The rate can only be set once. It cannot be changed.
-        if (rate[pair] == 0) {
-            rate[pair] = rate_;
+        if (rate[msg.sender] == 0) {
+            rate[msg.sender] = rate_;
         }
     }
 
     function getInitData(uint256 rate_) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(uint256,address)", rate_);
+        return abi.encodeWithSignature("init(uint256)", rate_);
     }
 
     // Get the latest exchange rate

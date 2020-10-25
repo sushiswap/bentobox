@@ -4,7 +4,7 @@ import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 
-contract SLPOracle is IOracle, Ownable {
+contract SLPOracle is IOracle {
     struct PairInfo {
         string collateralSymbol;
         string supplySymbol;
@@ -13,8 +13,7 @@ contract SLPOracle is IOracle, Ownable {
 
     mapping(address => PairInfo) pairs;
 
-    function init(uint256 rate_, address pair) public {
-        require(msg.sender == owner, "SLPOracle: not owner");
+    function init(uint256 rate_) public {
     }
 
     function getInitData(uint256 rate_) public pure returns (bytes memory) {

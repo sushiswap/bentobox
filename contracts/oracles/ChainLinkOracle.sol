@@ -9,7 +9,7 @@ interface IAggregator {
     function latestRoundData() external view returns (uint80, int256 answer, uint256, uint256, uint80);
 }
 
-contract ChainlinkOracle is Ownable, IOracle {
+contract ChainlinkOracle is IOracle {
     using BoringMath for uint256; // Keep everything in uint256
 
     struct SymbolPair {
@@ -21,19 +21,17 @@ contract ChainlinkOracle is Ownable, IOracle {
 
     mapping(address => SymbolPair) symbols;
 
-    function init(address multiply, address divide, uint256 decimals, address pair) public {
-        require(msg.sender == owner, "ChainlinkOracle: not owner");
-
+    function init(address multiply, address divide, uint256 decimals) public {
         // The rate can only be set once. It cannot be changed.
-        if (symbols[pair].decimals == 0) {
-            symbols[pair].multiply = multiply;
-            symbols[pair].divide = divide;
-            symbols[pair].decimals = decimals;
+        if (symbols[msg.sender].decimals == 0) {
+            symbols[msg.sender].multiply = multiply;
+            symbols[msg.sender].divide = divide;
+            symbols[msg.sender].decimals = decimals;
         }
     }
 
     function getInitData(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
-        return abi.encode(multiply, divide, decimals);
+        return abi.encodeWithSignature("init(address,address,uint256)", multiply, divide, decimals);
     }
 
     function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
@@ -47,10 +45,10 @@ contract ChainlinkOracle is Ownable, IOracle {
 
         if (divide != address(0)) {
             (, int256 priceC,,,) = IAggregator(divide).latestRoundData();
-            price = price.div(uint256(priceC));
+            price = price / uint256(priceC);
         }
 
-        return price.div(decimals);
+        return price / decimals;
     }
 
     // Get the latest exchange rate

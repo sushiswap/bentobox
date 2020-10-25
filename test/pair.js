@@ -55,35 +55,35 @@ contract('Pair', (accounts) => {
     await pair.updateExchangeRate();
   });
 
-  it('should not allow any remove without supply', async () => {
+  it('should not allow any remove without assets', async () => {
     await truffleAssert.reverts(pair.removeCollateral(e18(1), bob), 'BoringMath: Underflow');
-    await truffleAssert.reverts(pair.removeSupply(e18(1), bob), 'BoringMath: Underflow');
+    await truffleAssert.reverts(pair.removeAsset(e18(1), bob), 'BoringMath: Underflow');
   });
 
-  it('should not allow borrowing without any supply', async () => {
+  it('should not allow borrowing without any assets', async () => {
     await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
   });
 
-  it('should take a deposit of token B', async () => {
+  it('should take a deposit of assets', async () => {
     await b.approve(vault.address, e18(300), { from: bob });
-    await pair.addSupply(e18(300), { from: bob });
+    await pair.addAsset(e18(300), { from: bob });
   });
 
-  it('should have correct balances after supply of token B', async () => {
-    assert.equal((await pair.totalSupplyShare()).toString(), e18(300).toString());
-    assert.equal((await pair.userSupplyShare(bob)).toString(), e18(300).toString());
+  it('should have correct balances after supply of assets', async () => {
+    assert.equal((await pair.totalSupply()).toString(), e18(300).toString());
+    assert.equal((await pair.balanceOf(bob)).toString(), e18(300).toString());
   })
 
   it('should not allow borrowing without any collateral', async () => {
     await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'BentoBox: user insolvent');
   });
 
-  it('should take a deposit of token A', async () => {
+  it('should take a deposit of collateral', async () => {
     await a.approve(vault.address, e18(100), { from: alice });
     await pair.addCollateral(e18(100), { from: alice });
   });
 
-  it('should have correct balances after supply of token A', async () => {
+  it('should have correct balances after supply of collateral', async () => {
     assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
     assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
   })
@@ -116,7 +116,7 @@ contract('Pair', (accounts) => {
   });
 
   it('should report open insolvency after oracle rate is updated', async () => {
-    await oracle.init("1100000000000000000", pair.address);
+    await oracle.set("1100000000000000000", pair.address);
     await pair.updateExchangeRate();
     assert.equal(await pair.isSolvent(alice, true), false);
   })

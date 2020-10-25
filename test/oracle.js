@@ -14,7 +14,7 @@ contract('PeggedOracle', (accounts) => {
 
     before(async () => {
         oracle = await PeggedOracle.new({ from: accounts[0] });
-        await oracle.init("1000000000000000000", "0x30a0911731f6eC80c87C4b99f27c254639A3Abcd");
+        await oracle.init("1000000000000000000");
     });
 
     it('should return 0 on rate request for non-existant pair', async () => {
@@ -23,7 +23,7 @@ contract('PeggedOracle', (accounts) => {
     });
 
     it('should return 1e18 on rate request for deployed pair', async () => {
-        let result = await oracle.peek("0x30a0911731f6eC80c87C4b99f27c254639A3Abcd");
+        let result = await oracle.peek(accounts[0]);
         assert.equal(result.toString(), "1000000000000000000");
     });
 

@@ -4,15 +4,16 @@ import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
 import "../external/SushiSwapFactory.sol";
 import "../interfaces/IVault.sol";
+import "../ERC20.sol";
 
-contract SushiSwapDelegateSwapper {
+
+contract SushiSwapDelegateSwapper is ERC20Data {
     using BoringMath for uint256;
 
     // Keep at the top, these are members from Pair that will be available due to delegatecall
     IVault public vault;
-    address public tokenA;
-    address public tokenB;
 
+    // Local variables
     IUniswapV2Factory public factory;
 
     constructor(IUniswapV2Factory factory_) public {
@@ -37,7 +38,7 @@ contract SushiSwapDelegateSwapper {
     function swap(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFrom, uint256 amountToMin) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
-        vault.transfer(from, address(pair), amountFrom);
+        vault.transfer(IERC20(from), address(pair), amountFrom);
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
         uint256 amountTo;
@@ -62,12 +63,12 @@ contract SushiSwapDelegateSwapper {
         if (pair.token0() == from) {
             amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
-            vault.transfer(from, address(pair), amountFrom);
+            vault.transfer(IERC20(from), address(pair), amountFrom);
             pair.swap(0, exactAmountTo, address(vault), new bytes(0));
         } else {
             amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
-            vault.transfer(from, address(pair), amountFrom);
+            vault.transfer(IERC20(from), address(pair), amountFrom);
             pair.swap(exactAmountTo, 0, address(vault), new bytes(0));
         }
 

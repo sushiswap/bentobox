@@ -5,18 +5,22 @@ import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 
 // WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle
-contract TestOracle is IOracle, Ownable {
+contract TestOracle is IOracle {
     using BoringMath for uint256;
 
     mapping(address => uint256) rate;
 
-    function init(uint256 rate_, address pair) public {
+    function init(uint256 rate_) public {
+        rate[msg.sender] = rate_;
+    }
+
+    function set(uint256 rate_, address pair) public {
         // The rate can be updated.
         rate[pair] = rate_;
     }
 
     function getInitData(uint256 rate_) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(uint256,address)", rate_);
+        return abi.encodeWithSignature("init(uint256)", rate_);
     }
 
     // Get the latest exchange rate
