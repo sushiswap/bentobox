@@ -18,5 +18,8 @@
   "bugs": {
     "url": "https://github.com/sushiswap-core/bentobox/issues"
   },
-  "homepage": "https://github.com/sushiswap-core/bentobox#readme"
+  "homepage": "https://github.com/sushiswap-core/bentobox#readme",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^1.1.1"
+  }
 }
