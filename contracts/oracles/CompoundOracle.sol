@@ -17,8 +17,9 @@ contract CompoundOracle is IOracle, Ownable {
         uint256 rate;
     }
 
-    mapping(address => PairInfo) pairs;
+    mapping(address => PairInfo) pairs; // Map of pairs and their info
 
+    // Adds a pair and it's data to the pair map
     function init(string calldata collateralSymbol, string calldata supplySymbol, address pair) public {
         require(msg.sender == owner, "CompoundOracle: not owner");
 
@@ -29,10 +30,12 @@ contract CompoundOracle is IOracle, Ownable {
         }
     }
 
+    // Encodes the initialization data
     function getInitData(string calldata collateralSymbol, string calldata supplySymbol) public pure returns (bytes memory) {
         return abi.encode(collateralSymbol, supplySymbol);
     }
 
+    // Calculates the lastest exchange rate
     function _get(string memory collateralSymbol, string memory supplySymbol) private view returns (uint256) {
         return uint256(1e18)
             .mul(IUniswapAnchoredView(0xc629C26dcED4277419CDe234012F8160A0278a79).price(collateralSymbol))

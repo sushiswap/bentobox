@@ -19,7 +19,7 @@ contract SushiSwapDelegateSwapper {
         factory = factory_;
     }
 
-    // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
+    // Given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         uint amountInWithFee = amountIn.mul(997);
         uint numerator = amountInWithFee.mul(reserveOut);
@@ -27,13 +27,14 @@ contract SushiSwapDelegateSwapper {
         amountOut = numerator / denominator;
     }
 
-    // given an output amount of an asset and pair reserves, returns a required input amount of the other asset
+    // Given an output amount of an asset and pair reserves, returns a required input amount of the other asset
     function getAmountIn(uint amountOut, uint reserveIn, uint reserveOut) internal pure returns (uint amountIn) {
         uint numerator = reserveIn.mul(amountOut).mul(1000);
         uint denominator = reserveOut.sub(amountOut).mul(997);
         amountIn = (numerator / denominator).add(1);
     }
 
+    // Swaps to a flexible amount, from an exact input amount
     function swap(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFrom, uint256 amountToMin) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
@@ -53,6 +54,7 @@ contract SushiSwapDelegateSwapper {
         return amountTo;
     }
 
+    // Swaps to an exact amount, from a flexible input amount
     function swapExact(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFromMax, uint256 exactAmountTo) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
