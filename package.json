@@ -1,0 +1,22 @@
+{
+  "name": "bentobox",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sushiswap-core/bentobox.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/sushiswap-core/bentobox/issues"
+  },
+  "homepage": "https://github.com/sushiswap-core/bentobox#readme"
+}
