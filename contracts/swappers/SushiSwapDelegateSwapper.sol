@@ -56,7 +56,9 @@ contract SushiSwapDelegateSwapper is ERC20Data {
     }
 
     // Swaps to an exact amount, from a flexible input amount
-    function swapExact(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFromMax, uint256 exactAmountTo) public returns (uint256) {
+    function swapExact(
+        SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFromMax, uint256 exactAmountTo
+        ) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();

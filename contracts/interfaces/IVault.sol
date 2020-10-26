@@ -6,7 +6,8 @@ interface IVault {
     event FlashLoan(address indexed user, address indexed token, uint256 amount, uint256 fee);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event PairContractSet(address indexed pairContract, bool enabled);
-    event PairCreated(address indexed pairContract, IERC20 indexed tokenCollateral, IERC20 indexed tokenAsset, address oracle, address clone_address);
+    event PairCreated(
+        address indexed pairContract, IERC20 indexed tokenCollateral, IERC20 indexed tokenAsset, address oracle, address clone_address);
     event SwapperSet(address swapper, bool enabled);
     function dev() external view returns (address);
     function feeTo() external view returns (address);

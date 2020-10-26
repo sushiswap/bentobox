@@ -22,7 +22,8 @@ contract Vault is Ownable {
 
     event PairContractSet(address indexed pairContract, bool enabled);
     event SwapperSet(address swapper, bool enabled);
-    event PairCreated(address indexed pairContract, IERC20 indexed tokenCollateral, IERC20 indexed tokenAsset, address oracle, address clone_address);
+    event PairCreated(
+        address indexed pairContract, IERC20 indexed tokenCollateral, IERC20 indexed tokenAsset, address oracle, address clone_address);
     event FlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
 
     mapping(address => bool) public pairContracts; // Map of allowed master Pair Contracts.
