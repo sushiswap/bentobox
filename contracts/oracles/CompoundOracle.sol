@@ -17,8 +17,9 @@ contract CompoundOracle is IOracle {
         uint256 division;
     }
 
-    mapping(address => PairInfo) pairs;
+    mapping(address => PairInfo) pairs; // Map of pairs and their info
 
+    // Adds a pair and it's data to the pair map
     function init(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public {
         // The rate can only be set once. It cannot be changed.
         if (bytes(pairs[msg.sender].collateralSymbol).length == 0) {
@@ -28,10 +29,12 @@ contract CompoundOracle is IOracle {
         }
     }
 
+    // Encodes the initialization data
     function getInitData(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public pure returns (bytes memory) {
         return abi.encodeWithSignature("init(string,string,uint256)", collateralSymbol, assetSymbol, division);
     }
 
+    // Calculates the lastest exchange rate
     function _get(string memory collateralSymbol, string memory assetSymbol, uint256 division) private view returns (uint256) {
         return uint256(1e36)
             .mul(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(assetSymbol)) /

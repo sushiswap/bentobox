@@ -19,8 +19,9 @@ contract ChainlinkOracle is IOracle {
         uint256 rate;
     }
 
-    mapping(address => SymbolPair) symbols;
+    mapping(address => SymbolPair) symbols; // Map of pairs and their info
 
+    // Adds a pair and it's data to the pair map
     function init(address multiply, address divide, uint256 decimals) public {
         // The rate can only be set once. It cannot be changed.
         if (symbols[msg.sender].decimals == 0) {
@@ -30,13 +31,17 @@ contract ChainlinkOracle is IOracle {
         }
     }
 
+    // Encodes the initialization data
     function getInitData(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
         return abi.encodeWithSignature("init(address,address,uint256)", multiply, divide, decimals);
     }
 
+    // Calculates the lastest exchange rate
+    // Uses both divide and multiply only for tokens not supported directly by ChainLink, for example MKR/USD
     function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
         uint256 price = uint256(1e18);
         if (multiply != address(0)) {
+            // We only care about the second value - the price
             (, int256 priceC,,,) = IAggregator(multiply).latestRoundData();
             price = price.mul(uint256(priceC));
         } else {
@@ -44,6 +49,7 @@ contract ChainlinkOracle is IOracle {
         }
 
         if (divide != address(0)) {
+            // We only care about the second value - the price
             (, int256 priceC,,,) = IAggregator(divide).latestRoundData();
             price = price / uint256(priceC);
         }
