@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIXED
 pragma solidity =0.6.12;
 
 interface IUniswapV2Factory {

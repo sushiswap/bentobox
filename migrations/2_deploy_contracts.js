@@ -13,5 +13,5 @@ module.exports = async function (deployer, network, accounts) {
   // Get the contracts
   let vault = await Vault.deployed();
   let pairMaster = await Pair.deployed();
-  await vault.setPairContract(pairMaster.address, true);
+  await vault.setContract(pairMaster.address, true);
 };

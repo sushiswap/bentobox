@@ -48,8 +48,9 @@ contract('Pair', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    tx = await vault.deploy(pairMaster.address, a.address, b.address, oracle.address, oracleData);
-    let pair_address = tx.logs[0].args[4];
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    tx = await vault.deploy(pairMaster.address, initData);
+    let pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
     await pair.updateExchangeRate();
@@ -84,8 +85,8 @@ contract('Pair', (accounts) => {
   });
 
   it('should have correct balances after supply of collateral', async () => {
-    assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
-    assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
+    assert.equal((await pair.totalCollateral()).toString(), e18(100).toString());
+    assert.equal((await pair.userCollateral(alice)).toString(), e18(100).toString());
   })
 
   it('should allow borrowing with collateral up to 75%', async () => {
@@ -145,7 +146,7 @@ contract('Pair', (accounts) => {
   });
 
   it('should allow full withdrawal of collateral', async () => {
-    let shareALeft = await pair.userCollateralShare(alice);
+    let shareALeft = await pair.userCollateral(alice);
     await pair.removeCollateral(shareALeft, alice, { from: alice });
   });
 

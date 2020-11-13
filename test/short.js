@@ -48,8 +48,9 @@ contract('Pair (Shorting)', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    tx = await vault.deploy(pairMaster.address, a.address, b.address, oracle.address, oracleData);
-    let pair_address = tx.logs[0].args[4];
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    tx = await vault.deploy(pairMaster.address, initData);
+    let pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
     await pair.updateExchangeRate();
@@ -76,7 +77,7 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it('should have correct balances after short', async () => {
-    assert.equal((await pair.userCollateralShare(alice)).toString(), "337414868790779635185");
+    assert.equal((await pair.userCollateral(alice)).toString(), "337414868790779635185");
     assert.equal((await pair.balanceOf(alice)).toString(), "0");
     assert.equal((await pair.userBorrowShare(alice)).toString(), "250000000000000000000");
   })
@@ -84,5 +85,4 @@ contract('Pair (Shorting)', (accounts) => {
   it('should allow unwinding the short', async () => {
     await pair.unwind(swapper.address, e18(250), e18(337), { from: alice });
   });
-
 });

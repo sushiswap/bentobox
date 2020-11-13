@@ -20,19 +20,15 @@ contract BentoHelper {
         uint256 totalAsset;
         uint256 totalBorrow;
 
-        uint256 totalCollateralShare;
         uint256 totalAssetShare;
         uint256 totalBorrowShare;
 
         uint256 interestPerBlock;
         uint256 lastInterestBlock;
 
-        uint256 colRate;
-        uint256 openColRate;
-        uint256 liqMultiplier;
         uint256 feesPending;
 
-        uint256 userCollateralShare;
+        uint256 userCollateral;
         uint256 userAssetShare;
         uint256 userBorrowShare;
 
@@ -58,19 +54,15 @@ contract BentoHelper {
             info[i].totalAsset = pair.totalAsset();
             info[i].totalBorrow = pair.totalBorrow();
 
-            info[i].totalCollateralShare = pair.totalCollateralShare();
             info[i].totalAssetShare = pair.totalSupply();
             info[i].totalBorrowShare = pair.totalBorrowShare();
 
             info[i].interestPerBlock = pair.interestPerBlock();
             info[i].lastInterestBlock = pair.lastInterestBlock();
 
-            info[i].colRate = pair.colRate();
-            info[i].openColRate = pair.openColRate();
-            info[i].liqMultiplier = pair.liqMultiplier();
             info[i].feesPending = pair.feesPending();
 
-            info[i].userCollateralShare = pair.userCollateralShare(user);
+            info[i].userCollateral = pair.userCollateral(user);
             info[i].userAssetShare = pair.balanceOf(user);
             info[i].userBorrowShare = pair.userBorrowShare(user);
 
@@ -78,7 +70,6 @@ contract BentoHelper {
             info[i].userCollateralBalance = info[i].tokenCollateral.balanceOf(user);
             info[i].userAssetAllowance = info[i].tokenAsset.allowance(user, address(info[i].vault));
             info[i].userCollateralAllowance = info[i].tokenCollateral.allowance(user, address(info[i].vault));
-
         }
     }
 }

@@ -8,6 +8,7 @@ interface IPair {
     event AddBorrow(address indexed user, uint256 amount, uint256 share);
     event AddCollateral(address indexed user, uint256 amount, uint256 share);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+    event Initialized(address indexed masterContract, address clone_address);
     event NewExchangeRate(uint256 rate);
     event RemoveAsset(address indexed user, uint256 amount, uint256 share);
     event RemoveBorrow(address indexed user, uint256 amount, uint256 share);
@@ -15,16 +16,12 @@ interface IPair {
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     function approve(address spender, uint256 amount) external returns (bool success);
     function balanceOf(address) external view returns (uint256);
-    function colRate() external view returns (uint256);
-    function decimals() external view returns (uint8);
     function exchangeRate() external view returns (uint256);
     function feesPending() external view returns (uint256);
     function interestPerBlock() external view returns (uint256);
     function lastBlockAccrued() external view returns (uint256);
     function lastInterestBlock() external view returns (uint256);
-    function liqMultiplier() external view returns (uint256);
     function name() external view returns (string memory);
-    function openColRate() external view returns (uint256);
     function oracle() external view returns (IOracle);
     function symbol() external view returns (string memory);
     function tokenAsset() external view returns (IERC20);
@@ -33,14 +30,18 @@ interface IPair {
     function totalBorrow() external view returns (uint256);
     function totalBorrowShare() external view returns (uint256);
     function totalCollateral() external view returns (uint256);
-    function totalCollateralShare() external view returns (uint256);
     function totalSupply() external view returns (uint256);
     function transfer(address to, uint256 amount) external returns (bool success);
     function transferFrom(address from, address to, uint256 amount) external returns (bool success);
     function userBorrowShare(address) external view returns (uint256);
-    function userCollateralShare(address) external view returns (uint256);
+    function userCollateral(address) external view returns (uint256);
     function vault() external view returns (IVault);
-    function init(IVault vault_, IERC20 collateral_address, IERC20 asset_address, IOracle oracle_address, bytes calldata oracleData) external;
+    function decimals() external view returns (uint8);
+    function init(IERC20 collateral_address, IERC20 asset_address, IOracle oracle_address, bytes calldata oracleData) external;
+    function setVault(address vault_) external;
+    function getInitData(
+        IERC20 collateral_address, IERC20 asset_address,
+        IOracle oracle_address, bytes calldata oracleData) external pure returns (bytes memory);
     function accrue() external;
     function withdrawFees() external;
     function isSolvent(address user, bool open) external view returns (bool);
