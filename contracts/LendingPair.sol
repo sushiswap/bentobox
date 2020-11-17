@@ -32,7 +32,6 @@ interface ISwapper {
 
 contract Pair is ERC20 {
     using BoringMath for uint256;
-
     // Keep at the top in this order for delegate calls to be able to access them
     IVault public vault;
     IERC20 public collateral;
