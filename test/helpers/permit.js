@@ -28,7 +28,6 @@ getApprovalDigest = async (
   nonce,
   deadline
 ) => {
-  console.log("PERMIT_TYPEHASH", PERMIT_TYPEHASH);
   const DOMAIN_SEPARATOR = getDomainSeparator(token_address);
   const msg = defaultAbiCoder.encode(
     ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
