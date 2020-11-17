@@ -13,10 +13,8 @@ contract ERC20Data {
 }
 
 contract ERC20 is ERC20Data {
-
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-
 
     function transfer(address to, uint256 amount) public returns (bool success) {
         if (balanceOf[msg.sender] >= amount && amount > 0 && balanceOf[to] + amount > balanceOf[to]) {
