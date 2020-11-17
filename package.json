@@ -21,5 +21,9 @@
   "homepage": "https://github.com/sushiswap-core/bentobox#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.1.1"
+  },
+  "devDependencies": {
+    "ethereumjs-util": "^7.0.7",
+    "ethers": "^5.0.19"
   }
 }
