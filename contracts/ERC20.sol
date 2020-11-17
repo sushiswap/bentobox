@@ -41,13 +41,9 @@ contract ERC20 is ERC20Data {
         }
     }
 
-    function _approve(address owner, address spender, uint256 amount) private {
-        allowance[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
-    }
-
     function approve(address spender, uint256 amount) public returns (bool success) {
-        _approve(msg.sender, spender, amount);
+        allowance[msg.sender][spender] = amount;
+        emit Approval(owner, spender, amount);
         return true;
     }
 
