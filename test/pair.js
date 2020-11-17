@@ -54,7 +54,7 @@ contract('Pair', (accounts) => {
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await vault.deploy(pairMaster.address, initData);
-    let pair_address = tx.logs[0].args[2];
+    pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
     await pair.updateExchangeRate();
