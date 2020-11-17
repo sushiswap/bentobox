@@ -28,6 +28,8 @@ contract('Pair', (accounts) => {
   const alice = accounts[1];
   const bob = accounts[2];
   const dummy = accounts[4];
+  const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
+  const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
 
   before(async () => {
     vault = await Vault.deployed();
@@ -81,8 +83,6 @@ contract('Pair', (accounts) => {
   });
 
   it('should execute a permit', async () => {
-    const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
-    const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
     let nonce = await pair.nonces(public_key);
     nonce = nonce.toNumber();
     let block = await web3.eth.getBlock("latest");
@@ -98,6 +98,41 @@ contract('Pair', (accounts) => {
         Buffer.from(private_key.replace('0x', ''), 'hex')
     );
     await pair.permit(public_key, alice, 10, deadline, v, r, s);
+  });
+
+  it('permit should revert on old deadline', async () => {
+    let nonce = await pair.nonces(public_key);
+    nonce = nonce.toNumber();
+    const deadline = 0;
+    const digest = await permit.getApprovalDigest(
+        pair_address,
+        {owner: public_key, spender: alice, value: 10},
+        nonce,
+        deadline
+      );
+    const {v, r, s} = ecsign(
+        Buffer.from(digest.slice(2), 'hex'),
+        Buffer.from(private_key.replace('0x', ''), 'hex')
+    );
+    await truffleAssert.reverts(pair.permit(public_key, alice, 10, deadline, v, r, s), 'BentoBox: Expired');
+  });
+
+  it('permit should revert on incorrect signer', async () => {
+    let nonce = await pair.nonces(public_key);
+    nonce = nonce.toNumber();
+    let block = await web3.eth.getBlock("latest");
+    const deadline = Number(block.timestamp)+10000;
+    const digest = await permit.getApprovalDigest(
+        pair_address,
+        {owner: public_key, spender: alice, value: 10},
+        nonce,
+        deadline
+      );
+    const {v, r, s} = ecsign(
+        Buffer.from(digest.slice(2), 'hex'),
+        Buffer.from(private_key.replace('0x', ''), 'hex')
+    );
+    await truffleAssert.reverts(pair.permit(bob, alice, 10, deadline, v, r, s), 'BentoBox: Invalid Signature');
   });
 
   it('should have correct balances after supply of assets', async () => {
