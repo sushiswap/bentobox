@@ -11,8 +11,8 @@ interface IFlashLoaner {
     function executeOperation(IERC20 token, uint256 amount, uint256 fee, bytes calldata params) external;
 }
 
-// The BentoBox Vault and contract factory.
-// This contract stores the funds, handles their transfers. Also takes care of fees, deploying contracts and flash loans.
+// The BentoBox Vault
+// This contract stores the funds, handles their transfers. Also takes care of fees  and flash loans.
 contract Vault is Ownable {
     using BoringMath for uint256;
 
@@ -21,7 +21,6 @@ contract Vault is Ownable {
     event Created(address indexed masterContract, bytes data, address clone_address);
     event FlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
 
-    mapping(address => bool) public contracts; // Map of allowed master Contracts.
     mapping(address => bool) public swappers; // Map of allowed Swappers.
 
     mapping(IERC20 => mapping(address => uint256)) public shareOf; // Balance per token per address/contract
@@ -30,39 +29,10 @@ contract Vault is Ownable {
     address public feeTo;
     address public dev = 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E;
 
-    // Disables / enables a given master contract. If the master contract doesn't exist yet, it gets added to the map.
-    // When a master contract is disabled, it cannot be deployed. However, this doesn't affect already deployed clones.
-    function setContract(address newContract, bool enabled) public onlyOwner() {
-        contracts[newContract] = enabled;
-        emit ContractSet(newContract, enabled);
-    }
-
     // Disables / enables a given Swapper. If the Swapper doesn't exist yet, it gets added to the map.
     function setSwapper(address swapper, bool enabled) public onlyOwner() {
         swappers[swapper] = enabled;
         emit SwapperSet(swapper, enabled);
-    }
-
-    // Deploys a given master Contract as a clone.
-    function deploy(address masterContract, bytes calldata data) public {
-        require(contracts[masterContract], 'BentoBox: Contract not whitelisted');
-        bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
-        address clone_address; // Address where the clone contract will reside.
-
-        // Creates clone, more info here: https://blog.openzeppelin.com/deep-dive-into-the-minimal-proxy-contract/
-        assembly {
-            let clone := mload(0x40)
-            mstore(clone, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
-            mstore(add(clone, 0x14), targetBytes)
-            mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
-            clone_address := create(0, clone, 0x37)
-        }
-
-        (bool success,) = clone_address.call(data);
-        require(success, 'BentoBox: contract init failed.');
-        IPair(clone_address).setVault(address(this));
-
-        emit Created(masterContract, data, clone_address);
     }
 
     function toAmount(IERC20 token, uint256 share) public view returns (uint256) {
