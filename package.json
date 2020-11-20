@@ -22,7 +22,8 @@
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.1.1",
     "@uniswap/lib": "^2.2.0-alpha",
-    "@uniswap/v2-core": "^1.0.1"
+    "@uniswap/v2-core": "^1.0.1",
+    "ganache-cli": "^6.12.1"
   },
   "devDependencies": {
     "ethereumjs-util": "^7.0.7",

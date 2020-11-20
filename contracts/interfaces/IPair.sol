@@ -24,7 +24,7 @@ interface IPair {
     function name() external view returns (string memory);
     function oracle() external view returns (IOracle);
     function symbol() external view returns (string memory);
-    function tokenAsset() external view returns (IERC20);
+    function asset() external view returns (IERC20);
     function tokenCollateral() external view returns (IERC20);
     function totalAsset() external view returns (uint256);
     function totalBorrow() external view returns (uint256);

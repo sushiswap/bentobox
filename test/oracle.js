@@ -1,13 +1,10 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const AssertionError = require('./helpers/assertion-error');
+const {e18} = require('./helpers/utils');
 
 const Vault = artifacts.require("Vault");
 const PeggedOracle = artifacts.require("PeggedOracle");
-
-function e18(amount) {
-    return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
-}
 
 contract('PeggedOracle', (accounts) => {
     let oracle;
