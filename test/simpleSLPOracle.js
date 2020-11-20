@@ -61,11 +61,13 @@ contract('SimpleSLPOracle', (accounts) => {
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
 
-    // token address flickering
-    assert.equal((await oracle.price0Average()).toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.price1Average()).toString(), expectedPrice[1].toString());
-
-    // different prices
-    assert.equal((await oracle.peek(bentoPair.address)).toString(), token0Amount.div(10).toString()); // or token0Amount); ?
+    const token0 = await oracle.token0();
+    if(token0 === a.address){
+      assert.equal((await oracle.price0Average()).toString(), expectedPrice[0].toString());
+      assert.equal((await oracle.peek(bentoPair.address)).toString(), token0Amount.div(new web3.utils.BN(10)).toString());
+    } else {
+      assert.equal((await oracle.price0Average()).toString(), expectedPrice[1].toString());
+      assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.div(new web3.utils.BN(10)).toString());
+    }
   });
 });
