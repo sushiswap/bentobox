@@ -6,6 +6,7 @@ const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
+const BentoFactory = artifacts.require("BentoFactory");
 const Pair = artifacts.require("Pair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
