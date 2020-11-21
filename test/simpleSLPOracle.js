@@ -53,14 +53,15 @@ contract('SimpleSLPOracle', (accounts) => {
   it('update', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
     await timeWarp.advanceTime(30);
-    await truffleAssert.reverts(oracle.update(), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
+    await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
     await timeWarp.advanceTime(31);
-    await oracle.update();
+    await oracle.update(bentoPair.address);
     await timeWarp.advanceTime(61);
-    await oracle.update();
+    await oracle.update(bentoPair.address);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
-    assert.equal((await oracle.priceAverage()).toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.peek(bentoPair.address)).toString(), token0Amount.div(new web3.utils.BN(10)).toString());
+    const pairInfo = await oracle.pairs(bentoPair.address);
+    assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
+    assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
   });
 });
