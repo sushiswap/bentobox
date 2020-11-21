@@ -17,7 +17,31 @@ contract CompoundOracle is IOracle {
         uint256 division;
     }
 
+    struct PriceInfo {
+        uint128 price;
+        uint128 blockNumber;
+    }
+
     mapping(address => PairInfo) pairs; // Map of pairs and their info
+    mapping(string => PriceInfo) prices;
+
+    function _peekPrice(string memory symbol) internal view returns(uint256) {
+        PriceInfo memory info = prices[symbol];
+        if (block.number + 8 > info.blockNumber) {
+            return uint128(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+        }
+        return info.price;
+    }
+
+    function _getPrice(string memory symbol) internal returns(uint256) {
+        PriceInfo memory info = prices[symbol];
+        if (block.number + 8 > info.blockNumber) {
+            info.price = uint128(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+            info.blockNumber = uint128(block.number); // Blocknumber will fit in uint128
+            prices[symbol] = info;
+        }
+        return info.price;
+    }
 
     // Adds a pair and it's data to the pair map
     function init(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public {
@@ -35,10 +59,15 @@ contract CompoundOracle is IOracle {
     }
 
     // Calculates the lastest exchange rate
-    function _get(string memory collateralSymbol, string memory assetSymbol, uint256 division) private view returns (uint256) {
+    function _get(string memory collateralSymbol, string memory assetSymbol, uint256 division) private returns (uint256) {
         return uint256(1e36)
-            .mul(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(assetSymbol)) /
-                IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(collateralSymbol) / division;
+            .mul(_getPrice(assetSymbol)) / _getPrice(collateralSymbol) / division;
+    }
+
+    // Calculates the lastest exchange rate
+    function _peek(string memory collateralSymbol, string memory assetSymbol, uint256 division) private view returns (uint256) {
+        return uint256(1e36)
+            .mul(_peekPrice(assetSymbol)) / _peekPrice(collateralSymbol) / division;
     }
 
     // Get the latest exchange rate
@@ -48,10 +77,10 @@ contract CompoundOracle is IOracle {
 
     // Check the last exchange rate without any state changes
     function peek(address pair) public view override returns (uint256) {
-        return _get(pairs[pair].collateralSymbol, pairs[pair].assetSymbol, pairs[pair].division);
+        return _peek(pairs[pair].collateralSymbol, pairs[pair].assetSymbol, pairs[pair].division);
     }
 
     function test(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public view returns(uint256) {
-        return _get(collateralSymbol, assetSymbol, division);
+        return _peek(collateralSymbol, assetSymbol, division);
     }
 }
