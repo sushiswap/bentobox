@@ -82,8 +82,8 @@ function createInterface(name) {
             if (contracts[i] == "IVault") {
                 header.push('import "./IVault.sol";');
             }
-            if (contracts[i] == "IPair") {
-                header.push('import "./IPair.sol";');
+            if (contracts[i] == "ILendingPair") {
+                header.push('import "./ILendingPair.sol";');
             }
         }
         console.log(header.join("\r\n") + "\r\n" + lines.join("\r\n"));
@@ -93,5 +93,5 @@ function createInterface(name) {
     });
 }
 
-createInterface("Pair");
+createInterface("LendingPair");
 createInterface("Vault");

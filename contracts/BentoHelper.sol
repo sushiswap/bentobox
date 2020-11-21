@@ -2,12 +2,12 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 import "./interfaces/IERC20.sol";
-import "./interfaces/IPair.sol";
+import "./interfaces/ILendingPair.sol";
 import "./interfaces/IOracle.sol";
 
 contract BentoHelper {
     struct PairInfo {
-        IPair pair;
+        ILendingPair pair;
         IOracle oracle;
         IVault vault;
         IERC20 tokenAsset;
@@ -38,10 +38,10 @@ contract BentoHelper {
         uint256 userCollateralAllowance;
     }
 
-    function getPairs(address user, IPair[] calldata pairs) public view returns (PairInfo[] memory info) {
+    function getPairs(address user, ILendingPair[] calldata pairs) public view returns (PairInfo[] memory info) {
         info = new PairInfo[](pairs.length);
         for(uint256 i = 0; i < pairs.length; i++) {
-            IPair pair = pairs[i];
+            ILendingPair pair = pairs[i];
             info[i].pair = pair;
             info[i].oracle = pair.oracle();
             info[i].vault = pair.vault();

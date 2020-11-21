@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.6.12;
 import "../interfaces/IOracle.sol";
-import "../interfaces/IPair.sol";
+import "../interfaces/ILendingPair.sol";
 import "../libraries/BoringMath.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
@@ -103,7 +103,7 @@ contract SimpleSLPOracle is IOracle {
 
     // Check the last exchange rate without any state changes
     function peek(address bentoPairAddress) public view override returns (uint256 amountOut) {
-      IPair bentoPair = IPair(bentoPairAddress);
+      ILendingPair bentoPair = ILendingPair(bentoPairAddress);
       address token = address(bentoPair.asset());
       if (token == token0) {
           amountOut = price0Average.mul(10**18).decode144();

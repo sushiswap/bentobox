@@ -10,7 +10,7 @@ pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
-import "./interfaces/IVault.sol";
+import "./Vault.sol";
 import "./ERC20.sol";
 
 interface IDelegateSwapper {
@@ -30,11 +30,11 @@ interface ISwapper {
 // TODO: ensure BoringMath is always used
 // We do allow supplying assets and borrowing, but the asset does NOT provide collateral as it's just silly and no UI should allow this
 
-contract Pair is ERC20 {
+contract LendingPair is ERC20 {
     using BoringMath for uint256;
 
     // Keep at the top in this order for delegate calls to be able to access them
-    IVault public vault;
+    Vault public vault;
     IERC20 public collateral;
     IERC20 public asset;
 
@@ -91,7 +91,7 @@ contract Pair is ERC20 {
         lastInterestBlock = block.number;
     }
 
-    function setVault(IVault vault_) public {
+    function setVault(Vault vault_) public {
         require(address(vault) == address(0), 'BentoBox: already initialized');
         vault = vault_;
     }
@@ -122,8 +122,8 @@ contract Pair is ERC20 {
         uint256 fees = feesPending.sub(1);
         uint256 devFee = fees / 10; // 10% dev fee (of 10%)
         feesPending = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
-        vault.transferShare(asset, vault.feeTo(), fees.sub(devFee));
-        vault.transferShare(asset, vault.dev(), devFee);
+        vault.withdrawShare(asset, vault.feeTo(), fees.sub(devFee));
+        vault.withdrawShare(asset, vault.dev(), devFee);
     }
 
     // Checks if the user is solvent.
@@ -248,7 +248,7 @@ contract Pair is ERC20 {
 
     // Deposits an amount of collateral from the caller
     function addCollateral(uint256 amount) public {
-        _addCollateral(msg.sender, vault.transferAmountFrom(collateral, msg.sender, amount));
+        _addCollateral(msg.sender, vault.deposit(collateral, msg.sender, amount));
     }
 
     // Deposits an amount of supply (the borrowable token) from the caller
@@ -256,7 +256,7 @@ contract Pair is ERC20 {
         // Accrue interest before calculating pool shares in _addAsset
         accrue();
         updateInterestRate();
-        _addAsset(msg.sender, vault.transferAmountFrom(asset, msg.sender, amount));
+        _addAsset(msg.sender, vault.deposit(asset, msg.sender, amount));
     }
 
     // Withdraws a share of collateral of the caller to the specified address
@@ -265,7 +265,7 @@ contract Pair is ERC20 {
         _removeCollateral(msg.sender, amount);
         // Only allow withdrawing if user is solvent (in case of a closed liquidation)
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        vault.transferShare(collateral, to, amount);
+        vault.withdrawShare(collateral, to, amount);
     }
 
     // Withdraws a share of supply (the borrowable token) of the caller to the specified address
@@ -274,7 +274,7 @@ contract Pair is ERC20 {
         accrue();
         updateInterestRate();
         uint256 amount = _removeAssetShare(msg.sender, share);
-        vault.transferShare(asset, to, amount);
+        vault.withdrawShare(asset, to, amount);
     }
 
     // Borrows the given amount from the supply to the specified address
@@ -282,7 +282,7 @@ contract Pair is ERC20 {
         require(amount <= totalAsset.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
         updateInterestRate();
-        _addBorrow(msg.sender, vault.transferAmount(asset, to, amount));
+        _addBorrow(msg.sender, vault.withdraw(asset, to, amount));
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
@@ -291,7 +291,7 @@ contract Pair is ERC20 {
         accrue();
         updateInterestRate();
         uint256 amount = _removeBorrowShare(msg.sender, share);
-        vault.transferShareFrom(asset, msg.sender, amount);
+        vault.depositShare(asset, msg.sender, amount);
     }
 
     // Handles shorting with an approved swapper
@@ -310,7 +310,7 @@ contract Pair is ERC20 {
             vault.toAmount(asset, amountAsset),
             vault.toAmount(collateral, minAmountCollateral)));
         require(success, 'BentoBox: Swap failed');
-        _addCollateral(msg.sender, vault.addAmount(collateral, abi.decode(result, (uint256))));
+        _addCollateral(msg.sender, abi.decode(result, (uint256)));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
@@ -328,9 +328,9 @@ contract Pair is ERC20 {
             abi.encodeWithSignature("swapExact(address,address,address,uint256,uint256)", swapper,
             collateral, asset,
             vault.toAmount(collateral, maxAmountCollateral),
-            vault.addShare(asset, borrowAmount)));
+            vault.toAmount(asset, borrowAmount)));
         require(success, string(result));
-        _removeCollateral(msg.sender, vault.toShare(collateral, abi.decode(result, (uint256))));
+        _removeCollateral(msg.sender, abi.decode(result, (uint256)));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
@@ -390,18 +390,18 @@ contract Pair is ERC20 {
             emit AddAsset(address(0), extraAsset, 0);
         } else if (swapper == address(0)) {
             // Open liquidation directly using the caller's funds, without swapping
-            vault.transferShareFrom(asset, to, allBorrowAmount);
-            vault.transferShare(collateral, to, allCollateralAmount);
+            vault.deposit(asset, to, allBorrowAmount);
+            vault.withdraw(collateral, to, allCollateralAmount);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
-            vault.transferShare(collateral, swapper, allCollateralAmount);
+            vault.withdraw(collateral, swapper, allCollateralAmount);
             ISwapper(swapper).swap(
                 collateral, asset,
                 vault.toAmount(collateral, allCollateralAmount),
                 vault.toAmount(asset, allBorrowAmount),
                 to);
-            vault.transferShareFrom(asset, swapper, allBorrowAmount);
+            vault.deposit(asset, swapper, allBorrowAmount);
         }
     }
 }

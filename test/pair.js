@@ -7,19 +7,17 @@ const TokenB = artifacts.require("TokenB");
 const BentoFactory = artifacts.require("BentoFactory");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
-const Pair = artifacts.require("Pair");
+const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
 
-
-
 function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
 }
 
-contract('Pair', (accounts) => {
+contract('LendingPair', (accounts) => {
   let a;
   let b;
   let pair_address;
@@ -45,9 +43,7 @@ contract('Pair', (accounts) => {
     swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
     await vault.setSwapper(swapper.address, true);
 
-    console.log('here1', a.address, b.address);
     let tx = await factory.createPair(a.address, b.address);
-    console.log('here2');
     let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
     await a.transfer(sushiswappair.address, e18("5000"));
     await b.transfer(sushiswappair.address, e18("5000"));
@@ -59,8 +55,12 @@ contract('Pair', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    tx = await bentoFactory.createPair(a.address, b.address, oracle.address, oracleData);
-    //tx = await vault.deploy(pairMaster.address, initData);
+    await vault.setMasterContractApproval(pairMaster.address, true, { from: alice });
+    await vault.setMasterContractApproval(pairMaster.address, true, { from: bob });
+
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    tx = await vault.deploy(pairMaster.address, initData);
+    console.log(tx);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 

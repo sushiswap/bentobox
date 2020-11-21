@@ -3,7 +3,7 @@ pragma solidity ^0.6.12;
 import "./IOracle.sol";
 import "./IVault.sol";
 
-interface IPair {
+interface ILendingPair {
     event AddAsset(address indexed user, uint256 amount, uint256 share);
     event AddBorrow(address indexed user, uint256 amount, uint256 share);
     event AddCollateral(address indexed user, uint256 amount, uint256 share);

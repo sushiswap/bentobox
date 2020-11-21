@@ -1,5 +1,5 @@
 const Vault = artifacts.require("Vault");
-const Pair = artifacts.require("Pair");
+const Pair = artifacts.require("LendingPair");
 const BentoFactory = artifacts.require("BentoFactory");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 

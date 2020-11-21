@@ -1,18 +1,21 @@
+// SPDX-License-Identifier: MIT
+// solium-disable security/no-inline-assembly
+// solium-disable security/no-low-level-calls
 pragma solidity ^0.6.12;
 
 import "./libraries/Ownable.sol";
 import './interfaces/IBentoFactory.sol';
-import './interfaces/IPair.sol';
+import './interfaces/ILendingPair.sol';
 import './interfaces/IERC20.sol';
 
 contract BentoFactory is IBentoFactory {
     address public vault;
-    IPair public masterContract;
+    ILendingPair public masterContract;
     mapping(address => mapping(address => address)) public getPair;
 
-    event PairCreated(IERC20 indexed collateral, IERC20 indexed asset, IPair pair, address oracle);
+    event PairCreated(IERC20 indexed collateral, IERC20 indexed asset, ILendingPair pair, address oracle);
 
-    constructor(address vault_, IPair master_contract) public {
+    constructor(address vault_, ILendingPair master_contract) public {
         require(vault_ != address(0), 'BentoFactory: ZERO_ADDRESS');
         vault = vault_;
         require(address(master_contract) != address(0), 'BentoFactory: ZERO_ADDRESS');
@@ -38,13 +41,13 @@ contract BentoFactory is IBentoFactory {
 
         (bool success,) = clone_address.call(masterContract.getInitData(collateral, asset, oracle_address, oracleData));
         require(success, 'BentoFactory: contract init failed.');
-        IPair(clone_address).setVault(vault);
+        ILendingPair(clone_address).setVault(vault);
 
         getPair[address(collateral)][address(asset)] = clone_address;
-        emit PairCreated(collateral, asset, IPair(clone_address), address(oracle_address));
+        emit PairCreated(collateral, asset, ILendingPair(clone_address), address(oracle_address));
     }
 
-    function setMasterContract(IPair master_contract) external override {
+    function setMasterContract(ILendingPair master_contract) external override {
         require(msg.sender == Ownable(vault).owner(), 'BentoFactory: FORBIDDEN');
         require(address(master_contract) != address(0), 'BentoFactory: ZERO_ADDRESS');
         masterContract = master_contract;

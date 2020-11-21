@@ -3,7 +3,7 @@ pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
 import "../external/SushiSwapFactory.sol";
-import "../interfaces/IVault.sol";
+import "../Vault.sol";
 import "../ERC20.sol";
 
 
@@ -11,7 +11,7 @@ contract SushiSwapDelegateSwapper is ERC20Data {
     using BoringMath for uint256;
 
     // Keep at the top, these are members from Pair that will be available due to delegatecall
-    IVault public vault;
+    Vault public vault;
 
     // Local variables
     IUniswapV2Factory public factory;
@@ -39,7 +39,7 @@ contract SushiSwapDelegateSwapper is ERC20Data {
     function swap(SushiSwapDelegateSwapper swapper, address from, address to, uint256 amountFrom, uint256 amountToMin) public returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(swapper.factory().getPair(from, to));
 
-        vault.transferShare(IERC20(from), address(pair), amountFrom);
+        vault.withdraw(IERC20(from), address(pair), amountFrom);
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
         uint256 amountTo;
@@ -52,7 +52,7 @@ contract SushiSwapDelegateSwapper is ERC20Data {
             require(amountTo >= amountToMin, 'SushiSwapClosedSwapper: return not enough');
             pair.swap(amountTo, 0, address(vault), new bytes(0));
         }
-        return amountTo;
+        return vault.skim(IERC20(to));
     }
 
     // Swaps to an exact amount, from a flexible input amount
@@ -67,15 +67,15 @@ contract SushiSwapDelegateSwapper is ERC20Data {
         if (pair.token0() == from) {
             amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
-            vault.transferShare(IERC20(from), address(pair), amountFrom);
+            vault.withdraw(IERC20(from), address(pair), amountFrom);
             pair.swap(0, exactAmountTo, address(vault), new bytes(0));
         } else {
             amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
-            vault.transferShare(IERC20(from), address(pair), amountFrom);
+            vault.withdraw(IERC20(from), address(pair), amountFrom);
             pair.swap(exactAmountTo, 0, address(vault), new bytes(0));
         }
 
-        return amountFrom;
+        return vault.skim(IERC20(to));
     }
 }
