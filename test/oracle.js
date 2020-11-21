@@ -23,5 +23,4 @@ contract('PeggedOracle', (accounts) => {
         let result = await oracle.peek(accounts[0]);
         assert.equal(result.toString(), "1000000000000000000");
     });
-
 });

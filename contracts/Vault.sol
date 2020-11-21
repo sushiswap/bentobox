@@ -83,30 +83,32 @@ contract Vault is Ownable {
     modifier allowed(address from) {
         require(msg.sender == from || masterContractApproved[getMasterContract[msg.sender]][from], 'BentoBox: Transfer not approved');
         _;
-    }    
+    }
 
-    function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { deposit(token, from, msg.sender, amount); }
+    // TODO: depositWithPermit
+
+    function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { return deposit(token, from, msg.sender, amount); }
     function deposit(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _deposit(token, from, to, amount, share);
         return share;
     }
 
-    function depositShare(IERC20 token, address from, uint256 share) public returns (uint256) { depositShare(token, from, msg.sender, share); }
+    function depositShare(IERC20 token, address from, uint256 share) public returns (uint256) { return depositShare(token, from, msg.sender, share); }
     function depositShare(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
         uint256 amount = toAmount(token, share);
         _deposit(token, from, to, amount, share);
         return amount;
     }
 
-    function withdraw(IERC20 token, address to, uint256 amount) public returns (uint256) { withdraw(token, msg.sender, to, amount); }
+    function withdraw(IERC20 token, address to, uint256 amount) public returns (uint256) { return withdraw(token, msg.sender, to, amount); }
     function withdraw(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _withdraw(token, from, to, amount, share);
         return share;        
     }
 
-    function withdrawShare(IERC20 token, address to, uint256 share) public returns (uint256) { withdrawShare(token, msg.sender, to, share); }
+    function withdrawShare(IERC20 token, address to, uint256 share) public returns (uint256) { return withdrawShare(token, msg.sender, to, share); }
     function withdrawShare(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
         uint256 amount = toAmount(token, share);
         _withdraw(token, from, to, amount, share);
@@ -115,7 +117,7 @@ contract Vault is Ownable {
 
     // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
-    function transferShareNew(IERC20 token, address from, address to, uint256 share) allowed(from) public {
+    function transferShare(IERC20 token, address from, address to, uint256 share) allowed(from) public {
         shareOf[token][from] = shareOf[token][from].sub(share);
         shareOf[token][to] = shareOf[token][to].add(share);
     }

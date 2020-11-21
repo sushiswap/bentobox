@@ -17,6 +17,28 @@ function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
 }
 
+async function logStatus(vault, pair, a, b, alice, bob) {
+    console.log('Vault contract');
+    console.log('A', (await a.balanceOf(vault.address)).toString(), 'of', (await a.totalSupply()).toString());
+    console.log('B', (await b.balanceOf(vault.address)).toString(), 'of', (await b.totalSupply()).toString());
+    console.log('P', (await pair.balanceOf(vault.address)).toString(), 'of', (await pair.totalSupply()).toString());
+    console.log();
+    console.log('Pair contract');
+    console.log('A in vault', (await vault.shareOf(a.address, pair.address)).toString(), 'of', (await vault.totalShare(a.address)).toString(), 'total balance is', (await vault.totalBalance(a.address)).toString());
+    console.log('B in vault', (await vault.shareOf(b.address, pair.address)).toString(), 'of', (await vault.totalShare(b.address)).toString(), 'total balance is', (await vault.totalBalance(b.address)).toString());
+    console.log();
+    console.log('Alice');
+    console.log('A', (await a.balanceOf(alice)).toString());
+    console.log('B', (await b.balanceOf(alice)).toString());
+    console.log('P', (await pair.balanceOf(alice)).toString());
+    console.log();
+    console.log('Bob');
+    console.log('A', (await a.balanceOf(bob)).toString());
+    console.log('B', (await b.balanceOf(bob)).toString());
+    console.log('P', (await pair.balanceOf(bob)).toString());
+    console.log();
+}
+
 contract('LendingPair', (accounts) => {
   let a;
   let b;
@@ -60,7 +82,6 @@ contract('LendingPair', (accounts) => {
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await vault.deploy(pairMaster.address, initData);
-    console.log(tx);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 

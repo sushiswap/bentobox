@@ -7,7 +7,7 @@ const TokenB = artifacts.require("TokenB");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const BentoFactory = artifacts.require("BentoFactory");
-const Pair = artifacts.require("Pair");
+const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 
@@ -51,8 +51,12 @@ contract('Pair (Shorting)', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    tx = await bentoFactory.createPair(a.address, b.address, oracle.address, oracleData);
-    let pair_address = tx.logs[0].args[2];
+    await vault.setMasterContractApproval(pairMaster.address, true, { from: alice });
+    await vault.setMasterContractApproval(pairMaster.address, true, { from: bob });
+
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    tx = await vault.deploy(pairMaster.address, initData);
+    pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
     await pair.updateExchangeRate();
