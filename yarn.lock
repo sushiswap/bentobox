@@ -540,6 +540,16 @@
   dependencies:
     web3 "*"
 
+"@uniswap/lib@^2.2.0-alpha":
+  version "2.2.0-alpha"
+  resolved "https://registry.yarnpkg.com/@uniswap/lib/-/lib-2.2.0-alpha.tgz#998e294d214668f2e9ed346e78242c61c3c68cb8"
+  integrity sha512-9YSm0ILeun19ID1ZoFolXOT0M9ooho9G91L3/tTMfXv+6MgfHMF5EBH5B/5vapd3LjubX+WGzz00IUscBliHeg==
+
+"@uniswap/v2-core@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@uniswap/v2-core/-/v2-core-1.0.1.tgz#af8f508bf183204779938969e2e54043e147d425"
+  integrity sha512-MtybtkUPSyysqLY2U210NBDeCHX+ltHt3oADGdjqoThZaFRDKwM6k1Nb3F0A3hk5hwuQvytFWhrWHOEq6nVJ8Q==
+
 abstract-leveldown@~2.6.0:
   version "2.6.3"
   resolved "https://registry.yarnpkg.com/abstract-leveldown/-/abstract-leveldown-2.6.3.tgz#1c5e8c6a5ef965ae8c35dfb3a8770c476b82c4b8"
