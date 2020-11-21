@@ -14,30 +14,12 @@ contract SimpleSLPOracle is IOracle {
     using FixedPoint for *;
     using BoringMath for uint;
     uint256 public constant PERIOD = 1 minutes;
-    IUniswapV2Pair immutable pair;
-    address public immutable token0;
-    address public immutable token1;
-
+    IUniswapV2Pair pair;
+    bool isToken0;
     uint    public price0CumulativeLast;
     uint    public price1CumulativeLast;
     uint32  public blockTimestampLast;
-    FixedPoint.uq112x112 public price0Average;
-    FixedPoint.uq112x112 public price1Average;
-
-    constructor(address factory, address tokenA, address tokenB) public {
-        IUniswapV2Pair _pair = IUniswapV2Pair(IUniswapV2Factory(factory).getPair(tokenA, tokenB));
-        tokenA = _pair.token0();
-        tokenB = _pair.token1();
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        price0CumulativeLast = _pair.price0CumulativeLast(); // fetch the current accumulated price value (1 / 0)
-        price1CumulativeLast = _pair.price1CumulativeLast(); // fetch the current accumulated price value (0 / 1)
-        pair = _pair;
-        uint112 reserve0;
-        uint112 reserve1;
-        (reserve0, reserve1, blockTimestampLast) = _pair.getReserves();
-        require(reserve0 != 0 && reserve1 != 0, 'SimpleSLPOracle: NO_RESERVES'); // ensure that there's liquidity in the pair
-    }
-
+    FixedPoint.uq112x112 public priceAverage;
 
     // helper function that returns the current block timestamp within the range of uint32, i.e. [0, 2**32 - 1]
     function currentBlockTimestamp() internal view returns (uint32) {
@@ -65,12 +47,33 @@ contract SimpleSLPOracle is IOracle {
         }
     }
 
-    function init() public {
-        // do nothing
+    function init(address factory) public {
+        address bentoPairAddress = msg.sender;
+        IPair bentoPair = IPair(bentoPairAddress);
+        address token = address(bentoPair.asset());
+        address collateral = address(bentoPair.collateral());
+        IUniswapV2Pair _pair = IUniswapV2Pair(IUniswapV2Factory(factory).getPair(token, collateral));
+        address tokenA = _pair.token0();
+        address tokenB = _pair.token1();
+        address token0;
+        address token1;
+        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        price0CumulativeLast = _pair.price0CumulativeLast(); // fetch the current accumulated price value (1 / 0)
+        price1CumulativeLast = _pair.price1CumulativeLast(); // fetch the current accumulated price value (0 / 1)
+        pair = _pair;
+        if (collateral == token0) {
+            isToken0 = true;
+        } else {
+            isToken0 = false;
+        }
+        uint112 reserve0;
+        uint112 reserve1;
+        (reserve0, reserve1, blockTimestampLast) = _pair.getReserves();
+        require(reserve0 != 0 && reserve1 != 0, 'SimpleSLPOracle: NO_RESERVES'); // ensure that there's liquidity in the pair
     }
 
-    function getInitData() public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init()");
+    function getInitData(address factory) public pure returns (bytes memory) {
+        return abi.encodeWithSignature("init(address)", factory);
     }
 
     function update() public {
@@ -82,9 +85,11 @@ contract SimpleSLPOracle is IOracle {
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
-        price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
-
+        if(isToken0){
+          priceAverage = FixedPoint.uq112x112(uint224((price0Cumulative - price0CumulativeLast) / timeElapsed));
+        } else {
+          priceAverage = FixedPoint.uq112x112(uint224((price1Cumulative - price1CumulativeLast) / timeElapsed));
+        }
         price0CumulativeLast = price0Cumulative;
         price1CumulativeLast = price1Cumulative;
         blockTimestampLast = blockTimestamp;
@@ -103,14 +108,8 @@ contract SimpleSLPOracle is IOracle {
 
     // Check the last exchange rate without any state changes
     function peek(address bentoPairAddress) public view override returns (uint256 amountOut) {
-      ILendingPair bentoPair = ILendingPair(bentoPairAddress);
-      address token = address(bentoPair.asset());
-      if (token == token0) {
-          amountOut = price0Average.mul(10**18).decode144();
-      } else {
-          require(token == token1, 'SimpleSLPOracle: INVALID_TOKEN');
-          amountOut = price1Average.mul(10**18).decode144();
-      }
+      IPair bentoPair = IPair(bentoPairAddress);
+      amountOut = priceAverage.mul(10**18).decode144();
     }
 
 }

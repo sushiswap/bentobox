@@ -25,7 +25,7 @@ interface ILendingPair {
     function oracle() external view returns (IOracle);
     function symbol() external view returns (string memory);
     function asset() external view returns (IERC20);
-    function tokenCollateral() external view returns (IERC20);
+    function collateral() external view returns (IERC20);
     function totalAsset() external view returns (uint256);
     function totalBorrow() external view returns (uint256);
     function totalBorrowShare() external view returns (uint256);
