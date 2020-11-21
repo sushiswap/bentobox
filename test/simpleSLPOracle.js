@@ -56,8 +56,6 @@ contract('SimpleSLPOracle', (accounts) => {
     await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
     await timeWarp.advanceTime(31);
     await oracle.update(bentoPair.address);
-    await timeWarp.advanceTime(61);
-    await oracle.update(bentoPair.address);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
     const pairInfo = await oracle.pairs(bentoPair.address);
