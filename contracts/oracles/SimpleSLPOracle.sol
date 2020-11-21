@@ -61,8 +61,7 @@ contract SimpleSLPOracle is IOracle {
         address tokenA = _pair.token0();
         address tokenB = _pair.token1();
         address token0;
-        address token1;
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        token0 = tokenA < tokenB ? tokenA : tokenB;
 
         pairs[msg.sender].pair = _pair;
         if (collateral == token0) {
