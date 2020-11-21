@@ -3,7 +3,6 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 import "../interfaces/IOracle.sol";
-import "../interfaces/ILendingPair.sol";
 import "../libraries/BoringMath.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
@@ -52,12 +51,8 @@ contract SimpleSLPOracle is IOracle {
         }
     }
 
-    function init(address factory) public {
-        address bentoPairAddress = msg.sender;
-        ILendingPair bentoPair = ILendingPair(bentoPairAddress);
-        address token = address(bentoPair.asset());
-        address collateral = address(bentoPair.collateral());
-        IUniswapV2Pair _pair = IUniswapV2Pair(IUniswapV2Factory(factory).getPair(token, collateral));
+    function init(address pair, address collateral) public {
+        IUniswapV2Pair _pair = IUniswapV2Pair(pair);
         address tokenA = _pair.token0();
         address tokenB = _pair.token1();
         address token0;
@@ -77,8 +72,8 @@ contract SimpleSLPOracle is IOracle {
         require(reserve0 != 0 && reserve1 != 0, 'SimpleSLPOracle: NO_RESERVES'); // ensure that there's liquidity in the pair
     }
 
-    function getInitData(address factory) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(address)", factory);
+    function getInitData(address pair, address collateral) public pure returns (bytes memory) {
+        return abi.encodeWithSignature("init(address,address)", pair, collateral);
     }
 
     function update(address bentoPair) public {

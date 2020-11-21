@@ -21,6 +21,7 @@ contract('SimpleSLPOracle', (accounts) => {
   let b;
   let pair;
   let oracle;
+  let oracleData;
   let bentoPair;
 
   async function addLiquidity() {
@@ -43,11 +44,35 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await addLiquidity();
     oracle = await SimpleSLPOracle.new();
-    let oracleData = await oracle.getInitData(factory.address);
+    oracleData = await oracle.getInitData(pair.address, a.address);
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
+  });
+
+  it('getInitData should return correct result', async () => {
+    let abiSignature = web3.eth.abi.encodeFunctionCall(
+      {
+        "inputs": [
+          {
+            "internalType": "address",
+            "name": "pair",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "collateral",
+            "type": "address"
+          }
+        ],
+        "name": "init",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }, [pair.address, a.address]
+    );
+    assert.equal(oracleData, abiSignature);
   });
 
   it('update', async () => {
