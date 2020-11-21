@@ -4,6 +4,7 @@ const permit = require("./helpers/permit");
 const Vault = artifacts.require("Vault");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
+const BentoFactory = artifacts.require("BentoFactory");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("Pair");
@@ -24,6 +25,7 @@ contract('Pair', (accounts) => {
   let pair_address;
   let pair;
   let vault;
+  let bentoFactory;
   let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
@@ -34,6 +36,7 @@ contract('Pair', (accounts) => {
   before(async () => {
     vault = await Vault.deployed();
     pairMaster = await Pair.deployed();
+    bentoFactory = await BentoFactory.deployed();
 
     a = await TokenA.new({ from: accounts[0] });
     b = await TokenB.new({ from: accounts[0] });
@@ -42,7 +45,9 @@ contract('Pair', (accounts) => {
     swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
     await vault.setSwapper(swapper.address, true);
 
+    console.log('here1', a.address, b.address);
     let tx = await factory.createPair(a.address, b.address);
+    console.log('here2');
     let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
     await a.transfer(sushiswappair.address, e18("5000"));
     await b.transfer(sushiswappair.address, e18("5000"));
@@ -54,8 +59,8 @@ contract('Pair', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
-    tx = await vault.deploy(pairMaster.address, initData);
+    tx = await bentoFactory.createPair(a.address, b.address, oracle.address, oracleData);
+    //tx = await vault.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
