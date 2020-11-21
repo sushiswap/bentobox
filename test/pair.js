@@ -1,10 +1,9 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const Vault = artifacts.require("Vault");
+const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
-const BentoFactory = artifacts.require("BentoFactory");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -17,15 +16,15 @@ function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
 }
 
-async function logStatus(vault, pair, a, b, alice, bob) {
-    console.log('Vault contract');
-    console.log('A', (await a.balanceOf(vault.address)).toString(), 'of', (await a.totalSupply()).toString());
-    console.log('B', (await b.balanceOf(vault.address)).toString(), 'of', (await b.totalSupply()).toString());
-    console.log('P', (await pair.balanceOf(vault.address)).toString(), 'of', (await pair.totalSupply()).toString());
+async function logStatus(bentoBox, pair, a, b, alice, bob) {
+    console.log('BentoBox contract');
+    console.log('A', (await a.balanceOf(bentoBox.address)).toString(), 'of', (await a.totalSupply()).toString());
+    console.log('B', (await b.balanceOf(bentoBox.address)).toString(), 'of', (await b.totalSupply()).toString());
+    console.log('P', (await pair.balanceOf(bentoBox.address)).toString(), 'of', (await pair.totalSupply()).toString());
     console.log();
     console.log('Pair contract');
-    console.log('A in vault', (await vault.shareOf(a.address, pair.address)).toString(), 'of', (await vault.totalShare(a.address)).toString(), 'total balance is', (await vault.totalBalance(a.address)).toString());
-    console.log('B in vault', (await vault.shareOf(b.address, pair.address)).toString(), 'of', (await vault.totalShare(b.address)).toString(), 'total balance is', (await vault.totalBalance(b.address)).toString());
+    console.log('A in bentoBox', (await bentoBox.shareOf(a.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(a.address)).toString(), 'total balance is', (await bentoBox.totalBalance(a.address)).toString());
+    console.log('B in bentoBox', (await bentoBox.shareOf(b.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(b.address)).toString(), 'total balance is', (await bentoBox.totalBalance(b.address)).toString());
     console.log();
     console.log('Alice');
     console.log('A', (await a.balanceOf(alice)).toString());
@@ -44,7 +43,7 @@ contract('LendingPair', (accounts) => {
   let b;
   let pair_address;
   let pair;
-  let vault;
+  let bentoBox;
   let bentoFactory;
   let swapper;
   const alice = accounts[1];
@@ -54,16 +53,15 @@ contract('LendingPair', (accounts) => {
   const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
 
   before(async () => {
-    vault = await Vault.deployed();
+    bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
-    bentoFactory = await BentoFactory.deployed();
 
     a = await TokenA.new({ from: accounts[0] });
     b = await TokenB.new({ from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
-    await vault.setSwapper(swapper.address, true);
+    await pairMaster.setSwapper(swapper.address, true);
 
     let tx = await factory.createPair(a.address, b.address);
     let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
@@ -77,11 +75,11 @@ contract('LendingPair', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    await vault.setMasterContractApproval(pairMaster.address, true, { from: alice });
-    await vault.setMasterContractApproval(pairMaster.address, true, { from: bob });
+    await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
+    await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
-    tx = await vault.deploy(pairMaster.address, initData);
+    tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
@@ -99,7 +97,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should take a deposit of assets', async () => {
-    await b.approve(vault.address, e18(300), { from: bob });
+    await b.approve(bentoBox.address, e18(300), { from: bob });
     await pair.addAsset(e18(300), { from: bob });
   });
 
@@ -171,7 +169,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should take a deposit of collateral', async () => {
-    await a.approve(vault.address, e18(100), { from: alice });
+    await a.approve(bentoBox.address, e18(100), { from: alice });
     await pair.addCollateral(e18(100), { from: alice });
   });
 
@@ -199,7 +197,7 @@ contract('LendingPair', (accounts) => {
   })
 
   it('should not allow open liquidate yet', async () => {
-    await b.approve(vault.address, e18(25), { from: bob });
+    await b.approve(bentoBox.address, e18(25), { from: bob });
     await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
   });
 
@@ -214,12 +212,12 @@ contract('LendingPair', (accounts) => {
   })
 
   it('should allow open liquidate', async () => {
-    await b.approve(vault.address, e18(25), { from: bob });
+    await b.approve(bentoBox.address, e18(25), { from: bob });
     await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
   });
 
   it('should allow repay', async () => {
-    await b.approve(vault.address, e18(100), { from: alice });
+    await b.approve(bentoBox.address, e18(100), { from: alice });
     await pair.repay(e18(50), { from: alice });
   });
 

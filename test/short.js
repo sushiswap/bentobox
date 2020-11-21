@@ -1,12 +1,11 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 
-const Vault = artifacts.require("Vault");
+const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
-const BentoFactory = artifacts.require("BentoFactory");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
@@ -20,7 +19,7 @@ contract('Pair (Shorting)', (accounts) => {
   let b;
   let pair_address;
   let pair;
-  let vault;
+  let bentoBox;
   let bentoFactory;
   let swapper;
   const alice = accounts[1];
@@ -28,16 +27,15 @@ contract('Pair (Shorting)', (accounts) => {
   const dummy = accounts[4];
 
   before(async () => {
-    vault = await Vault.deployed();
+    bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
-    bentoFactory = await BentoFactory.deployed();
 
     a = await TokenA.new({ from: accounts[0] });
     b = await TokenB.new({ from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
-    await vault.setSwapper(swapper.address, true);
+    await pairMaster.setSwapper(swapper.address, true);
 
     let tx = await factory.createPair(a.address, b.address);
     let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
@@ -51,11 +49,11 @@ contract('Pair (Shorting)', (accounts) => {
     oracle = await TestOracle.new({ from: accounts[0] });
     let oracleData = await oracle.getInitData("1000000000000000000");
 
-    await vault.setMasterContractApproval(pairMaster.address, true, { from: alice });
-    await vault.setMasterContractApproval(pairMaster.address, true, { from: bob });
+    await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
+    await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
-    tx = await vault.deploy(pairMaster.address, initData);
+    tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
 
@@ -63,10 +61,10 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it('should take deposits', async () => {
-    await a.approve(vault.address, e18(100), { from: alice });
+    await a.approve(bentoBox.address, e18(100), { from: alice });
     await pair.addCollateral(e18(100), { from: alice });
 
-    await b.approve(vault.address, e18(1000), { from: bob });
+    await b.approve(bentoBox.address, e18(1000), { from: bob });
     await pair.addAsset(e18(1000), { from: bob });
   });
 

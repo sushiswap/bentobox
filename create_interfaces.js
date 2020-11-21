@@ -79,9 +79,6 @@ function createInterface(name) {
             if (contracts[i] == "IOracle") {
                 header.push('import "./IOracle.sol";');
             }
-            if (contracts[i] == "IVault") {
-                header.push('import "./IVault.sol";');
-            }
             if (contracts[i] == "ILendingPair") {
                 header.push('import "./ILendingPair.sol";');
             }
@@ -94,4 +91,4 @@ function createInterface(name) {
 }
 
 createInterface("LendingPair");
-createInterface("Vault");
+createInterface("BentoBox");

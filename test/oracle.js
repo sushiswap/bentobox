@@ -3,7 +3,7 @@ const timeWarp = require("./helpers/timeWarp");
 const AssertionError = require('./helpers/assertion-error');
 const {e18} = require('./helpers/utils');
 
-const Vault = artifacts.require("Vault");
+const BentoBox = artifacts.require("BentoBox");
 const PeggedOracle = artifacts.require("PeggedOracle");
 
 contract('PeggedOracle', (accounts) => {

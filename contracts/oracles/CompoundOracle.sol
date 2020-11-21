@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
-import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 
 interface IUniswapAnchoredView {
@@ -10,6 +9,8 @@ interface IUniswapAnchoredView {
 
 contract CompoundOracle is IOracle {
     using BoringMath for uint256;
+
+    IUniswapAnchoredView constant private oracle = IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1);
 
     struct PairInfo {
         string collateralSymbol;
@@ -22,21 +23,23 @@ contract CompoundOracle is IOracle {
         uint128 blockNumber;
     }
 
-    mapping(address => PairInfo) pairs; // Map of pairs and their info
     mapping(string => PriceInfo) prices;
+    mapping(address => PairInfo) pairs; // Map of pairs and their info
 
     function _peekPrice(string memory symbol) internal view returns(uint256) {
+        if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number + 8 > info.blockNumber) {
-            return uint128(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+            return uint128(oracle.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
         }
         return info.price;
     }
 
     function _getPrice(string memory symbol) internal returns(uint256) {
+        if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number + 8 > info.blockNumber) {
-            info.price = uint128(IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1).price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+            info.price = uint128(oracle.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
             info.blockNumber = uint128(block.number); // Blocknumber will fit in uint128
             prices[symbol] = info;
         }
@@ -54,6 +57,7 @@ contract CompoundOracle is IOracle {
     }
 
     // Encodes the initialization data
+    // Use an empty string for any USD symbol, such as USDT as they are pegged 1:1 to USD in compound anyway
     function getInitData(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public pure returns (bytes memory) {
         return abi.encodeWithSignature("init(string,string,uint256)", collateralSymbol, assetSymbol, division);
     }

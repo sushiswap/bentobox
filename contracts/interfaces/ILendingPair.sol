@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 import "./IOracle.sol";
-import "./IVault.sol";
+import "./IERC20.sol";
+import "../BentoBox.sol";
 
 interface ILendingPair {
     event AddAsset(address indexed user, uint256 amount, uint256 share);
@@ -35,10 +36,10 @@ interface ILendingPair {
     function transferFrom(address from, address to, uint256 amount) external returns (bool success);
     function userBorrowShare(address) external view returns (uint256);
     function userCollateral(address) external view returns (uint256);
-    function vault() external view returns (IVault);
+    function bentoBox() external view returns (BentoBox);
     function decimals() external view returns (uint8);
     function init(IERC20 collateral_address, IERC20 asset_address, IOracle oracle_address, bytes calldata oracleData) external;
-    function setVault(address vault_) external;
+    function setBentoBox(address bentoBox_, address masterContract_) external;
     function getInitData(
         IERC20 collateral_address, IERC20 asset_address,
         IOracle oracle_address, bytes calldata oracleData) external pure returns (bytes memory);

@@ -4,10 +4,12 @@ pragma solidity ^0.6.12;
 // Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
 // Edited by BoringCrypto
 
-contract Ownable {
+contract OwnableData {
     address public owner;
     address public pendingOwner;
+}
 
+contract Ownable is OwnableData {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     constructor () internal {

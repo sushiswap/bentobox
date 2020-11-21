@@ -5,7 +5,7 @@ const AssertionError = require('./helpers/assertion-error');
 
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
-const Vault = artifacts.require("Vault");
+const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
@@ -15,7 +15,7 @@ const token0Amount = e18(5);
 const token1Amount = e18(10);
 
 contract('SimpleSLPOracle', (accounts) => {
-  let vault;
+  let bentoBox;
   let pairMaster;
   let a;
   let b;
@@ -30,7 +30,7 @@ contract('SimpleSLPOracle', (accounts) => {
   }
 
   beforeEach(async () => {
-    vault = await Vault.deployed();
+    bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
     a = await TokenA.new({ from: accounts[0] });
@@ -46,7 +46,7 @@ contract('SimpleSLPOracle', (accounts) => {
     let oracleData = await oracle.getInitData(factory.address);
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
-    tx = await vault.deploy(pairMaster.address, initData);
+    tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
   });
 

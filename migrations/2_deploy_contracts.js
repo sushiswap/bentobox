@@ -1,6 +1,5 @@
-const Vault = artifacts.require("Vault");
+const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
-const BentoFactory = artifacts.require("BentoFactory");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 
 function e18(amount) {
@@ -8,12 +7,11 @@ function e18(amount) {
 }
 
 module.exports = async function (deployer, network, accounts) {
-  await deployer.deploy(Vault);
+  await deployer.deploy(BentoBox);
   await deployer.deploy(Pair);
 
   // Get the contracts
-  let vault = await Vault.deployed();
+  let bentoBox = await BentoBox.deployed();
   let pairMaster = await Pair.deployed();
-  await deployer.deploy(BentoFactory, vault.address, pairMaster.address);
-  let bentoFactory = await BentoFactory.deployed();
+  pairMaster.setBentoBox(bentoBox.address, pairMaster.address);
 };

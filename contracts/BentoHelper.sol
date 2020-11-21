@@ -2,6 +2,7 @@
 pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 import "./interfaces/IERC20.sol";
+import "./BentoBox.sol";
 import "./interfaces/ILendingPair.sol";
 import "./interfaces/IOracle.sol";
 
@@ -9,7 +10,7 @@ contract BentoHelper {
     struct PairInfo {
         ILendingPair pair;
         IOracle oracle;
-        IVault vault;
+        BentoBox bentoBox;
         IERC20 tokenAsset;
         IERC20 tokenCollateral;
 
@@ -44,7 +45,7 @@ contract BentoHelper {
             ILendingPair pair = pairs[i];
             info[i].pair = pair;
             info[i].oracle = pair.oracle();
-            info[i].vault = pair.vault();
+            info[i].bentoBox = pair.bentoBox();
             info[i].tokenAsset = pair.asset();
             info[i].tokenCollateral = pair.collateral();
 
@@ -68,8 +69,8 @@ contract BentoHelper {
 
             info[i].userAssetBalance = info[i].tokenAsset.balanceOf(user);
             info[i].userCollateralBalance = info[i].tokenCollateral.balanceOf(user);
-            info[i].userAssetAllowance = info[i].tokenAsset.allowance(user, address(info[i].vault));
-            info[i].userCollateralAllowance = info[i].tokenCollateral.allowance(user, address(info[i].vault));
+            info[i].userAssetAllowance = info[i].tokenAsset.allowance(user, address(info[i].bentoBox));
+            info[i].userCollateralAllowance = info[i].tokenCollateral.allowance(user, address(info[i].bentoBox));
         }
     }
 }

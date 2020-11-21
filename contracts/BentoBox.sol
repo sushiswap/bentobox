@@ -6,42 +6,28 @@ pragma experimental ABIEncoderV2;
 import "./libraries/BoringMath.sol";
 import "./libraries/Ownable.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IWETH.sol";
 import "./interfaces/ILendingPair.sol";
+import "./interfaces/IFlashLoaner.sol";
 
-interface IWETH {
-    function deposit() external payable;
-    function withdraw(uint256) external;
-}
-
-interface IMasterContract {
-    // JSON with information about the master contract
-    function contractInfo() external view returns (string memory);
-}
-
-interface IFlashLoaner {
-    function executeOperation(IERC20 token, uint256 amount, uint256 fee, bytes calldata params) external;
-}
-
-// The BentoBox Vault
+// The BentoBox
 // This contract stores the funds, handles their transfers. Also takes care of fees and flash loans.
-contract Vault is Ownable {
+contract BentoBox is Ownable {
     using BoringMath for uint256;
 
-    event SwapperSet(address swapper, bool enabled);
-    event Created(address indexed masterContract, bytes data, address clone_address);
-    event FlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
+    event InfoChanged(address indexed masterContract, bytes indexed key, bytes indexed value);
+    event Created(address indexed masterContract, bytes data, address indexed clone_address);
+    event FlashLoaned(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
 
-    mapping(address => IMasterContract) public getMasterContract;
-    mapping(address => bool) public swappers; // Map of allowed Swappers.
+    mapping(address => address) public getMasterContract;
 
-    mapping(IMasterContract => mapping(address => bool)) public masterContractApproved;
+    mapping(address => mapping(address => bool)) public masterContractApproved;
     mapping(IERC20 => mapping(address => uint256)) public shareOf; // Balance per token per address/contract
     mapping(IERC20 => uint256) public totalShare; // Total share per token
     mapping(IERC20 => uint256) public totalBalance; // Total balance per token
     address public feeTo;
     address public dev = 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E;
-    // TODO: should we deploy our own WETH?
-    IERC20 private weth = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 private WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     // Deploys a given master Contract as a clone.
     function deploy(address masterContract, bytes calldata data) public {
@@ -56,11 +42,11 @@ contract Vault is Ownable {
             mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
             clone_address := create(0, clone, 0x37)
         }
-        getMasterContract[clone_address] = IMasterContract(masterContract);
+        getMasterContract[clone_address] = masterContract;
 
         (bool success,) = clone_address.call(data);
         require(success, 'BentoBox: contract init failed.');
-        ILendingPair(clone_address).setVault(address(this));
+        ILendingPair(clone_address).setBentoBox(address(this), masterContract);
 
         emit Created(masterContract, data, clone_address);
     }    
@@ -76,7 +62,7 @@ contract Vault is Ownable {
     }
 
     // *** Public actions *** //
-    function setMasterContractApproval(IMasterContract masterContract, bool approved) public {
+    function setMasterContractApproval(address masterContract, bool approved) public {
         masterContractApproved[masterContract][msg.sender] = approved;
     }
 
@@ -86,7 +72,6 @@ contract Vault is Ownable {
     }
 
     // TODO: depositWithPermit
-
     function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { return deposit(token, from, msg.sender, amount); }
     function deposit(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
@@ -145,39 +130,22 @@ contract Vault is Ownable {
         IFlashLoaner(user).executeOperation(token, amount, fee, params);
         _deposit(token, user, address(this), total, toShare(token, total));
 
-        emit FlashLoan(user, token, amount, fee);
+        emit FlashLoaned(user, token, amount, fee);
     }
 
-    // *** Admin function *** //
-    // Disables / enables a given Swapper. If the Swapper doesn't exist yet, it gets added to the map.
-    function setSwapper(address swapper, bool enabled) public onlyOwner {
-        swappers[swapper] = enabled;
-        emit SwapperSet(swapper, enabled);
-    }
+    // *** Admin functions *** //
+    function setWETH(IERC20 newWETH) public onlyOwner { WETH = newWETH; }  // TODO: Hardcode WETH on final deploy
+    function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
+    function setDev(address newDev) public { require(msg.sender == dev, 'BentoBox: Not dev'); dev = newDev; }
 
-    // Change the weth address
-    function setWeth(IERC20 newWeth) public onlyOwner {
-        weth = newWeth;
-    }
-
-    // Change the fee address
-    function setFeeTo(address newFeeTo) public onlyOwner {
-        feeTo = newFeeTo;
-    }
-
-    // Change the devfee address
-    function setDev(address newDev) public {
-        require(msg.sender == dev, 'BentoBox: Not dev');
-        dev = newDev;
-    }
-
+    // *** Internal functions *** //
     function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
         shareOf[token][to] = shareOf[token][to].add(share);
         totalShare[token] = totalShare[token].add(share);
         totalBalance[token] = totalBalance[token].add(amount);
 
-        if (address(token) == address(weth)) {
-            IWETH(address(weth)).deposit{value: msg.value}();
+        if (address(token) == address(WETH)) {
+            IWETH(address(WETH)).deposit{value: msg.value}();
         } else {
             (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
@@ -188,8 +156,8 @@ contract Vault is Ownable {
         shareOf[token][from] = shareOf[token][from].sub(share);
         totalShare[token] = totalShare[token].sub(share);
         totalBalance[token] = totalBalance[token].sub(amount);
-        if (address(token) == address(weth)) {
-            IWETH(address(weth)).withdraw(amount);
+        if (address(token) == address(WETH)) {
+            IWETH(address(WETH)).withdraw(amount);
             (bool success,) = to.call{value: amount}(new bytes(0));
             require(success, "BentoBox: ETH transfer failed");
         } else {
