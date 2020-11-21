@@ -46,7 +46,7 @@ contract BentoHelper {
             info[i].oracle = pair.oracle();
             info[i].vault = pair.vault();
             info[i].tokenAsset = pair.asset();
-            info[i].tokenCollateral = pair.tokenCollateral();
+            info[i].tokenCollateral = pair.collateral();
 
             info[i].latestExchangeRate = info[i].oracle.peek(address(pair));
             info[i].lastBlockAccrued = pair.lastBlockAccrued();

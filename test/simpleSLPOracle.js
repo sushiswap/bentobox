@@ -42,8 +42,8 @@ contract('SimpleSLPOracle', (accounts) => {
     pair = await UniswapV2Pair.at(tx.logs[0].args.pair);
 
     await addLiquidity();
-    oracle = await SimpleSLPOracle.new(factory.address, a.address, b.address);
-    let oracleData = await oracle.getInitData();
+    oracle = await SimpleSLPOracle.new();
+    let oracleData = await oracle.getInitData(factory.address);
 
     let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await vault.deploy(pairMaster.address, initData);
@@ -53,21 +53,15 @@ contract('SimpleSLPOracle', (accounts) => {
   it('update', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
     await timeWarp.advanceTime(30);
-    await truffleAssert.reverts(oracle.update(), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
+    await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
     await timeWarp.advanceTime(31);
-    await oracle.update();
+    await oracle.update(bentoPair.address);
     await timeWarp.advanceTime(61);
-    await oracle.update();
+    await oracle.update(bentoPair.address);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
-
-    const token0 = await oracle.token0();
-    if(token0 === a.address){
-      assert.equal((await oracle.price0Average()).toString(), expectedPrice[0].toString());
-      assert.equal((await oracle.peek(bentoPair.address)).toString(), token0Amount.div(new web3.utils.BN(10)).toString());
-    } else {
-      assert.equal((await oracle.price0Average()).toString(), expectedPrice[1].toString());
-      assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.div(new web3.utils.BN(10)).toString());
-    }
+    const pairInfo = await oracle.pairs(bentoPair.address);
+    assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
+    assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
   });
 });
