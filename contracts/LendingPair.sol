@@ -112,15 +112,9 @@ contract LendingPair is ERC20, Ownable {
         swappers[swapper] = enable;
     }
 
-    // Encodes the initialization data
-    function getInitData(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData)
-        public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(address,address,address,bytes)", collateral_, asset_, oracle_address, oracleData);
-    }
-
     function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
     function setDev(address newDev) public { require(msg.sender == dev, 'BentoBox: Not dev'); dev = newDev; }
-
+    
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
         // Number of blocks since accrue was called

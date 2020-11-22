@@ -19,10 +19,6 @@ contract TestOracle is IOracle {
         rate[pair] = rate_;
     }
 
-    function getInitData(uint256 rate_) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(uint256)", rate_);
-    }
-
     // Get the latest exchange rate
     function get(address pair) public override returns (bool, uint256) {
         uint256 _rate = rate[pair];

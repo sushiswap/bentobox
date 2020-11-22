@@ -1,6 +1,10 @@
+const fs = require('fs');
 const timeWarp = require("./helpers/timeWarp");
 const truffleAssert = require('./helpers/truffle-assertions');
 const {e18, encodePrice} = require("./helpers/utils");
+const { oracle } = require("../build/contracts/SimpleSLPOracle.json");
+const lendingPair = JSON.parse(fs.readFileSync("./build/contracts/LendingPair.json", "utf8"));
+const {getInitData} = require("./helpers/getInitData");
 const AssertionError = require('./helpers/assertion-error');
 
 const TokenA = artifacts.require("TokenA");
@@ -44,35 +48,10 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await addLiquidity();
     oracle = await SimpleSLPOracle.new();
-    oracleData = await oracle.getInitData(pair.address, a.address);
-
-    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    oracleData = getInitData(oracle.abi, [pair.address, a.address]);
+    let initData = getInitData(lendingPair.abi, [a.address, b.address, oracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
-  });
-
-  it('getInitData should return correct result', async () => {
-    let abiSignature = web3.eth.abi.encodeFunctionCall(
-      {
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "pair",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "collateral",
-            "type": "address"
-          }
-        ],
-        "name": "init",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      }, [pair.address, a.address]
-    );
-    assert.equal(oracleData, abiSignature);
   });
 
   it('update', async () => {

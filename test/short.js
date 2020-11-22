@@ -1,3 +1,4 @@
+const fs = require('fs');
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 
@@ -9,6 +10,9 @@ const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
+const lendingPair = JSON.parse(fs.readFileSync("./build/contracts/LendingPair.json", "utf8"));
+const testOracle = JSON.parse(fs.readFileSync("./build/contracts/TestOracle.json", "utf8"));
+const {getInitData} = require("./helpers/getInitData");
 
 function e18(amount) {
   return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
@@ -47,12 +51,12 @@ contract('Pair (Shorting)', (accounts) => {
     await b.transfer(bob, e18(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
-    let oracleData = await oracle.getInitData("1000000000000000000");
+    let oracleData = getInitData(testOracle.abi, ["1000000000000000000"]);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+    let initData = getInitData(lendingPair.abi, [a.address, b.address, oracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);

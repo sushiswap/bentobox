@@ -31,11 +31,6 @@ contract ChainlinkOracle is IOracle {
         }
     }
 
-    // Encodes the initialization data
-    function getInitData(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(address,address,uint256)", multiply, divide, decimals);
-    }
-
     // Calculates the lastest exchange rate
     // Uses both divide and multiply only for tokens not supported directly by ChainLink, for example MKR/USD
     function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
