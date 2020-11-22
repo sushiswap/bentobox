@@ -10,6 +10,7 @@ pragma solidity ^0.6.12;
 import "./libraries/BoringMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
+import "./libraries/Ownable.sol";
 import "./BentoBox.sol";
 import "./ERC20.sol";
 
@@ -36,6 +37,9 @@ contract LendingPair is ERC20, Ownable {
     // Keep at the top in this order for delegate calls to be able to access them
     BentoBox public bentoBox;
     LendingPair public masterContract;
+    address public feeTo;
+    address public dev;
+
     IERC20 public collateral;
     IERC20 public asset;
 
@@ -78,6 +82,11 @@ contract LendingPair is ERC20, Ownable {
     event RemoveAsset(address indexed user, uint256 amount, uint256 share);
     event RemoveBorrow(address indexed user, uint256 amount, uint256 share);
 
+    constructor() public {
+        dev = msg.sender;
+        feeTo = msg.sender;
+    }
+
     // Serves as the constructor, as clones can't have a regular constructor
     function init(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData) public {
         require(address(bentoBox) == address(0), 'BentoBox: already initialized');
@@ -109,6 +118,9 @@ contract LendingPair is ERC20, Ownable {
         return abi.encodeWithSignature("init(address,address,address,bytes)", collateral_, asset_, oracle_address, oracleData);
     }
 
+    function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
+    function setDev(address newDev) public { require(msg.sender == dev, 'BentoBox: Not dev'); dev = newDev; }
+
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
         // Number of blocks since accrue was called
@@ -129,8 +141,8 @@ contract LendingPair is ERC20, Ownable {
         uint256 fees = feesPending.sub(1);
         uint256 devFee = fees / 10; // 10% dev fee (of 10%)
         feesPending = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
-        bentoBox.withdrawShare(asset, bentoBox.feeTo(), fees.sub(devFee));
-        bentoBox.withdrawShare(asset, bentoBox.dev(), devFee);
+        bentoBox.withdrawShare(asset, feeTo, fees.sub(devFee));
+        bentoBox.withdrawShare(asset, dev, devFee);
     }
 
     // Checks if the user is solvent.
@@ -289,7 +301,9 @@ contract LendingPair is ERC20, Ownable {
         require(amount <= totalAsset.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
         updateInterestRate();
-        _addBorrow(msg.sender, bentoBox.withdraw(asset, to, amount));
+        uint256 fee = amount.mul(5) / 10000; // A flat 0.05% fee is charged for any borrow
+        _addBorrow(msg.sender, bentoBox.withdraw(asset, to, amount).add(fee));
+        totalAsset = totalAsset.add(fee);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
