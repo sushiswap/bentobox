@@ -114,7 +114,7 @@ contract LendingPair is ERC20, Ownable {
 
     function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
     function setDev(address newDev) public { require(msg.sender == dev, 'BentoBox: Not dev'); dev = newDev; }
-    
+
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
         // Number of blocks since accrue was called
