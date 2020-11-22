@@ -40,9 +40,6 @@ interface ILendingPair {
     function decimals() external view returns (uint8);
     function init(IERC20 collateral_address, IERC20 asset_address, IOracle oracle_address, bytes calldata oracleData) external;
     function setBentoBox(address bentoBox_, address masterContract_) external;
-    function getInitData(
-        IERC20 collateral_address, IERC20 asset_address,
-        IOracle oracle_address, bytes calldata oracleData) external pure returns (bytes memory);
     function accrue() external;
     function withdrawFees() external;
     function isSolvent(address user, bool open) external view returns (bool);
