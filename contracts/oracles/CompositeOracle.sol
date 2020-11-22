@@ -11,30 +11,32 @@ contract CompositeOracle is IOracle {
 
     struct PathInfo {
         address firstOracle;
-        address firstPair;
         address secondOracle;
-        address secondPair;
     }
 
     mapping(address => PathInfo) public paths; // Map of pairs and their path
 
     function init(
         address firstOracle,
-        address firstPairAddress,
+        bytes calldata firstOracleData,
         address secondOracle,
-        address secordPairAddress) public {
-        ILendingPair firstPair = ILendingPair(firstPairAddress);
-        ILendingPair secondPair = ILendingPair(secordPairAddress);
-        require(address(firstPair.asset()) == address(secondPair.collateral()), "CompositeOracle: route does not connect");
-        paths[msg.sender] = PathInfo(firstOracle, firstPairAddress, secondOracle, secordPairAddress);
+        bytes calldata secondOracleData) public {
+        if (paths[msg.sender].firstOracle == address(0)) {
+            bool success;
+            (success,) = firstOracle.call(firstOracleData);
+            require(success, 'CompositeOracle: oracle init failed.');
+            (success,) = secondOracle.call(secondOracleData);
+            require(success, 'CompositeOracle: oracle init failed.');
+            paths[msg.sender] = PathInfo(firstOracle, secondOracle);        
+        }
     }
 
     function getInitData(
         address firstOracle,
-        address firstPairAddress,
+        bytes calldata firstOracleData,
         address secondOracle,
-        address secordPairAddress) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(address,address,address,address)", firstOracle, firstPairAddress, secondOracle, secordPairAddress);
+        bytes calldata secondOracleData) public pure returns (bytes memory) {
+        return abi.encodeWithSignature("init(address,bytes,address,bytes)", firstOracle, firstOracleData, secondOracle, secondOracleData);
     }
 
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
@@ -42,15 +44,15 @@ contract CompositeOracle is IOracle {
         PathInfo memory path = paths[bentoPairAddress];
         uint256 firstPrice;
         uint256 secondPrice;
-        (,firstPrice) = IOracle(path.firstOracle).get(path.firstPair);
-        (,secondPrice) = IOracle(path.secondOracle).get(path.secondPair);
+        (,firstPrice) = IOracle(path.firstOracle).get(address(this));
+        (,secondPrice) = IOracle(path.secondOracle).get(address(this));
         amountOut = firstPrice.mul(secondPrice) / 10**18;
     }
 
     // Check the last exchange rate without any state changes
     function peek(address bentoPairAddress) public view override returns (uint256 amountOut) {
         PathInfo memory path = paths[bentoPairAddress];
-        amountOut = IOracle(path.firstOracle).peek(path.firstPair).mul(IOracle(path.secondOracle).peek(path.secondPair)) / 10**18;
+        amountOut = IOracle(path.firstOracle).peek(address(this)).mul(IOracle(path.secondOracle).peek(address(this))) / 10**18;
     }
 
 }
