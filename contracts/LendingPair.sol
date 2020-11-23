@@ -141,8 +141,8 @@ contract LendingPair is ERC20, Ownable {
         uint256 fees = feesPending.sub(1);
         uint256 devFee = fees / 10; // 10% dev fee (of 10%)
         feesPending = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
-        bentoBox.withdrawShare(asset, feeTo, fees.sub(devFee));
-        bentoBox.withdrawShare(asset, dev, devFee);
+        bentoBox.withdrawShare(asset, masterContract.feeTo(), fees.sub(devFee));
+        bentoBox.withdrawShare(asset, masterContract.dev(), devFee);
     }
 
     // Checks if the user is solvent.
