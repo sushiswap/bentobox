@@ -192,13 +192,10 @@ contract('BentoBox', (accounts) => {
     await a.approve(bentoBox.address, e18(2), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
 
-    let skim = bentoJSON.abi.find(element => element.name == "skim" && element.inputs.length == 1);
-    skim = web3.eth.abi.encodeFunctionCall(skim, [a.address]);
+    let param = web3.eth.abi.encodeParameter('bool', true);
     let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
-    await bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, skim, { from: maki });
-    console.log("maki", (await a.balanceOf(maki)).toString());
-    console.log("flashLoaner", (await a.balanceOf(flashLoaner.address)).toString());
-    console.log("flashLoaner share", (await bentoBox.shareOf(a.address, flashLoaner.address)).toString());
+    await a.transfer(flashLoaner.address, e18(2), { from: alice });
+    await bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki });
     let amount = await bentoBox.toAmount(a.address, e18(1));
     assert.equal(amount.toString(), e18(1).mul(new web3.utils.BN(1.0005)).toString());
 
