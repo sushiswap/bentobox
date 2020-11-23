@@ -56,12 +56,6 @@ contract CompoundOracle is IOracle {
         }
     }
 
-    // Encodes the initialization data
-    // Use an empty string for any USD symbol, such as USDT as they are pegged 1:1 to USD in compound anyway
-    function getInitData(string calldata collateralSymbol, string calldata assetSymbol, uint256 division) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(string,string,uint256)", collateralSymbol, assetSymbol, division);
-    }
-
     // Calculates the lastest exchange rate
     function _get(string memory collateralSymbol, string memory assetSymbol, uint256 division) private returns (uint256) {
         return uint256(1e36)
