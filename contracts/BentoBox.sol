@@ -53,7 +53,8 @@ contract BentoBox {
 
     // *** View functions *** //
     function toAmount(IERC20 token, uint256 share) public view returns (uint256) {
-        return share.mul(totalBalance[token]) / totalShare[token];
+        uint256 _totalShare = totalShare[token];
+        return _totalShare == 0 ? share : share.mul(totalBalance[token]) / _totalShare;
     }
 
     function toShare(IERC20 token, uint256 amount) public view returns (uint256) {

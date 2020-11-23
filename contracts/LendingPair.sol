@@ -48,6 +48,7 @@ contract LendingPair is ERC20, Ownable {
     mapping(address => uint256) public userBorrowShare;
 
     IOracle public oracle;
+    bytes public oracleData;
     mapping(address => bool) public swappers;
 
     uint256 public totalCollateral;
@@ -88,15 +89,14 @@ contract LendingPair is ERC20, Ownable {
     }
 
     // Serves as the constructor, as clones can't have a regular constructor
-    function init(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData) public {
+    function init(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData_) public {
         require(address(bentoBox) == address(0), 'BentoBox: already initialized');
 
         collateral = collateral_;
         asset = asset_;
 
         oracle = oracle_address;
-        (bool success,) = address(oracle).call(oracleData);
-        require(success, 'BentoBox: oracle init failed.');
+        oracleData = oracleData_;
 
         interestPerBlock = 4566210045;  // 1% APR, with 1e18 being 100%
         lastInterestBlock = block.number;
@@ -154,7 +154,7 @@ contract LendingPair is ERC20, Ownable {
 
     // Gets the exchange rate. How much collateral to buy 1e18 asset.
     function updateExchangeRate() public returns (uint256) {
-        (bool success, uint256 rate) = oracle.get(address(this));
+        (bool success, uint256 rate) = oracle.get(oracleData);
 
         // TODO: How to deal with unsuccessful fetch
         if (success) {

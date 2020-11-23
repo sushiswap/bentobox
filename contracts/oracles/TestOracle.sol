@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
@@ -8,25 +8,20 @@ import "../interfaces/IOracle.sol";
 contract TestOracle is IOracle {
     using BoringMath for uint256;
 
-    mapping(address => uint256) rate;
+    uint256 rate;
 
-    function init(uint256 rate_) public {
-        rate[msg.sender] = rate_;
-    }
-
-    function set(uint256 rate_, address pair) public {
+    function set(uint256 rate_, address) public {
         // The rate can be updated.
-        rate[pair] = rate_;
+        rate = rate_;
     }
 
     // Get the latest exchange rate
-    function get(address pair) public override returns (bool, uint256) {
-        uint256 _rate = rate[pair];
-        return (_rate != 0, _rate);
+    function get(bytes calldata) public override returns (bool, uint256) {
+        return (true, rate);
     }
 
     // Check the last exchange rate without any state changes
-    function peek(address pair) public view override returns (uint256) {
-        return rate[pair];
+    function peek(bytes calldata) public override view returns (bool, uint256) {
+        return (true, rate);
     }
 }

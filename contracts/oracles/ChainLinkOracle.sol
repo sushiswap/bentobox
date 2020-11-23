@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.6.12;
 import "../libraries/BoringMath.sol";
-import "../libraries/Ownable.sol";
 import "../interfaces/IOracle.sol";
 
 // ChainLink Aggregator
@@ -11,25 +10,6 @@ interface IAggregator {
 
 contract ChainlinkOracle is IOracle {
     using BoringMath for uint256; // Keep everything in uint256
-
-    struct SymbolPair {
-        address multiply;   // The ChainLink price to multiply by to get rate
-        address divide;     // The ChainLink price to divide by to get rate
-        uint256 decimals;   // Just pre-calc and store as something like 10000000000000000000000.
-        uint256 rate;
-    }
-
-    mapping(address => SymbolPair) symbols; // Map of pairs and their info
-
-    // Adds a pair and it's data to the pair map
-    function init(address multiply, address divide, uint256 decimals) public {
-        // The rate can only be set once. It cannot be changed.
-        if (symbols[msg.sender].decimals == 0) {
-            symbols[msg.sender].multiply = multiply;
-            symbols[msg.sender].divide = divide;
-            symbols[msg.sender].decimals = decimals;
-        }
-    }
 
     // Calculates the lastest exchange rate
     // Uses both divide and multiply only for tokens not supported directly by ChainLink, for example MKR/USD
@@ -53,20 +33,14 @@ contract ChainlinkOracle is IOracle {
     }
 
     // Get the latest exchange rate
-    function get(address pair) public override returns (bool, uint256) {
-        SymbolPair storage s = symbols[pair];
-        uint256 rate = _get(s.multiply, s.divide, s.decimals);
-        s.rate = rate;
-        return (true, rate);
+    function get(bytes calldata data) public override returns (bool, uint256) {
+        (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
+        return (true, _get(multiply, divide, decimals));
     }
 
     // Check the last exchange rate without any state changes
-    function peek(address pair) public override view returns (uint256) {
-        SymbolPair storage s = symbols[pair];
-        return _get(s.multiply, s.divide, s.decimals);
-    }
-
-    function test(address multiply, address divide, uint256 decimals) public view returns(uint256) {
-        return _get(multiply, divide, decimals);
+    function peek(bytes calldata data) public override view returns (bool, uint256) {
+        (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
+        return (true, _get(multiply, divide, decimals));
     }
 }

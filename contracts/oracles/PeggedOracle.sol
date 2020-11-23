@@ -7,24 +7,15 @@ import "../interfaces/IOracle.sol";
 contract PeggedOracle is IOracle {
     using BoringMath for uint256;
 
-    mapping(address => uint256) rate; // Map of pairs and their prices
-
-    // Adds a pair and it's price to the pair map
-    function init(uint256 rate_) public {
-        // The rate can only be set once. It cannot be changed.
-        if (rate[msg.sender] == 0) {
-            rate[msg.sender] = rate_;
-        }
-    }
-
     // Get the exchange rate
-    function get(address pair) public override returns (bool, uint256) {
-        uint256 _rate = rate[pair];
+    function get(bytes calldata data) public override returns (bool, uint256) {
+        uint256 _rate = abi.decode(data, (uint256));
         return (_rate != 0, _rate);
     }
 
     // Check the exchange rate without any state changes
-    function peek(address pair) public view override returns (uint256) {
-        return rate[pair];
+    function peek(bytes calldata data) public override view returns (bool, uint256) {
+        uint256 _rate = abi.decode(data, (uint256));
+        return (_rate != 0, _rate);
     }
 }
