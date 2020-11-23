@@ -17,11 +17,6 @@ contract PeggedOracle is IOracle {
         }
     }
 
-    // Encodes the initialization data
-    function getInitData(uint256 rate_) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(uint256)", rate_);
-    }
-
     // Get the exchange rate
     function get(address pair) public override returns (bool, uint256) {
         uint256 _rate = rate[pair];

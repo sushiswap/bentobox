@@ -72,10 +72,6 @@ contract SimpleSLPOracle is IOracle {
         require(reserve0 != 0 && reserve1 != 0, 'SimpleSLPOracle: NO_RESERVES'); // ensure that there's liquidity in the pair
     }
 
-    function getInitData(address pair, address collateral) public pure returns (bytes memory) {
-        return abi.encodeWithSignature("init(address,address)", pair, collateral);
-    }
-
     function update(address bentoPair) public {
         (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = currentCumulativePrices(address(pairs[bentoPair].pair));
         uint32 timeElapsed = blockTimestamp - pairs[bentoPair].blockTimestampLast; // overflow is desired
