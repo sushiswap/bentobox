@@ -336,6 +336,7 @@ contract LendingPair is ERC20, Ownable {
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
+    event Data(uint256 amountFromMax, uint256 exactAmountTo, bytes bla);
     // Handles unwinding shorts with an approved swapper
     function unwind(address swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
@@ -345,13 +346,16 @@ contract LendingPair is ERC20, Ownable {
         uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
 
         // Swaps the collateral back for the borrowal asset
+        uint256 amountFromMax = bentoBox.toAmount(collateral, maxAmountCollateral);
+        uint256 exactAmountTo = bentoBox.toAmount(asset, borrowAmount);
         (bool success, bytes memory result) = swapper.delegatecall(
             abi.encodeWithSignature("swapExact(address,address,address,uint256,uint256)", swapper,
             collateral, asset,
-            bentoBox.toAmount(collateral, maxAmountCollateral),
-            bentoBox.toAmount(asset, borrowAmount)));
-        require(success, 'BentoBox: Swap failed');
-        _removeCollateral(msg.sender, abi.decode(result, (uint256)));
+            amountFromMax,
+            exactAmountTo));
+        // require(success, 'BentoBox: Swap failed');
+        emit Data(amountFromMax, exactAmountTo, result);
+        // _removeCollateral(msg.sender, abi.decode(result, (uint256)));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
