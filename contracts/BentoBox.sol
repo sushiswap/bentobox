@@ -66,14 +66,9 @@ contract BentoBox {
 
     // *** Public actions *** //
     function setMasterContractApproval(address masterContract, bool approved) public {
+        require(masterContract != address(0), 'BentoBox: masterContract must be set'); // Important for security
         masterContractApproved[masterContract][msg.sender] = approved;
         emit MasterContractApprovalSet(masterContract, msg.sender, approved);
-    }
-
-    function setMasterContractApprovals(address[] calldata masterContracts, bool approved) public {
-        for (uint256 i=0; i < masterContracts.length; i++) {
-            setMasterContractApproval(masterContracts[i], approved);
-        }
     }
 
     modifier allowed(address from) {
@@ -111,7 +106,6 @@ contract BentoBox {
         return amount;
     }
 
-
     function withdraw(IERC20 token, address to, uint256 amount) public returns (uint256) { return withdraw(token, msg.sender, to, amount); }
     function withdraw(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
@@ -129,6 +123,7 @@ contract BentoBox {
     // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
     function transfer(IERC20 token, address from, address to, uint256 amount) allowed(from) public returns (uint256) {
+        require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         uint256 share = toShare(token, amount);
         shareOf[token][from] = shareOf[token][from].sub(share);
         shareOf[token][to] = shareOf[token][to].add(share);
@@ -136,6 +131,7 @@ contract BentoBox {
     }
 
     function transferMultiple(IERC20 token, address from, address[] calldata tos, uint256[] calldata amounts) allowed(from) public returns (uint256) {
+        require(tos[0] != address(0), 'BentoBox: to[0] not set'); // To avoid a bad UI from burning funds
         uint256 totalShares;
         for (uint256 i=0; i < tos.length; i++) {
             address to = tos[i];
@@ -148,11 +144,13 @@ contract BentoBox {
     }
 
     function transferShare(IERC20 token, address from, address to, uint256 share) allowed(from) public {
+        require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][from] = shareOf[token][from].sub(share);
         shareOf[token][to] = shareOf[token][to].add(share);
     }
 
     function transferMultipleShare(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) allowed(from) public {
+        require(tos[0] != address(0), 'BentoBox: to[0] not set'); // To avoid a bad UI from burning funds
         uint256 totalShares;
         for (uint256 i=0; i < tos.length; i++) {
             address to = tos[i];
@@ -190,8 +188,7 @@ contract BentoBox {
     }
 
     // Take out a flash loan
-    function flashLoan(address user, IERC20 token, uint256 amount, bytes calldata params) public checkEntry {
-        // Calculates the fee - 0.05% of the amount.
+    function flashLoan(IERC20 token, uint256 amount, address user, bytes calldata params) public checkEntry {
         uint256 fee = amount.mul(5) / 10000;
         uint256 total = amount.add(fee);
 
@@ -204,10 +201,33 @@ contract BentoBox {
         emit FlashLoaned(user, token, amount, fee);
     }
 
+    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public checkEntry {
+        uint256[] memory fees = new uint256[](tokens.length);
+        uint256[] memory totals = new uint256[](tokens.length);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            uint256 amount = amounts[i];
+            fees[i] = amount.mul(5) / 10000;
+            totals[i] = amount.add(fees[i]);
+
+            (bool success, bytes memory data) = address(tokens[i]).call(abi.encodeWithSelector(0xa9059cbb, user, amount));
+            require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
+        }
+
+        IFlashLoaner(user).executeOperationMultiple(tokens, amounts, fees, params);
+
+        for (uint i = 0; i < tokens.length; i++) {
+            (bool success, bytes memory data) = address(tokens[i]).call(abi.encodeWithSelector(0x23b872dd, user, address(this), totals[i]));
+            require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
+
+            emit FlashLoaned(user, tokens[i], amounts[i], fees[i]);
+        }
+    }    
+
     function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory, bytes[] memory) {
         bool[] memory successes = new bool[](calls.length);
         bytes[] memory results = new bytes[](calls.length);
-        for (uint256 i=0; i < calls.length; i++) {
+        for (uint256 i = 0; i < calls.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
             require(success || !revertOnFail, 'BentoBox: Transaction failed');
             successes[i] = success;
@@ -222,6 +242,7 @@ contract BentoBox {
     }
     
     function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
+        require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][to] = shareOf[token][to].add(share);
         totalShare[token] = totalShare[token].add(share);
         totalBalance[token] = totalBalance[token].add(amount);
@@ -235,6 +256,7 @@ contract BentoBox {
     }
 
     function _withdraw(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
+        require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][from] = shareOf[token][from].sub(share);
         totalShare[token] = totalShare[token].sub(share);
         totalBalance[token] = totalBalance[token].sub(amount);

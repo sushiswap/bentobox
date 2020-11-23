@@ -7,6 +7,8 @@
 // solium-disable security/no-low-level-calls
 
 pragma solidity ^0.6.12;
+pragma experimental ABIEncoderV2;
+
 import "./libraries/BoringMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
@@ -418,5 +420,17 @@ contract LendingPair is ERC20, Ownable {
                 to);
             bentoBox.deposit(asset, swapper, allBorrowAmount);
         }
+    }
+
+    function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory, bytes[] memory) {
+        bool[] memory successes = new bool[](calls.length);
+        bytes[] memory results = new bytes[](calls.length);
+        for (uint256 i = 0; i < calls.length; i++) {
+            (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
+            require(success || !revertOnFail, 'BentoBox: Transaction failed');
+            successes[i] = success;
+            results[i] = result;
+        }
+        return (successes, results);
     }
 }
