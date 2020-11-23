@@ -22,4 +22,8 @@ contract FlashLoaner is IFlashLoaner{
     //token.approve(address(bentoBox), payback);
     //token.transfer(tx.origin, winnings);
   }
+  function executeOperationMultiple(
+      IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) external override {
+
+      }
 }

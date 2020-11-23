@@ -49,7 +49,7 @@ contract BentoHelper {
             info[i].tokenAsset = pair.asset();
             info[i].tokenCollateral = pair.collateral();
 
-            info[i].latestExchangeRate = info[i].oracle.peek(address(pair));
+            //info[i].latestExchangeRate = info[i].oracle.peek(address(pair));
             info[i].lastBlockAccrued = pair.lastBlockAccrued();
             info[i].totalCollateral = pair.totalCollateral();
             info[i].totalAsset = pair.totalAsset();

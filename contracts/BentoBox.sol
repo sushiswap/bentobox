@@ -196,11 +196,11 @@ contract BentoBox {
         uint256 fee = amount.mul(5) / 10000;
         uint256 total = amount.add(fee);
 
-        //(bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, user, amount));
-        //require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
+        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, user, amount));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
         IFlashLoaner(user).executeOperation(token, amount, fee, params);
-        //(success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), total));
-        //require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
+        (success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), total));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
 
         emit FlashLoaned(user, token, amount, fee);
     }
