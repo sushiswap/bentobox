@@ -17,6 +17,9 @@ contract BentoBox {
     event Created(address indexed masterContract, bytes data, address indexed clone_address);
     event FlashLoaned(address indexed user, IERC20 indexed token, uint256 amount, uint256 fee);
     event MasterContractApprovalSet(address indexed masterContract, address indexed user, bool indexed approved);
+    event Deposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    event Withdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    event Transfer(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     // TODO: Add events for transfers?
 
     mapping(address => address) public getMasterContract; // Mapping from clone contracts to their masterContract
@@ -46,7 +49,7 @@ contract BentoBox {
         }
         getMasterContract[clone_address] = masterContract;
 
-        (bool success,) = clone_address.call(abi.encodeWithSelector(0x23b872dd, data));
+        (bool success,) = clone_address.call(data);
         require(success, 'BentoBox: contract init failed.');
         IMasterContract(clone_address).setBentoBox(address(this), masterContract);
 
@@ -128,6 +131,8 @@ contract BentoBox {
         uint256 share = toShare(token, amount);
         shareOf[token][from] = shareOf[token][from].sub(share);
         shareOf[token][to] = shareOf[token][to].add(share);
+
+        emit Transfer(token, from, to, amount, share);
         return share;
     }
 
@@ -139,27 +144,34 @@ contract BentoBox {
             uint256 share = toShare(token, amounts[i]);
             shareOf[token][to] = shareOf[token][to].add(share);
             totalShares = totalShares.add(share);
+            emit Transfer(token, from, to, amounts[i], share);
         }
         shareOf[token][from] = shareOf[token][from].sub(totalShares);
         return totalShares;
     }
 
-    function transferShare(IERC20 token, address from, address to, uint256 share) allowed(from) public {
+    function transferShare(IERC20 token, address from, address to, uint256 share) allowed(from) public returns (uint256) {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
+        uint256 amount = toAmount(token, share);
         shareOf[token][from] = shareOf[token][from].sub(share);
         shareOf[token][to] = shareOf[token][to].add(share);
+        emit Transfer(token, from, to, amount, share);
+        return amount;
     }
 
-    function transferMultipleShare(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) allowed(from) public {
+    function transferMultipleShare(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) allowed(from) public returns (uint256) {
         require(tos[0] != address(0), 'BentoBox: to[0] not set'); // To avoid a bad UI from burning funds
         uint256 totalShares;
+        uint256 totalAmounts;
         for (uint256 i=0; i < tos.length; i++) {
-            address to = tos[i];
-            uint256 share = shares[i];
-            shareOf[token][to] = shareOf[token][to].add(share);
-            totalShares = totalShares.add(share);
+            uint256 amount = toAmount(token, shares[i]);
+            totalAmounts = totalAmounts.add(amount);
+            totalShares = totalShares.add(shares[i]);
+            shareOf[token][tos[i]] = shareOf[token][tos[i]].add(shares[i]);
+            emit Transfer(token, from, tos[i], amount, shares[i]);
         }
         shareOf[token][from] = shareOf[token][from].sub(totalShares);
+        return totalAmounts;
     }
 
     function skim(IERC20 token) public returns (uint256) { return skim(token, msg.sender); }
@@ -170,6 +182,7 @@ contract BentoBox {
         shareOf[token][to] = shareOf[token][to].add(share);
         totalShare[token] = totalShare[token].add(share);
         totalBalance[token] = totalBalance[token].add(amount);
+        emit Deposit(token, address(this), to, amount, share);
         return share;
     }
 
@@ -257,6 +270,7 @@ contract BentoBox {
             (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
         }
+        emit Deposit(token, from, to, amount, share);
     }
 
     function _withdraw(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
@@ -272,5 +286,6 @@ contract BentoBox {
             (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
         }
+        emit Withdraw(token, from, to, amount, share);
     }
 }

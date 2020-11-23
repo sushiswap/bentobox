@@ -154,6 +154,10 @@ contract LendingPair is ERC20, Ownable {
         return userCollateral[user].mul(open ? 77000 : 75000) / 1e5 >= borrow.mul(exchangeRate) / 1e18;
     }
 
+    function peekExchangeRate() public view returns (bool, uint256) {
+        return oracle.peek(oracleData);
+    }
+
     // Gets the exchange rate. How much collateral to buy 1e18 asset.
     function updateExchangeRate() public returns (uint256) {
         (bool success, uint256 rate) = oracle.get(oracleData);
