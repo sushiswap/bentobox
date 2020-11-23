@@ -80,45 +80,45 @@ contract BentoBox {
         _;
     }
 
-    function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { return deposit(token, from, msg.sender, amount); }
-    function deposit(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
+    function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { return depositTo(token, from, msg.sender, amount); }
+    function depositTo(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _deposit(token, from, to, amount, share);
         return share;
     }
 
-    function depositShare(IERC20 token, address from, uint256 share) public returns (uint256) { return depositShare(token, from, msg.sender, share); }
-    function depositShare(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
+    function depositShare(IERC20 token, address from, uint256 share) public returns (uint256) { return depositShareTo(token, from, msg.sender, share); }
+    function depositShareTo(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
         uint256 amount = toAmount(token, share);
         _deposit(token, from, to, amount, share);
         return amount;
     }
 
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public returns (uint256) { return depositWithPermit(token, from, msg.sender, amount, deadline, v, r, s); }
-    function depositWithPermit(IERC20 token, address from, address to, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public allowed(from) returns (uint256) {
+    function depositWithPermit(IERC20 token, address from, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public returns (uint256) { return depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); }
+    function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _approveWithPermit(token, from, amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
         return share;
     }
 
-    function depositShareWithPermit(IERC20 token, address from, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public returns (uint256) { return depositShareWithPermit(token, from, msg.sender, share, deadline, v, r, s); }
-    function depositShareWithPermit(IERC20 token, address from, address to, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public allowed(from) returns (uint256) {
+    function depositShareWithPermit(IERC20 token, address from, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public returns (uint256) { return depositShareWithPermitTo(token, from, msg.sender, share, deadline, v, r, s); }
+    function depositShareWithPermitTo(IERC20 token, address from, address to, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public allowed(from) returns (uint256) {
         uint256 amount = toAmount(token, share);
         _approveWithPermit(token, from, amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
         return amount;
     }
 
-    function withdraw(IERC20 token, address to, uint256 amount) public returns (uint256) { return withdraw(token, msg.sender, to, amount); }
-    function withdraw(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
+    function withdraw(IERC20 token, address to, uint256 amount) public returns (uint256) { return withdrawFrom(token, msg.sender, to, amount); }
+    function withdrawFrom(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _withdraw(token, from, to, amount, share);
         return share;
     }
 
-    function withdrawShare(IERC20 token, address to, uint256 share) public returns (uint256) { return withdrawShare(token, msg.sender, to, share); }
-    function withdrawShare(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
+    function withdrawShare(IERC20 token, address to, uint256 share) public returns (uint256) { return withdrawShareFrom(token, msg.sender, to, share); }
+    function withdrawShareFrom(IERC20 token, address from, address to, uint256 share) public allowed(from) returns (uint256) {
         uint256 amount = toAmount(token, share);
         _withdraw(token, from, to, amount, share);
         return amount;
@@ -174,8 +174,8 @@ contract BentoBox {
         return totalAmounts;
     }
 
-    function skim(IERC20 token) public returns (uint256) { return skim(token, msg.sender); }
-    function skim(IERC20 token, address to) public returns (uint256) {
+    function skim(IERC20 token) public returns (uint256) { return skimTo(token, msg.sender); }
+    function skimTo(IERC20 token, address to) public returns (uint256) {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         uint256 amount = token.balanceOf(address(this)).sub(totalBalance[token]);
         uint256 share = toShare(token, amount);
@@ -186,10 +186,10 @@ contract BentoBox {
         return share;
     }
 
-    function skimETH() public returns (uint256) { return skimETH(msg.sender); }
-    function skimETH(address to) public returns (uint256) {
+    function skimETH() public returns (uint256) { return skimETHTo(msg.sender); }
+    function skimETHTo(address to) public returns (uint256) {
         IWETH(address(WETH)).deposit{value: address(this).balance}();
-        return skim(WETH, to);
+        return skimTo(WETH, to);
     }
 
     bool private entryAllowed = true;
