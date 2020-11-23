@@ -163,9 +163,12 @@ contract BentoBox {
 
     function skim(IERC20 token) public returns (uint256) { return skim(token, msg.sender); }
     function skim(IERC20 token, address to) public returns (uint256) {
+        require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         uint256 amount = token.balanceOf(address(this)).sub(totalBalance[token]);
-        uint256 share = totalShare[token] == 0 ? amount : amount.mul(totalShare[token]) / totalBalance[token];
+        uint256 share = toShare(token, amount);
         shareOf[token][to] = shareOf[token][to].add(share);
+        totalShare[token] = totalShare[token].add(share);
+        totalBalance[token] = totalBalance[token].add(amount);
         return share;
     }
 
