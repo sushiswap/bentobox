@@ -8,8 +8,8 @@ const DEFAULT_WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 module.exports = async function (deployer, network, accounts) {
 
-  let wethAddress = process.env.WETH_ADDR;
-  if (!wethAddress) {
+  let wethAddress = DEFAULT_WETH;
+  if (process.env.IS_TESTNET) {
     await deployer.deploy(WETH9);
     let weth = await WETH9.deployed();
     wethAddress = weth.address;
