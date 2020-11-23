@@ -3,6 +3,7 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const AssertionError = require('./helpers/assertion-error');
 const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
+const FlashLoaner = artifacts.require("FlashLoaner");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
 const bentoJSON = JSON.parse(fs.readFileSync("./build/contracts/BentoBox.json", "utf8"));
@@ -30,6 +31,12 @@ contract('BentoBox', (accounts) => {
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(1).toString());
+  });
+
+  it('should not allow deposit without approve', async () => {
+    truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }));
+    let share = await bentoBox.shareOf(a.address, alice);
+    assert.equal(share.toString(), e18(0).toString());
   });
 
   it('should allow depositShare', async () => {
@@ -181,7 +188,21 @@ contract('BentoBox', (accounts) => {
   });
 
   it('should allow flashloan', async () => {
-    // TODO: Flashloan test
+    await a.transfer(bentoBox.address, e18(2), { from: alice });
+    await a.approve(bentoBox.address, e18(2), { from: alice });
+    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
+
+    let skim = bentoJSON.abi.find(element => element.name == "skim");
+    skim = web3.eth.abi.encodeFunctionCall(skim, [a.address]);
+    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
+    await bentoBox.flashLoan(flashLoaner.address, a.address, e18(1), skim, { from: maki });
+    console.log("maki", (await a.balanceOf(maki)).toString());
+    console.log("approval", (a.allowance(flashLoaner.address, bentoBox.address)).toString());
+    console.log("flashLoaner", (a.balanceOf(flashLoaner.address)).toString());
+    console.log("flashLoaner share", (bentoBox.shareOf(flashLoaner.address)).toString());
+    //let amount = await bentoBox.toAmount(a.address, e18(1));
+    //assert.equal(amount.toString(), e18(1).mul(new web3.utils.BN(1.0005)).toString());
+
   });
 
   it('should allow successfull batch call', async () => {
@@ -214,7 +235,7 @@ contract('BentoBox', (accounts) => {
     transfer = web3.eth.abi.encodeFunctionCall(transfer, [a.address, alice, bob, e18(2)]);
     await bentoBox.batch([deposit, transfer], false, { from: alice });
     let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(2).toString(), "alice should have tokens");
+    assert.equal(share.toString(), e18(1).toString(), "alice should have tokens");
     share = await bentoBox.shareOf(a.address, bob);
     assert.equal(share.toString(), e18(0).toString(), "bob should not have tokens");
   });
@@ -225,7 +246,7 @@ contract('BentoBox', (accounts) => {
     deposit = web3.eth.abi.encodeFunctionCall(deposit, [a.address, alice, e18(1)]);
     let transfer = bentoJSON.abi.find(element => element.name == "transfer");
     transfer = web3.eth.abi.encodeFunctionCall(transfer, [a.address, alice, bob, e18(2)]);
-    truffleAssert.reverts(await bentoBox.batch([deposit, transfer], true, { from: alice }), 'BentoBox: Transaction failed');
+    truffleAssert.reverts(bentoBox.batch([deposit, transfer], true, { from: alice }), 'BentoBox: Transaction failed');
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(0).toString(), "alice should not have tokens");
     share = await bentoBox.shareOf(a.address, bob);

@@ -51,13 +51,14 @@ contract BentoBox {
         IMasterContract(clone_address).setBentoBox(address(this), masterContract);
 
         emit Created(masterContract, data, clone_address);
-    }    
+    }
 
     // *** View functions *** //
     function toAmount(IERC20 token, uint256 share) public view returns (uint256) {
         uint256 _totalShare = totalShare[token];
         return _totalShare == 0 ? share : share.mul(totalBalance[token]) / _totalShare;
     }
+
 
     function toShare(IERC20 token, uint256 amount) public view returns (uint256) {
         uint256 _totalShare = totalShare[token];
@@ -110,7 +111,7 @@ contract BentoBox {
     function withdraw(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _withdraw(token, from, to, amount, share);
-        return share;        
+        return share;
     }
 
     function withdrawShare(IERC20 token, address to, uint256 share) public returns (uint256) { return withdrawShare(token, msg.sender, to, share); }
@@ -195,11 +196,11 @@ contract BentoBox {
         uint256 fee = amount.mul(5) / 10000;
         uint256 total = amount.add(fee);
 
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, user, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
+        //(bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, user, amount));
+        //require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed at ERC20");
         IFlashLoaner(user).executeOperation(token, amount, fee, params);
-        (success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), total));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
+        //(success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), total));
+        //require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
 
         emit FlashLoaned(user, token, amount, fee);
     }
@@ -225,7 +226,7 @@ contract BentoBox {
 
             emit FlashLoaned(user, tokens[i], amounts[i], fees[i]);
         }
-    }    
+    }
 
     function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory, bytes[] memory) {
         bool[] memory successes = new bool[](calls.length);
@@ -243,7 +244,7 @@ contract BentoBox {
     function _approveWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
         token.permit(from, address(this), amount, deadline, v, r, s);
     }
-    
+
     function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][to] = shareOf[token][to].add(share);
