@@ -43,6 +43,7 @@ interface ILendingPair {
     function accrue() external;
     function withdrawFees() external;
     function isSolvent(address user, bool open) external view returns (bool);
+    function peekExchangeRate() external view returns (bool, uint256);
     function updateExchangeRate() external returns (uint256);
     function updateInterestRate() external;
     function addCollateral(uint256 amount) external;

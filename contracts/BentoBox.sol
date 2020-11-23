@@ -163,13 +163,11 @@ contract BentoBox {
         uint256 totalShares;
         uint256 totalAmounts;
         for (uint256 i=0; i < tos.length; i++) {
-            address to = tos[i];
-            uint256 share = shares[i];
-            uint256 amount = toAmount(token, share);
+            uint256 amount = toAmount(token, shares[i]);
             totalAmounts = totalAmounts.add(amount);
-            shareOf[token][to] = shareOf[token][to].add(share);
-            totalShares = totalShares.add(share);
-            emit Transfer(token, from, to, amount, share);
+            totalShares = totalShares.add(shares[i]);
+            shareOf[token][tos[i]] = shareOf[token][tos[i]].add(shares[i]);
+            emit Transfer(token, from, tos[i], amount, shares[i]);
         }
         shareOf[token][from] = shareOf[token][from].sub(totalShares);
         return totalAmounts;
