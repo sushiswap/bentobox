@@ -323,6 +323,7 @@ contract LendingPair is ERC20, Ownable {
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
+    event Data(uint256 amountFromMax, uint256 exactAmountTo, bytes bla);
     // Handles unwinding shorts with an approved swapper
     function unwind(ISwapper swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
