@@ -17,6 +17,7 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(BentoBox, wethAddress);
   await deployer.deploy(Pair);
 
+
   // Get the contracts
   let bentoBox = await BentoBox.deployed();
   let pairMaster = await Pair.deployed();
