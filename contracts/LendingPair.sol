@@ -134,7 +134,7 @@ contract LendingPair is ERC20, Ownable {
 
     // Checks if the user is solvent.
     // Has an option to check if the user is solvent in an open/closed liquidation case.
-    function isSolvent(address user, bool open) public returns (bool) {
+    function isSolvent(address user, bool open) public view returns (bool) {
         // accrue must have already been called!
         if (userBorrowShare[user] == 0) return true;
         if (totalCollateral == 0) return false;
