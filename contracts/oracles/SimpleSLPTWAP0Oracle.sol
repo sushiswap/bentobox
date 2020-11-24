@@ -26,6 +26,9 @@ contract SimpleSLPOracle is IOracle {
     mapping(IUniswapV2Pair => PairInfo) public pairs; // Map of pairs and their info
     mapping(address => IUniswapV2Pair) public callerInfo; // Map of callers to pairs
 
+    function init() external {
+    }
+
     function _get(IUniswapV2Pair pair) public view returns (uint256, uint32, FixedPoint.uq112x112 memory) {
         PairInfo storage info = pairs[pair];
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
