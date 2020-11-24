@@ -277,17 +277,12 @@ contract LendingPair is ERC20, Ownable {
         bentoBox.withdrawShare(collateral, to, amount);
     }
 
-    function _assetBalance() internal returns (uint256) {
-        return bentoBox.shareOf(asset, address(this)).mul(bentoBox.totalBalance(asset)) / bentoBox.totalShare(asset);
-    }
-
     // Withdraws a share of supply (the borrowable token) of the caller to the specified address
     function removeAsset(uint256 share, address to) public {
         // Accrue interest before calculating pool shares in _removeAssetShare
         accrue();
         updateInterestRate();
         uint256 amount = _removeAssetShare(msg.sender, share);
-        require(amount <= _assetBalance().sub(totalBorrow), 'BentoBox: not enough liquidity');
         bentoBox.withdrawShare(asset, to, amount);
     }
 
