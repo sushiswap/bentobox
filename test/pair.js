@@ -2,6 +2,7 @@ const fs = require('fs');
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
+const {e18} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
@@ -16,8 +17,9 @@ const testOracle = JSON.parse(fs.readFileSync("./build/contracts/TestOracle.json
 const {getInitData} = require("./helpers/getInitData");
 const {ecsign} = ethereumjsUtil;
 
-function e18(amount) {
-  return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
+function netBorrowFee(amount) {
+  const withDecimals = new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
+  return withDecimals.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
 }
 
 async function logStatus(bentoBox, pair, a, b, alice, bob) {
@@ -182,7 +184,7 @@ contract('LendingPair', (accounts) => {
   })
 
   it('should allow borrowing with collateral up to 75%', async () => {
-    await pair.borrow(e18(75), alice, { from: alice });
+    await pair.borrow(netBorrowFee(75), alice, { from: alice });
   });
 
   it('should not allow any more borrowing', async () => {
