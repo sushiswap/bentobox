@@ -29,7 +29,7 @@ start_ganache() {
     --account="0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f,1000000000000000000000000"
   )
 
-  ganache-cli --gasLimit 9000000 "${accounts[@]}" -p "$ganache_port" > /dev/null &
+  node_modules/.bin/ganache-cli --gasLimit 9000000 "${accounts[@]}" -p "$ganache_port" > /dev/null &
 
   ganache_pid=$!
 }
