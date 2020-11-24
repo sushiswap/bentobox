@@ -39,6 +39,8 @@ contract CompoundOracle is IOracle {
         return info.price;
     }
 
+    function getDataParameter(string memory collateralSymbol, string memory assetSymbol, uint256 division) public pure returns (bytes memory) { return abi.encode(collateralSymbol, assetSymbol, division); }
+
     // Get the latest exchange rate
     function get(bytes calldata data) public override returns (bool, uint256) {
         (string memory collateralSymbol, string memory assetSymbol, uint256 division) = abi.decode(data, (string, string, uint256));

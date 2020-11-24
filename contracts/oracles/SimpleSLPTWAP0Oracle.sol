@@ -49,6 +49,8 @@ contract SimpleSLPOracle is IOracle {
         );
     }
 
+    function getDataParameter(IUniswapV2Pair pair) public pure returns (bytes memory) { return abi.encode(pair); }
+
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));

@@ -15,6 +15,8 @@ contract TestOracle is IOracle {
         rate = rate_;
     }
 
+    function getDataParameter() public pure returns (bytes memory) { return abi.encode(); }
+
     // Get the latest exchange rate
     function get(bytes calldata) public override returns (bool, uint256) {
         return (true, rate);

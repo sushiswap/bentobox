@@ -7,6 +7,8 @@ import "../interfaces/IOracle.sol";
 contract CompositeOracle is IOracle {
     using BoringMath for uint;
 
+    function getDataParameter(IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) public pure returns (bytes memory) { return abi.encode(oracle1, oracle2, data1, data2); }
+
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool status, uint256 amountOut){
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));

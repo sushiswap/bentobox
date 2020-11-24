@@ -32,6 +32,8 @@ contract ChainlinkOracle is IOracle {
         return price / decimals;
     }
 
+    function getDataParameter(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) { return abi.encode(multiply, divide, decimals); }
+
     // Get the latest exchange rate
     function get(bytes calldata data) public override returns (bool, uint256) {
         (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
