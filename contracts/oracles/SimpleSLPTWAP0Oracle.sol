@@ -26,15 +26,7 @@ contract SimpleSLPOracle is IOracle {
     mapping(IUniswapV2Pair => PairInfo) public pairs; // Map of pairs and their info
     mapping(address => IUniswapV2Pair) public callerInfo; // Map of callers to pairs
 
-    function init() external {
-    }
-
-    function _get(IUniswapV2Pair pair) public view returns (uint256, uint32, FixedPoint.uq112x112 memory) {
-        PairInfo storage info = pairs[pair];
-        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        uint32 timeElapsed = blockTimestamp - info.blockTimestampLast; // overflow is desired
-        require(timeElapsed >= PERIOD, 'SimpleSLPOracle: PERIOD_NOT_ELAPSED');
-
+    function _get(IUniswapV2Pair pair, uint32 blockTimestamp) public view returns (uint256) {
         uint256 priceCumulative = pair.price0CumulativeLast();
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
@@ -45,11 +37,7 @@ contract SimpleSLPOracle is IOracle {
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        return (
-            priceCumulative,
-            blockTimestamp,
-            FixedPoint.uq112x112(uint224((priceCumulative - info.priceCumulativeLast) / timeElapsed))
-        );
+        return priceCumulative;
     }
 
     function getDataParameter(IUniswapV2Pair pair) public pure returns (bytes memory) { return abi.encode(pair); }
@@ -57,9 +45,23 @@ contract SimpleSLPOracle is IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-
         PairInfo storage info = pairs[pair];
-        (info.priceCumulativeLast, info.blockTimestampLast, info.priceAverage) = _get(pair);
+        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        if (blockTimestamp == 0) {
+            info.blockTimestampLast = blockTimestamp;
+            info.priceCumulativeLast = _get(pair, blockTimestamp);
+
+            return (false, 0);
+        }
+        uint32 timeElapsed = blockTimestamp - info.blockTimestampLast; // overflow is desired
+        if (timeElapsed >= PERIOD) {
+            return (false, info.priceAverage.mul(10**18).decode144());
+        }
+
+        uint256 priceCumulative = _get(pair, blockTimestamp);
+        info.priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - info.priceCumulativeLast) / timeElapsed));
+        info.blockTimestampLast = blockTimestamp;
+        info.priceCumulativeLast = priceCumulative;
 
         return (true, info.priceAverage.mul(10**18).decode144());
     }
@@ -67,7 +69,19 @@ contract SimpleSLPOracle is IOracle {
     // Check the last exchange rate without any state changes
     function peek(bytes calldata data) public override view returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        (,, FixedPoint.uq112x112 memory priceAverage) = _get(pair);
+        PairInfo storage info = pairs[pair];
+        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        if (blockTimestamp == 0) {
+            return (false, 0);
+        }
+        uint32 timeElapsed = blockTimestamp - info.blockTimestampLast; // overflow is desired
+        if (timeElapsed >= PERIOD) {
+            return (false, info.priceAverage.mul(10**18).decode144());
+        }
+
+        uint256 priceCumulative = _get(pair, blockTimestamp);
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - info.priceCumulativeLast) / timeElapsed));
+
         return (true, priceAverage.mul(10**18).decode144());
     }
 }

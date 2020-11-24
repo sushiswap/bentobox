@@ -69,16 +69,16 @@ contract('CompositeOracle', (accounts) => {
     bentoPairC = await Pair.at(tx.logs[0].args[2]);
   });
 
-  // it('update', async () => {
-  //   // update both pairs
-  //   await timeWarp.advanceTime(61);
-  //   await oracleA.update(compositeOracle.address);
-  //   await oracleB.update(compositeOracle.address);
+  it('update', async () => {
+    // update both pairs
+    await timeWarp.advanceTime(61);
+    await oracleA.update(compositeOracle.address);
+    await oracleB.update(compositeOracle.address);
 
-  //   // check the composite oracle
-  //   const expectedPrice = encodePrice(token0Amount, token2Amount);
-  //   const price = await compositeOracle.peek(bentoPairC.address);
-  //   const rounding = new web3.utils.BN("10000000000000000"); // 10^16
-  //   assert.equal(price.divRound(rounding).toString(), token2Amount.mul(new web3.utils.BN("100")).div(token0Amount).toString());
-  // });
+    // check the composite oracle
+    const expectedPrice = encodePrice(token0Amount, token2Amount);
+    const price = await compositeOracle.peek(bentoPairC.address);
+    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
+    assert.equal(price.divRound(rounding).toString(), token2Amount.mul(new web3.utils.BN("100")).div(token0Amount).toString());
+  });
 });

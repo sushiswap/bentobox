@@ -44,22 +44,29 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await addLiquidity();
     oracle = await SimpleSLPOracle.new();
-    oracleData = getDataParameter(SimpleSLPOracle._json.abi, []);
+    oracleData = await oracle.getDataParameter(pair.address);
+    oracleData = getDataParameter(SimpleSLPOracle._json.abi, [pair.address]);
     let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
+
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
   });
 
-  // it('update', async () => {
-  //   const blockTimestamp = (await pair.getReserves())[2];
-  //   await timeWarp.advanceTime(30);
-  //   await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
-  //   await timeWarp.advanceTime(31);
-  //   await oracle.update(bentoPair.address);
+  it('update', async () => {
+    const blockTimestamp = (await pair.getReserves())[2];
+    
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(30);
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(31);
+    //await oracle.get(oracleData);
+    const pairInfo = await oracle.peek(oracleData);
 
-  //   const expectedPrice = encodePrice(token0Amount, token1Amount);
-  //   const pairInfo = await oracle.pairs(bentoPair.address);
-  //   assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
-  //   assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
-  // });
+    const expectedPrice = encodePrice(token0Amount, token1Amount);
+    console.log("Expected", expectedPrice[0].toString());
+    console.log("Output", pairInfo[0].toString());
+    console.log("Output", pairInfo[1].toString());
+    /*assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
+    assert.equal((await oracle.peek(oracleData)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());*/
+  });
 });
