@@ -3,8 +3,7 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const TokenA = artifacts.require("TokenA");
-const TokenB = artifacts.require("TokenB");
+const MockERC20 = artifacts.require("MockERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -28,8 +27,8 @@ contract('Pair (Shorting)', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await TokenA.new({ from: accounts[0] });
-    b = await TokenB.new({ from: accounts[0] });
+    a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "truffle build",
-    "test": "./test.sh"
+    "test": "./test.sh $TRUFFLE_TEST"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/sushiswap-core/bentobox#readme",
   "dependencies": {
+    "@openzeppelin/contracts": "^3.2.0",
     "@truffle/hdwallet-provider": "^1.2.0",
     "@uniswap/lib": "^2.2.0-alpha",
     "@uniswap/v2-core": "^1.0.1",
