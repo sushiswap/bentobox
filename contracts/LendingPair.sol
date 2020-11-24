@@ -134,13 +134,12 @@ contract LendingPair is ERC20, Ownable {
 
     // Checks if the user is solvent.
     // Has an option to check if the user is solvent in an open/closed liquidation case.
-    function isSolvent(address user, bool open) public view returns (bool) {
+    function isSolvent(address user, bool open) public returns (bool) {
         // accrue must have already been called!
         if (userBorrowShare[user] == 0) return true;
         if (totalCollateral == 0) return false;
 
         uint256 borrow = userBorrowShare[user].mul(totalBorrow) / totalBorrowShare;
-
         // openColRate : colRate
         return userCollateral[user].mul(open ? 77000 : 75000) / 1e5 >= borrow.mul(exchangeRate) / 1e18;
     }
@@ -283,7 +282,9 @@ contract LendingPair is ERC20, Ownable {
         // Accrue interest before calculating pool shares in _removeAssetShare
         accrue();
         updateInterestRate();
+        uint256 nonVirtualAssetBalance = bentoBox.totalBalance(asset);
         uint256 amount = _removeAssetShare(msg.sender, share);
+        require(amount <= nonVirtualAssetBalance.sub(totalBorrow), 'BentoBox: not enough liquidity');
         bentoBox.withdrawShare(asset, to, amount);
     }
 
@@ -323,7 +324,6 @@ contract LendingPair is ERC20, Ownable {
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
-    event Data(uint256 amountFromMax, uint256 exactAmountTo, bytes bla);
     // Handles unwinding shorts with an approved swapper
     function unwind(ISwapper swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
