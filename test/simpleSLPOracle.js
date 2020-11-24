@@ -9,7 +9,8 @@ const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
-const SimpleSLPOracle = artifacts.require("SimpleSLPOracle");
+const SimpleSLPOracle0 = artifacts.require("SimpleSLPTWAP0Oracle");
+const SimpleSLPOracle1 = artifacts.require("SimpleSLPTWAP1Oracle");
 
 const token0Amount = e18(5);
 const token1Amount = e18(10);
@@ -43,9 +44,12 @@ contract('SimpleSLPOracle', (accounts) => {
     pair = await UniswapV2Pair.at(tx.logs[0].args.pair);
 
     await addLiquidity();
-    oracle = await SimpleSLPOracle.new();
+    if (a.address == (await pair.token0())) {
+           oracle = await SimpleSLPOracle0.new();
+       } else {
+           oracle = await SimpleSLPOracle1.new();
+    }
     oracleData = await oracle.getDataParameter(pair.address);
-    oracleData = getDataParameter(SimpleSLPOracle._json.abi, [pair.address]);
     let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
 
     tx = await bentoBox.deploy(pairMaster.address, initData);
@@ -63,9 +67,7 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
-    console.log("Expected", expectedPrice[0].toString());
-    console.log("Output", (await oracle.pairs(pair.address)).priceCumulativeLast.toString());
-    /*assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.peek(oracleData)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());*/
+    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[0].toString());
+    assert.equal((await oracle.peek(oracleData))[1].toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
   });
 });
