@@ -9,7 +9,7 @@ const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
-const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
+const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const {getInitData} = require("./helpers/getInitData");
 
 
@@ -34,7 +34,7 @@ contract('Pair (Shorting)', (accounts) => {
     b = await TokenB.new({ from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
-    swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
+    swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
     await pairMaster.setSwapper(swapper.address, true);
 
     let tx = await factory.createPair(a.address, b.address);
@@ -69,7 +69,7 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting if it doesn't return enough of token A", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), 'BentoBox: Swap failed');
+    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapClosedSwapper: return not enough");
   });
 
   // it("should not allow shorting into insolvency", async () => {
@@ -131,7 +131,7 @@ contract('Pair (Shorting)', (accounts) => {
     await truffleAssert.reverts(pair.removeAsset(bobBal, bob, {from: bob}), 'BoringMath: Underflow');
     // 750 still too much, as 250 should be kept to rewind all shorts
     await truffleAssert.reverts(pair.removeAsset(e18(750), bob, {from: bob}), 'BoringMath: Underflow');
-    // 500 still too much, as some dust has been accrued in interest 
+    // 500 still too much, as some dust has been accrued in interest
     // await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'BentoBox: not enough liquidity');
     await pair.removeAsset(e18(499), bob, {from: bob});
   });
