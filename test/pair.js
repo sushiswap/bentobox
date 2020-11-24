@@ -9,7 +9,7 @@ const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
-const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
+const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
 
@@ -62,7 +62,7 @@ contract('LendingPair', (accounts) => {
     b = await TokenB.new({ from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
-    swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
+    swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
     await pairMaster.setSwapper(swapper.address, true);
 
     let tx = await factory.createPair(a.address, b.address);
