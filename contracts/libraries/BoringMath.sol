@@ -5,13 +5,14 @@ library BoringMath {
     function add(uint a, uint b) internal pure returns (uint c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
     function sub(uint a, uint b) internal pure returns (uint c) {require((c = a - b) <= a, "BoringMath: Underflow");}
     function mul(uint256 a, uint256 b) internal pure returns (uint256) {
+    	// previous implementation:
+    	// require(a == 0 || (c = a * b)/b == a
+    	// was failing if b = 0
         if (a == 0) {
             return 0;
         }
-
         uint256 c = a * b;
         require(c / a == b, "BoringMath: Mul Overflow");
-
         return c;
     }
 }
