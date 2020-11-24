@@ -45,42 +45,40 @@ contract SimpleSLPOracle is IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        PairInfo storage info = pairs[pair];
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        if (blockTimestamp == 0) {
-            info.blockTimestampLast = blockTimestamp;
-            info.priceCumulativeLast = _get(pair, blockTimestamp);
+        if (pairs[pair].blockTimestampLast == 0) {
+            pairs[pair].blockTimestampLast = blockTimestamp;
+            pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
 
             return (false, 0);
         }
-        uint32 timeElapsed = blockTimestamp - info.blockTimestampLast; // overflow is desired
-        if (timeElapsed >= PERIOD) {
-            return (false, info.priceAverage.mul(10**18).decode144());
-        }
+        uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
+        /*if (timeElapsed < PERIOD) {
+            return (false, pairs[pair].priceAverage.mul(10**18).decode144());
+        }*/
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        info.priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - info.priceCumulativeLast) / timeElapsed));
-        info.blockTimestampLast = blockTimestamp;
-        info.priceCumulativeLast = priceCumulative;
+        pairs[pair].priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        pairs[pair].blockTimestampLast = blockTimestamp;
+        pairs[pair].priceCumulativeLast = priceCumulative;
 
-        return (true, info.priceAverage.mul(10**18).decode144());
+        return (true, pairs[pair].priceAverage.mul(10**18).decode144());
     }
 
     // Check the last exchange rate without any state changes
     function peek(bytes calldata data) public override view returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        PairInfo storage info = pairs[pair];
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        if (blockTimestamp == 0) {
+        if (pairs[pair].blockTimestampLast == 0) {
             return (false, 0);
         }
-        uint32 timeElapsed = blockTimestamp - info.blockTimestampLast; // overflow is desired
-        if (timeElapsed >= PERIOD) {
-            return (false, info.priceAverage.mul(10**18).decode144());
-        }
+        uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
+        /*if (timeElapsed < PERIOD) {
+            return (false, pairs[pair].priceAverage.mul(10**18).decode144());
+        }*/
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - info.priceCumulativeLast) / timeElapsed));
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
 
         return (true, priceAverage.mul(10**18).decode144());
     }

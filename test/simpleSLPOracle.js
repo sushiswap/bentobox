@@ -54,18 +54,17 @@ contract('SimpleSLPOracle', (accounts) => {
 
   it('update', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
-    
+
     await oracle.get(oracleData);
     await timeWarp.advanceTime(30);
     await oracle.get(oracleData);
     await timeWarp.advanceTime(31);
     //await oracle.get(oracleData);
-    const pairInfo = await oracle.peek(oracleData);
+    await oracle.get(oracleData);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
     console.log("Expected", expectedPrice[0].toString());
-    console.log("Output", pairInfo[0].toString());
-    console.log("Output", pairInfo[1].toString());
+    console.log("Output", (await oracle.pairs(pair.address)).priceCumulativeLast.toString());
     /*assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
     assert.equal((await oracle.peek(oracleData)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());*/
   });
