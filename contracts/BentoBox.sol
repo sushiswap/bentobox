@@ -126,6 +126,7 @@ contract BentoBox {
 
     // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
+    //function transfer(IERC20 token, address to, uint256 amount) public returns (uint256) { return transfer(token, msg.sender, to, amount); }
     function transfer(IERC20 token, address from, address to, uint256 amount) allowed(from) public returns (uint256) {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         uint256 share = toShare(token, amount);
@@ -136,6 +137,7 @@ contract BentoBox {
         return share;
     }
 
+    //function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) public returns (uint256) { return transferMultiple(token, msg.sender, tos, amounts); }
     function transferMultiple(IERC20 token, address from, address[] calldata tos, uint256[] calldata amounts) allowed(from) public returns (uint256) {
         require(tos[0] != address(0), 'BentoBox: to[0] not set'); // To avoid a bad UI from burning funds
         uint256 totalShares;
@@ -150,6 +152,7 @@ contract BentoBox {
         return totalShares;
     }
 
+    //function transferShare(IERC20 token, address to, uint256 amount) public returns (uint256) { return transferShare(token, msg.sender, to, amount); }
     function transferShare(IERC20 token, address from, address to, uint256 share) allowed(from) public returns (uint256) {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         uint256 amount = toAmount(token, share);
@@ -159,6 +162,7 @@ contract BentoBox {
         return amount;
     }
 
+    //function transferMultipleShare(IERC20 token, address[] calldata tos, uint256[] calldata amounts) public returns (uint256) { return transferMultipleShare(token, msg.sender, tos, amounts); }
     function transferMultipleShare(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) allowed(from) public returns (uint256) {
         require(tos[0] != address(0), 'BentoBox: to[0] not set'); // To avoid a bad UI from burning funds
         uint256 totalShares;

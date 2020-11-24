@@ -15,16 +15,7 @@ import "./interfaces/IOracle.sol";
 import "./libraries/Ownable.sol";
 import "./BentoBox.sol";
 import "./ERC20.sol";
-
-interface IDelegateSwapper {
-    // Withdraws amountFrom 'from tokens' from the bentoBox, turns it into at least amountToMin 'to tokens' and transfers those into the bentoBox.
-    // Returns amount of tokens added to the bentoBox.
-    function swap(address swapper, IERC20 from, IERC20 to, uint256 amountFrom, uint256 amountToMin) external returns (uint256);
-}
-
-interface ISwapper {
-    function swap(IERC20 from, IERC20 to, uint256 amountFrom, uint256 amountTo, address profitTo) external;
-}
+import "./interfaces/ISwapper.sol";
 
 // Special thanks to:
 // https://twitter.com/burger_crypto - for the idea of trying to let the LPs benefit from liquidations
@@ -51,7 +42,7 @@ contract LendingPair is ERC20, Ownable {
 
     IOracle public oracle;
     bytes public oracleData;
-    mapping(address => bool) public swappers;
+    mapping(ISwapper => bool) public swappers;
 
     uint256 public totalCollateral;
     uint256 public totalAsset; // Includes totalBorrow
@@ -110,7 +101,7 @@ contract LendingPair is ERC20, Ownable {
         masterContract = LendingPair(masterContract_);
     }
 
-    function setSwapper(address swapper, bool enable) public onlyOwner {
+    function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
     }
 
@@ -316,48 +307,43 @@ contract LendingPair is ERC20, Ownable {
     }
 
     // Handles shorting with an approved swapper
-    function short(address swapper, uint256 amountAsset, uint256 minAmountCollateral) public {
-        require(amountAsset <= totalAsset.sub(totalBorrow), 'BentoBox: not enough liquidity');
-
+    function short(ISwapper swapper, uint256 amountAsset, uint256 minReturnedCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
         updateInterestRate();
         _addBorrow(msg.sender, amountAsset);
+        uint256 suppliedAmount = bentoBox.transferShare(asset, address(this), address(swapper), amountAsset);
 
         // Swaps the borrowable asset for collateral
-        (bool success, bytes memory result) = swapper.delegatecall(
-            abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper,
-            asset, collateral,
-            bentoBox.toAmount(asset, amountAsset),
-            bentoBox.toAmount(collateral, minAmountCollateral)));
-        require(success, 'BentoBox: Swap failed');
-        _addCollateral(msg.sender, abi.decode(result, (uint256)));
+        swapper.swap(asset, collateral, suppliedAmount, bentoBox.toAmount(collateral, minReturnedCollateral));
+        uint256 returnedCollateral = bentoBox.skim(collateral);
+        require(returnedCollateral >= minReturnedCollateral, 'BentoBox: not enough collateral returned');
+        _addCollateral(msg.sender, returnedCollateral);
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
     // Handles unwinding shorts with an approved swapper
-    function unwind(address swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
+    function unwind(ISwapper swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
         updateInterestRate();
+        uint suppliedAmount = bentoBox.transferShare(collateral, address(this), address(swapper), maxAmountCollateral);
 
         uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
 
         // Swaps the collateral back for the borrowal asset
-        (bool success, bytes memory result) = swapper.delegatecall(
-            abi.encodeWithSignature("swapExact(address,address,address,uint256,uint256)", swapper,
-            collateral, asset,
-            bentoBox.toAmount(collateral, maxAmountCollateral),
-            bentoBox.toAmount(asset, borrowAmount)));
-        require(success, 'BentoBox: Swap failed');
-        _removeCollateral(msg.sender, abi.decode(result, (uint256)));
+        uint256 usedAmount = swapper.swapExact(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, borrowAmount), address(this));
+        uint256 returnedAssetShare = bentoBox.skim(asset);
+        require(returnedAssetShare >= borrowShare, 'BentoBox: Not enough assets returned');
+
+        _removeCollateral(msg.sender, suppliedAmount.sub(usedAmount));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
     // Handles the liquidation of users' balances, once the users' amount of collateral is too low
-    function liquidate(address[] calldata users, uint256[] calldata borrowShares, address to, address swapper, bool open) public {
+    function liquidate(address[] calldata users, uint256[] calldata borrowShares, address to, ISwapper swapper, bool open) public {
         accrue();
         updateExchangeRate();
         updateInterestRate();
@@ -398,10 +384,10 @@ contract LendingPair is ERC20, Ownable {
             require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
 
             // Swaps the users' collateral for the borrowed asset
-            (bool success, bytes memory result) = swapper.delegatecall(
-                abi.encodeWithSignature("swap(address,address,address,uint256,uint256)", swapper, collateral, asset, allCollateralAmount, allBorrowAmount));
-            require(success, 'BentoBox: Swap failed');
-            uint256 extraAsset = abi.decode(result, (uint256)).sub(allBorrowAmount);
+            uint256 suppliedAmount = bentoBox.transfer(collateral, address(this), address(swapper), allCollateralAmount);
+            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowAmount));
+            uint256 returnedAssetShare = bentoBox.skim(asset);
+            uint256 extraAsset = returnedAssetShare.sub(allBorrowAmount);
 
             // The extra asset gets added to the pool
             uint256 feeAmount = extraAsset / 10; // 10% of profit goes to fee
@@ -409,20 +395,20 @@ contract LendingPair is ERC20, Ownable {
 
             totalAsset = totalAsset.add(extraAsset.sub(feeAmount));
             emit AddAsset(address(0), extraAsset, 0);
-        } else if (swapper == address(0)) {
+        } else if (address(swapper) == address(0)) {
             // Open liquidation directly using the caller's funds, without swapping
             bentoBox.deposit(asset, to, allBorrowAmount);
             bentoBox.withdraw(collateral, to, allCollateralAmount);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
-            bentoBox.withdraw(collateral, swapper, allCollateralAmount);
-            ISwapper(swapper).swap(
-                collateral, asset,
-                bentoBox.toAmount(collateral, allCollateralAmount),
-                bentoBox.toAmount(asset, allBorrowAmount),
-                to);
-            bentoBox.deposit(asset, swapper, allBorrowAmount);
+            uint256 suppliedAmount = bentoBox.transfer(collateral, address(this), address(swapper), allCollateralAmount);
+            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowAmount));
+            uint256 returnedAssetShare = bentoBox.skim(asset);
+            uint256 extraAsset = returnedAssetShare.sub(allBorrowAmount);
+
+            totalAsset = totalAsset.add(extraAsset);
+            emit AddAsset(address(0), extraAsset, 0);
         }
     }
 
