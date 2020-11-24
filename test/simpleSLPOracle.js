@@ -1,10 +1,7 @@
-const fs = require('fs');
 const timeWarp = require("./helpers/timeWarp");
 const truffleAssert = require('./helpers/truffle-assertions');
 const {e18, encodePrice} = require("./helpers/utils");
-const { oracle } = require("../build/contracts/SimpleSLPOracle.json");
-const lendingPair = JSON.parse(fs.readFileSync("./build/contracts/LendingPair.json", "utf8"));
-const {getDataParameter} = require("./helpers/getDataParameter");
+const {getDataParameter} = require("./helpers/getInitData");
 const AssertionError = require('./helpers/assertion-error');
 
 const TokenA = artifacts.require("TokenA");
@@ -48,22 +45,22 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await addLiquidity();
     oracle = await SimpleSLPOracle.new();
-    oracleData = getDataParameter(oracle.abi, [pair.address, a.address]);
-    let initData = getDataParameter(lendingPair.abi, [a.address, b.address, oracle.address, oracleData])
+    oracleData = getDataParameter(SimpleSLPOracle._json.abi, []);
+    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
   });
 
-  it('update', async () => {
-    const blockTimestamp = (await pair.getReserves())[2];
-    await timeWarp.advanceTime(30);
-    await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
-    await timeWarp.advanceTime(31);
-    await oracle.update(bentoPair.address);
+  // it('update', async () => {
+  //   const blockTimestamp = (await pair.getReserves())[2];
+  //   await timeWarp.advanceTime(30);
+  //   await truffleAssert.reverts(oracle.update(bentoPair.address), "SimpleSLPOracle: PERIOD_NOT_ELAPSED");
+  //   await timeWarp.advanceTime(31);
+  //   await oracle.update(bentoPair.address);
 
-    const expectedPrice = encodePrice(token0Amount, token1Amount);
-    const pairInfo = await oracle.pairs(bentoPair.address);
-    assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
-  });
+  //   const expectedPrice = encodePrice(token0Amount, token1Amount);
+  //   const pairInfo = await oracle.pairs(bentoPair.address);
+  //   assert.equal(pairInfo.priceAverage.toString(), expectedPrice[0].toString());
+  //   assert.equal((await oracle.peek(bentoPair.address)).toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
+  // });
 });

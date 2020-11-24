@@ -10,6 +10,9 @@ contract TestOracle is IOracle {
 
     uint256 rate;
 
+    function init() external {
+    }
+
     function set(uint256 rate_, address) public {
         // The rate can be updated.
         rate = rate_;
