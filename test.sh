@@ -3,6 +3,8 @@
 # Exit script as soon as a command fails.
 set -o errexit
 
+export IS_TESTNET=true
+
 # Executes cleanup function at script exit.
 trap cleanup EXIT
 
