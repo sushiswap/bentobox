@@ -49,7 +49,7 @@ contract('CompositeOracle', (accounts) => {
     await b.transfer(pairA.address, token1Amount);
     await pairA.mint(accounts[0]);
     oracleA = await SimpleSLPOracle.new();
-    const oracleDataA = await oracleA.getInitData(pairA.address, a.address);
+    const oracleDataA = await oracleA.getDataParameter(pairA.address, a.address);
 
     // set up second bento pair
     tx = await factory.createPair(b.address, c.address);
@@ -59,16 +59,16 @@ contract('CompositeOracle', (accounts) => {
     await c.transfer(pairB.address, token2Amount);
     await pairB.mint(accounts[0]);
     oracleB = await SimpleSLPOracle.new();
-    const oracleDataB = await oracleB.getInitData(pairB.address, b.address);
+    const oracleDataB = await oracleB.getDataParameter(pairB.address, b.address);
 
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();
-    oracleData = await compositeOracle.getInitData(
+    oracleData = await compositeOracle.getDataParameter(
       oracleA.address,
       oracleDataA,
       oracleB.address,
       oracleDataB);
-    initData = await pairMaster.getInitData(a.address, c.address, compositeOracle.address, oracleData);
+    initData = await pairMaster.getDataParameter(a.address, c.address, compositeOracle.address, oracleData);
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPairC = await Pair.at(tx.logs[0].args[2]);
   });

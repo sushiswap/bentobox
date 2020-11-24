@@ -4,7 +4,7 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const {e18, encodePrice} = require("./helpers/utils");
 const { oracle } = require("../build/contracts/SimpleSLPOracle.json");
 const lendingPair = JSON.parse(fs.readFileSync("./build/contracts/LendingPair.json", "utf8"));
-const {getInitData} = require("./helpers/getInitData");
+const {getDataParameter} = require("./helpers/getDataParameter");
 const AssertionError = require('./helpers/assertion-error');
 
 const TokenA = artifacts.require("TokenA");
@@ -48,8 +48,8 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await addLiquidity();
     oracle = await SimpleSLPOracle.new();
-    oracleData = getInitData(oracle.abi, [pair.address, a.address]);
-    let initData = getInitData(lendingPair.abi, [a.address, b.address, oracle.address, oracleData])
+    oracleData = getDataParameter(oracle.abi, [pair.address, a.address]);
+    let initData = getDataParameter(lendingPair.abi, [a.address, b.address, oracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
   });
