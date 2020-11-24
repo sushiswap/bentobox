@@ -1,7 +1,7 @@
 const fs = require('fs');
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
-const {e18} = require('./helpers/utils');
+const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
@@ -10,7 +10,6 @@ const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
-const {getDataParameter} = require("./helpers/getInitData");
 
 contract('Pair (Shorting)', (accounts) => {
   let a;
@@ -51,7 +50,7 @@ contract('Pair (Shorting)', (accounts) => {
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-    let initData = getDataParameter(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
+    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);

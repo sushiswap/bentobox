@@ -1,7 +1,6 @@
 const timeWarp = require("./helpers/timeWarp");
 const truffleAssert = require('./helpers/truffle-assertions');
-const {e18, encodePrice} = require("./helpers/utils");
-const {getDataParameter} = require("./helpers/getInitData");
+const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const AssertionError = require('./helpers/assertion-error');
 
 const TokenA = artifacts.require("TokenA");

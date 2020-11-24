@@ -1,9 +1,8 @@
 const fs = require('fs');
 const timeWarp = require("./helpers/timeWarp");
 const truffleAssert = require('./helpers/truffle-assertions');
-const {e18, encodePrice} = require("./helpers/utils");
+const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const AssertionError = require('./helpers/assertion-error');
-const {getInitData} = require("./helpers/getInitData");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
 const BentoBox = artifacts.require("BentoBox");
@@ -64,7 +63,7 @@ contract('CompositeOracle', (accounts) => {
 
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();
-    oracleData = getInitData(CompositeOracle._json.abi, []);
+    oracleData = getDataParameter(CompositeOracle._json.abi, []);
     initData = getInitData(Pair._json.abi, [a.address, c.address, compositeOracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPairC = await Pair.at(tx.logs[0].args[2]);

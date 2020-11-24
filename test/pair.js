@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18} = require("./helpers/utils");
+const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
@@ -11,7 +11,6 @@ const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
-const {getDataParameter} = require("./helpers/getInitData");
 const {ecsign} = ethereumjsUtil;
 
 function netBorrowFee(amount) {
@@ -76,7 +75,7 @@ contract('LendingPair', (accounts) => {
     await b.transfer(bob, e18(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
-    let oracleData = getDataParameter(TestOracle._json.abi, ["1000000000000000000"]);
+    let oracleData = getDataParameter(TestOracle._json.abi, []);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
