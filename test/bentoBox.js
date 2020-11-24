@@ -19,9 +19,9 @@ contract('BentoBox', (accounts) => {
   const alice = accounts[1];
   const bob = accounts[2];
   const maki = accounts[3];
+  const public_key = accounts[4];
   let pairMaster;
   const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
-  const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
   beforeEach(async () => {
     bentoBox = await BentoBox.deployed();
     a = await TokenA.new({ from: accounts[0] });
@@ -37,7 +37,7 @@ contract('BentoBox', (accounts) => {
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(1).toString());
   });
-/*
+
   it('should allow depositWithPermit', async () => {
     await a.transfer(public_key, e18(1), {from: alice});
     let nonce = await a.nonces(public_key);
@@ -45,8 +45,8 @@ contract('BentoBox', (accounts) => {
     let block = await web3.eth.getBlock("latest");
     const deadline = Number(block.timestamp)+10000;
     const digest = await permit.getApprovalDigest(
-        pair_address,
-        {owner: public_key, spender: alice, value: 10},
+        a.address,
+        {owner: public_key, spender: bentoBox.address, value: e18(1).toString()},
         nonce,
         deadline
       );
@@ -54,12 +54,10 @@ contract('BentoBox', (accounts) => {
         Buffer.from(digest.slice(2), 'hex'),
         Buffer.from(private_key.replace('0x', ''), 'hex')
     );
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
+    await bentoBox.depositWithPermit(a.address, public_key, e18(1), deadline, v, r, s, { from: public_key });
+    let share = await bentoBox.shareOf(a.address, public_key);
     assert.equal(share.toString(), e18(1).toString());
   });
-  */
 
   it('should not allow deposit without approve', async () => {
     truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "BentoBox: TransferFrom failed at ERC20");
@@ -101,12 +99,24 @@ contract('BentoBox', (accounts) => {
   });
 
   it('should allow to depositWithPermit for other user', async () => {
-    await a.approve(bentoBox.address, e18(3), { from: alice });
-    await bentoBox.methods['depositTo(address,address,address,uint256)'](a.address, alice, bob, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "incorrect share calculation");
-    let totalShare = await bentoBox.totalShare(a.address);
-    assert.equal(totalShare.toString(), e18(1).toString(), "incorrect total share");
+    await a.transfer(public_key, e18(1), {from: alice});
+    let nonce = await a.nonces(public_key);
+    nonce = nonce.toNumber();
+    let block = await web3.eth.getBlock("latest");
+    const deadline = Number(block.timestamp)+10000;
+    const digest = await permit.getApprovalDigest(
+        a.address,
+        {owner: public_key, spender: bentoBox.address, value: e18(1).toString()},
+        nonce,
+        deadline
+      );
+    const {v, r, s} = ecsign(
+        Buffer.from(digest.slice(2), 'hex'),
+        Buffer.from(private_key.replace('0x', ''), 'hex')
+    );
+    await bentoBox.depositWithPermitTo(a.address, public_key, alice, e18(1), deadline, v, r, s, { from: public_key });
+    let amount = await bentoBox.toAmount(a.address, await bentoBox.shareOf(a.address, alice));
+    assert.equal(amount.toString(), e18(1).toString());
   });
 
   it('should allow depositShare to other User', async () => {
@@ -304,7 +314,6 @@ contract('BentoBox', (accounts) => {
     let approved = await bentoBox.masterContractApproved(pairMaster.address, alice);
     assert.equal(approved, false);
   });
-
 
 
 });
