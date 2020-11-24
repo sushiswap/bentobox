@@ -75,7 +75,9 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting into insolvency", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), 'BentoBox: user insolvent');
+    // test broken because oracle returns 0 price
+    // await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }));
+    throw new Error('oracle error');
   });
 
   it('should have correct balances before short', async () => {
@@ -103,32 +105,40 @@ contract('Pair (Shorting)', (accounts) => {
     // check distribution of collateral (tokenA)
     assert.equal((await a.balanceOf(sushiswappair.address)).toString(), "4762585131209220364815");
     assert.equal((await a.balanceOf(bentoBox.address)).toString(), "337414868790779635185");
-    assert.equal((await bentoBox.totalShare(a.address)).toString(), e18(100).toString()); // !!! should be 337
-    assert.equal((await bentoBox.totalBalance(a.address)).toString(), e18(100).toString()); // !!! should be 337
+    assert.equal((await bentoBox.totalShare(a.address)).toString(), "337414868790779635185");
+    assert.equal((await bentoBox.totalBalance(a.address)).toString(), "337414868790779635185");
     assert.equal((await bentoBox.shareOf(a.address, pair.address)).toString(), "337414868790779635185");
     assert.equal((await pair.userCollateral(alice)).toString(), "337414868790779635185");
 
     // check distribution of asset/borrow (tokenB)
-    assert.equal((await b.balanceOf(sushiswappair.address)).toString(), "5250000000000000000000");
-    assert.equal((await b.balanceOf(bentoBox.address)).toString(), "750000000000000000000");
+    assert.equal((await b.balanceOf(sushiswappair.address)).toString(), e18(5250).toString());
+    assert.equal((await b.balanceOf(bentoBox.address)).toString(), e18(750).toString());
     assert.equal((await b.balanceOf(alice)).toString(), "0"); // !!! should be 75
-    assert.equal((await bentoBox.totalShare(b.address)).toString(), e18(1000).toString());
-    assert.equal((await bentoBox.totalBalance(b.address)).toString(), e18(1000).toString());
-    assert.equal((await bentoBox.shareOf(b.address, pair.address)).toString(), e18(1000).toString());  // !!! should be 750
-    assert.equal((await pair.totalSupply()).toString(), e18(1000).toString());  // !!! should be 750
-    assert.equal((await pair.totalAsset()).toString(), e18(1000).toString()); // !!! should be 500
+    assert.equal((await bentoBox.totalShare(b.address)).toString(), e18(750).toString());
+    assert.equal((await bentoBox.totalBalance(b.address)).toString(), e18(750).toString());
+    assert.equal((await bentoBox.shareOf(b.address, pair.address)).toString(), e18(750).toString());
+    assert.equal((await pair.totalSupply()).toString(), e18(1000).toString());  // actually only 750
+    assert.equal((await pair.totalAsset()).toString(), e18(1000).toString()); // actually only 750
     assert.equal((await pair.totalBorrow()).toString(), e18(250).toString());
     assert.equal((await pair.totalBorrowShare()).toString(), e18(250).toString());
     assert.equal((await pair.balanceOf(alice)).toString(), "0");
-    assert.equal((await pair.balanceOf(bob)).toString(), e18(1000).toString());  // !!! should be 500
+    assert.equal((await pair.balanceOf(bob)).toString(), e18(1000).toString());  // actually only 500
     assert.equal((await pair.userBorrowShare(alice)).toString(), e18(250).toString());
   });
 
+  it('should limit asset availability for bob', async () => {
+    const bobBal = await pair.balanceOf(bob);
+    assert.equal((await pair.balanceOf(bob)).toString(), e18(1000).toString());
+    // virtual balance of 1000 is more than contract has (250 given to sushi in short swap)
+    await truffleAssert.reverts(pair.removeAsset(bobBal, bob, {from: bob}), 'BentoBox: not enough liquidity');
+    // 750 still too much, as 250 should be kept to rewind all shorts
+    await truffleAssert.reverts(pair.removeAsset(e18(750), bob, {from: bob}), 'BentoBox: not enough liquidity');
+    // 500 still too much, as some dust has been accrued in interest 
+    await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'BentoBox: not enough liquidity');
+    await pair.removeAsset(e18(499), bob, {from: bob});
+  });
+
   it('should allow unwinding the short', async () => {
-    const tx = await pair.unwind(swapper.address, e18(250), e18(337), { from: alice });
-    console.log(tx.receipt.rawLogs);
-    console.log(tx.receipt.logs[3].args.amountFromMax.toString());
-    console.log(tx.receipt.logs[3].args.exactAmountTo.toString());
-    console.log(tx.receipt.logs[3].args.bla);
+    await pair.unwind(swapper.address, e18(250), e18(337), { from: alice });
   });
 });
