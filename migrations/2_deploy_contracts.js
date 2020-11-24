@@ -1,5 +1,6 @@
 const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
+const WETH9 = artifacts.require("WETH9");
 const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
 const {e18} = require("../test/helpers/utils");
 

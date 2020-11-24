@@ -37,29 +37,6 @@ contract('BentoBox', (accounts) => {
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(1).toString());
   });
-/*
-  it('should allow depositWithPermit', async () => {
-    await a.transfer(public_key, e18(1), {from: alice});
-    let nonce = await a.nonces(public_key);
-    nonce = nonce.toNumber();
-    let block = await web3.eth.getBlock("latest");
-    const deadline = Number(block.timestamp)+10000;
-    const digest = await permit.getApprovalDigest(
-        pair_address,
-        {owner: public_key, spender: alice, value: 10},
-        nonce,
-        deadline
-      );
-    const {v, r, s} = ecsign(
-        Buffer.from(digest.slice(2), 'hex'),
-        Buffer.from(private_key.replace('0x', ''), 'hex')
-    );
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(1).toString());
-  });
-  */
 
   it('should allow depositWithPermit', async () => {
     await a.transfer(public_key, e18(1), {from: alice});

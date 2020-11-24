@@ -140,6 +140,7 @@ contract LendingPair is ERC20, Ownable {
         if (totalCollateral == 0) return false;
 
         uint256 borrow = userBorrowShare[user].mul(totalBorrow) / totalBorrowShare;
+
         // openColRate : colRate
         return userCollateral[user].mul(open ? 77000 : 75000) / 1e5 >= borrow.mul(exchangeRate) / 1e18;
     }
