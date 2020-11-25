@@ -17,26 +17,26 @@ contract BentoHelper {
         uint256 latestExchangeRate;
         uint256 lastBlockAccrued;
         uint256 interestRate;
-        uint256 totalCollateral;
-        uint256 totalAsset;
-        uint256 totalBorrow;
-
+        uint256 totalCollateralShare;
         uint256 totalAssetShare;
         uint256 totalBorrowShare;
+
+        uint256 totalAssetFraction;
+        uint256 totalBorrowFraction;
 
         uint256 interestPerBlock;
         uint256 lastInterestBlock;
 
-        uint256 feesPending;
+        uint256 feesPendingShare;
 
-        uint256 userCollateral;
-        uint256 userAssetShare;
-        uint256 userBorrowShare;
+        uint256 userCollateralShare;
+        uint256 userAssetFraction;
+        uint256 userBorrowFraction;
 
         uint256 userAssetBalance;
-        uint256 userCollateralBalance;
+        uint256 userCollateralShareBalance;
         uint256 userAssetAllowance;
-        uint256 userCollateralAllowance;
+        uint256 userCollateralShareAllowance;
     }
 
     function getPairs(address user, ILendingPair[] calldata pairs) public view returns (PairInfo[] memory info) {
@@ -51,26 +51,26 @@ contract BentoHelper {
 
             (, info[i].latestExchangeRate) = pair.peekExchangeRate();
             info[i].lastBlockAccrued = pair.lastBlockAccrued();
-            info[i].totalCollateral = pair.totalCollateral();
-            info[i].totalAsset = pair.totalAsset();
-            info[i].totalBorrow = pair.totalBorrow();
-
-            info[i].totalAssetShare = pair.totalSupply();
+            info[i].totalCollateralShare = pair.totalCollateralShare();
+            info[i].totalAssetShare = pair.totalAssetShare();
             info[i].totalBorrowShare = pair.totalBorrowShare();
+
+            info[i].totalAssetFraction = pair.totalSupply();
+            info[i].totalBorrowFraction = pair.totalBorrowFraction();
 
             info[i].interestPerBlock = pair.interestPerBlock();
             info[i].lastInterestBlock = pair.lastInterestBlock();
 
-            info[i].feesPending = pair.feesPending();
+            info[i].feesPendingShare = pair.feesPendingShare();
 
-            info[i].userCollateral = pair.userCollateral(user);
-            info[i].userAssetShare = pair.balanceOf(user);
-            info[i].userBorrowShare = pair.userBorrowShare(user);
+            info[i].userCollateralShare = pair.userCollateralShare(user);
+            info[i].userAssetFraction = pair.balanceOf(user);
+            info[i].userBorrowFraction = pair.userBorrowFraction(user);
 
             info[i].userAssetBalance = info[i].tokenAsset.balanceOf(user);
-            info[i].userCollateralBalance = info[i].tokenCollateral.balanceOf(user);
+            info[i].userCollateralShareBalance = info[i].tokenCollateral.balanceOf(user);
             info[i].userAssetAllowance = info[i].tokenAsset.allowance(user, address(info[i].bentoBox));
-            info[i].userCollateralAllowance = info[i].tokenCollateral.allowance(user, address(info[i].bentoBox));
+            info[i].userCollateralShareAllowance = info[i].tokenCollateral.allowance(user, address(info[i].bentoBox));
         }
     }
 }

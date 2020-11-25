@@ -22,12 +22,13 @@ import "./interfaces/ISwapper.sol";
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
 // TODO: ensure BoringMath is always used
+// TODO: turn magic number back into constants
+// TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
 // We do allow supplying assets and borrowing, but the asset does NOT provide collateral as it's just silly and no UI should allow this
 
 contract LendingPair is ERC20, Ownable {
     using BoringMath for uint256;
 
-    // Keep at the top in this order for delegate calls to be able to access them
     BentoBox public bentoBox;
     LendingPair public masterContract;
     address public feeTo;
@@ -36,20 +37,20 @@ contract LendingPair is ERC20, Ownable {
     IERC20 public collateral;
     IERC20 public asset;
 
-    mapping(address => uint256) public userCollateral;
-    // userAssetShare = balanceOf - the asset share is the token.
-    mapping(address => uint256) public userBorrowShare;
+    mapping(address => uint256) public userCollateralShare;
+    // userAssetFraction is called balanceOf for ERC20 compatibility
+    mapping(address => uint256) public userBorrowFraction;
 
     IOracle public oracle;
     bytes public oracleData;
     mapping(ISwapper => bool) public swappers;
 
-    uint256 public totalCollateral;
-    uint256 public totalAsset; // Includes totalBorrow
-    uint256 public totalBorrow; // Total units of asset borrowed
+    uint256 public totalCollateralShare;
+    uint256 public totalAssetShare; // Includes totalBorrowShare (actual Share in BentoBox = totalAssetShare - totalBorrowShare)
+    uint256 public totalBorrowShare; // Total units of asset borrowed
 
-    // totalAssetShare = totalSupply - Total amount of shares in the asset pool
-    uint256 public totalBorrowShare;
+    // totalAssetFraction is called totalSupply for ERC20 compatibility
+    uint256 public totalBorrowFraction;
 
     // TODO: Consider always updating interest and accrue together to reduce one update, but sometimes add one
     uint256 public exchangeRate;
@@ -58,7 +59,7 @@ contract LendingPair is ERC20, Ownable {
     uint256 public interestPerBlock;
     uint256 public lastInterestBlock; // Last block when the interest rate was updated
 
-    uint256 public feesPending;
+    uint256 public feesPendingShare;
 
     string public constant symbol = "BENTO M LP";
     string public constant name = "Bento Medium Risk Lending Pool";
@@ -80,6 +81,20 @@ contract LendingPair is ERC20, Ownable {
         dev = msg.sender;
         feeTo = msg.sender;
     }
+
+    uint256 public constant closedCollaterizationRate = 75000; // 75%
+    uint256 public constant openCollaterizationRate = 77000; // 77%
+    uint256 public constant minimumTargetUtilization = 7e17; // 70%
+    uint256 public constant maximumTargetUtilization = 8e17; // 80%
+
+    uint256 public constant minimumInterestPerBlock = 1141552511;
+    uint256 public constant maximumInterestPerBlock = 1141552511;
+
+    uint256 public constant liquidationMultiplier = 112e16; // add 12%
+
+    uint256 public constant protocolFee = 10; // 10%
+    uint256 public constant devFee = 10; // 10% of the protocolFee = 1%
+    uint256 public constant borrowOpeningFee = 5; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
     function init(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData_) public {
@@ -114,35 +129,37 @@ contract LendingPair is ERC20, Ownable {
         uint256 blocks = block.number - lastBlockAccrued;
         if (blocks == 0) {return;}
         // The first time lastBlockAccrued will be 0, but also borrowed will be 0, so all good
-        uint256 extraAmount = totalBorrow.mul(interestPerBlock).mul(blocks) / 1e18;
-        uint256 feeAmount = extraAmount / 10; // 10% of interest paid goes to fee
-        totalBorrow = totalBorrow.add(extraAmount);
-        totalAsset = totalAsset.add(extraAmount.sub(feeAmount));
-        feesPending = feesPending.add(feeAmount);
+        uint256 extraShare = totalBorrowShare.mul(interestPerBlock).mul(blocks) / 1e18;
+        uint256 feeShare = extraShare.mul(protocolFee) / 100; // % of interest paid goes to fee
+        totalBorrowShare = totalBorrowShare.add(extraShare);
+        totalAssetShare = totalAssetShare.add(extraShare.sub(feeShare));
+        feesPendingShare = feesPendingShare.add(feeShare);
         lastBlockAccrued = block.number;
     }
 
     // Withdraws the fees accumulated
     function withdrawFees() public {
         accrue();
-        uint256 fees = feesPending.sub(1);
-        uint256 devFee = fees / 10; // 10% dev fee (of 10%)
-        feesPending = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
-        bentoBox.withdrawShare(asset, masterContract.feeTo(), fees.sub(devFee));
-        bentoBox.withdrawShare(asset, masterContract.dev(), devFee);
+        uint256 feeShare = feesPendingShare.sub(1);
+        uint256 devFeeShare = feeShare.mul(devFee) / 100;
+        feesPendingShare = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
+        bentoBox.withdrawShare(asset, masterContract.feeTo(), feeShare.sub(devFeeShare));
+        bentoBox.withdrawShare(asset, masterContract.dev(), devFeeShare);
     }
 
     // Checks if the user is solvent.
     // Has an option to check if the user is solvent in an open/closed liquidation case.
     function isSolvent(address user, bool open) public view returns (bool) {
         // accrue must have already been called!
-        if (userBorrowShare[user] == 0) return true;
-        if (totalCollateral == 0) return false;
+        if (userBorrowFraction[user] == 0) return true;
+        if (totalCollateralShare == 0) return false;
 
-        uint256 borrow = userBorrowShare[user].mul(totalBorrow) / totalBorrowShare;
+        uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
 
         // openColRate : colRate
-        return userCollateral[user].mul(open ? 77000 : 75000) / 1e5 >= borrow.mul(exchangeRate) / 1e18;
+        return userCollateralShare[user]
+            .mul(open ? openCollaterizationRate : closedCollaterizationRate) / 1e5 >=
+            borrow.mul(exchangeRate) / 1e18;
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -162,163 +179,163 @@ contract LendingPair is ERC20, Ownable {
     }
 
     function updateInterestRate() public {
-        if (totalAsset == 0) {return;}
+        if (totalAssetShare == 0) {return;}
 
         uint256 blocks = block.number - lastInterestBlock; // Number of blocks since accrue was called
         if (blocks == 0) {return;}
         lastInterestBlock = block.number;
-        uint256 utilization = totalBorrow.mul(1e18) / totalAsset;
+        uint256 utilization = totalBorrowShare.mul(1e18) / totalAssetShare;
         uint256 newInterestPerBlock;
-        if (utilization < 7e17) { // less than 70% utilization
+        if (utilization < minimumTargetUtilization) {
             uint256 underFactor = uint256(7e17).sub(utilization).mul(1e18) / 7e17;
             uint256 scale = uint256(2000e36).add(underFactor.mul(underFactor).mul(blocks));
             newInterestPerBlock = interestPerBlock.mul(2000e36) / scale;
-            if (newInterestPerBlock < 1141552511) {newInterestPerBlock = 1141552511;} // 0.25% APR minimum
-        } else if (utilization > 8e17) { // more than 80% utilization
+            if (newInterestPerBlock < minimumInterestPerBlock) {newInterestPerBlock = minimumInterestPerBlock;} // 0.25% APR minimum
+        } else if (utilization > maximumTargetUtilization) {
             uint256 overFactor = utilization.sub(8e17).mul(1e18) / uint256(1e18).sub(8e17);
             uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
             newInterestPerBlock = interestPerBlock.mul(scale) / 2000e36;
-            if (newInterestPerBlock > 4566210045000) {newInterestPerBlock = 4566210045000;} // 0.25% APR maximum
+            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 0.25% APR maximum
         } else {return;}
 
         interestPerBlock = newInterestPerBlock;
     }
 
     // Handles internal variable updates when collateral is deposited
-    function _addCollateral(address user, uint256 amount) private {
+    function _addCollateralShare(address user, uint256 share) private {
         // Adds this share to user
-        userCollateral[user] = userCollateral[user].add(amount);
-        // Adds the amount deposited to the total of collateral
-        totalCollateral = totalCollateral.add(amount);
-        emit AddCollateral(msg.sender, amount);
+        userCollateralShare[user] = userCollateralShare[user].add(share);
+        // Adds the share deposited to the total of collateral
+        totalCollateralShare = totalCollateralShare.add(share);
+        emit AddCollateral(msg.sender, share);
     }
 
     // Handles internal variable updates when supply (the borrowable token) is deposited
-    function _addAsset(address user, uint256 amount) private {
+    function _addAssetShare(address user, uint256 share) private {
         // Calculates what share of the pool the user gets for the amount deposited
-        uint256 newShare = totalSupply == 0 ? amount : amount.mul(totalSupply) / totalAsset;
+        uint256 newFraction = totalSupply == 0 ? share : share.mul(totalSupply) / totalAssetShare;
         // Adds this share to user
-        balanceOf[user] = balanceOf[user].add(newShare);
+        balanceOf[user] = balanceOf[user].add(newFraction);
         // Adds this share to the total of supply shares
-        totalSupply = totalSupply.add(newShare);
+        totalSupply = totalSupply.add(newFraction);
         // Adds the amount deposited to the total of supply
-        totalAsset = totalAsset.add(amount);
-        emit AddAsset(msg.sender, amount, newShare);
+        totalAssetShare = totalAssetShare.add(share);
+        emit AddAsset(msg.sender, share, newFraction);
     }
 
     // Handles internal variable updates when supply (the borrowable token) is borrowed
-    function _addBorrow(address user, uint256 amount) private {
+    function _addBorrow(address user, uint256 share) private {
         // Calculates what share of the borrowed funds the user gets for the amount borrowed
-        uint256 newShare = totalBorrowShare == 0 ? amount : amount.mul(totalBorrowShare) / totalBorrow;
+        uint256 newFraction = totalBorrowFraction == 0 ? share : share.mul(totalBorrowFraction) / totalBorrowShare;
         // Adds this share to the user
-        userBorrowShare[user] = userBorrowShare[user].add(newShare);
+        userBorrowFraction[user] = userBorrowFraction[user].add(newFraction);
         // Adds amount borrowed to the total amount borrowed
-        totalBorrowShare = totalBorrowShare.add(newShare);
+        totalBorrowFraction = totalBorrowFraction.add(newFraction);
         // Adds amount borrowed to the total amount borrowed
-        totalBorrow = totalBorrow.add(amount);
-        emit AddBorrow(msg.sender, amount, newShare);
+        totalBorrowShare = totalBorrowShare.add(share);
+        emit AddBorrow(msg.sender, share, newFraction);
     }
 
     // Handles internal variable updates when collateral is withdrawn and returns the amount of collateral withdrawn
-    function _removeCollateral(address user, uint256 amount) private {
+    function _removeCollateralShare(address user, uint256 share) private {
         // Subtracts the share from user
-        userCollateral[user] = userCollateral[user].sub(amount);
+        userCollateralShare[user] = userCollateralShare[user].sub(share);
         // Subtracts the amount from the total of collateral
-        totalCollateral = totalCollateral.sub(amount);
-        emit RemoveCollateral(msg.sender, amount);
+        totalCollateralShare = totalCollateralShare.sub(share);
+        emit RemoveCollateral(msg.sender, share);
     }
 
     // Handles internal variable updates when supply is withdrawn and returns the amount of supply withdrawn
-    function _removeAssetShare(address user, uint256 share) private returns (uint256) {
+    function _removeAssetFraction(address user, uint256 share) private returns (uint256) {
         // Subtracts the share from user
         balanceOf[user] = balanceOf[user].sub(share);
         // Calculates the amount of tokens to withdraw
-        uint256 amount = share.mul(totalAsset) / totalSupply;
+        uint256 amount = share.mul(totalAssetShare) / totalSupply;
         // Subtracts the calculated amount from the total of supply
         totalSupply = totalSupply.sub(share);
         // Subtracts the share from the total of supply shares
-        totalAsset = totalAsset.sub(amount);
+        totalAssetShare = totalAssetShare.sub(amount);
         emit RemoveAsset(msg.sender, amount, share);
         return amount;
     }
 
     // Handles internal variable updates when supply is repaid
-    function _removeBorrowShare(address user, uint256 share) private returns (uint256) {
+    function _removeBorrowFraction(address user, uint256 share) private returns (uint256) {
         // Subtracts the share from user
-        userBorrowShare[user] = userBorrowShare[user].sub(share);
+        userBorrowFraction[user] = userBorrowFraction[user].sub(share);
         // Calculates the amount of tokens to repay
-        uint256 amount = share.mul(totalBorrow) / totalBorrowShare;
+        uint256 amount = share.mul(totalBorrowShare) / totalBorrowFraction;
         // Subtracts the share from the total of shares borrowed
-        totalBorrowShare = totalBorrowShare.sub(share);
+        totalBorrowFraction = totalBorrowFraction.sub(share);
         // Subtracts the calculated amount from the total amount borrowed
-        totalBorrow = totalBorrow.sub(amount);
+        totalBorrowShare = totalBorrowShare.sub(amount);
         emit RemoveBorrow(msg.sender, amount, share);
         return amount;
     }
 
     // Deposits an amount of collateral from the caller
     function addCollateral(uint256 amount) public {
-        _addCollateral(msg.sender, bentoBox.deposit(collateral, msg.sender, amount));
+        _addCollateralShare(msg.sender, bentoBox.deposit(collateral, msg.sender, amount));
     }
 
     // Deposits an amount of supply (the borrowable token) from the caller
     function addAsset(uint256 amount) public {
-        // Accrue interest before calculating pool shares in _addAsset
+        // Accrue interest before calculating pool shares in _addAssetShare
         accrue();
         updateInterestRate();
-        _addAsset(msg.sender, bentoBox.deposit(asset, msg.sender, amount));
+        _addAssetShare(msg.sender, bentoBox.deposit(asset, msg.sender, amount));
     }
 
     // Withdraws a share of collateral of the caller to the specified address
-    function removeCollateral(uint256 amount, address to) public {
+    function removeCollateral(uint256 share, address to) public {
         accrue();
-        _removeCollateral(msg.sender, amount);
+        _removeCollateralShare(msg.sender, share);
         // Only allow withdrawing if user is solvent (in case of a closed liquidation)
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
-        bentoBox.withdrawShare(collateral, to, amount);
+        bentoBox.withdrawShare(collateral, to, share);
     }
 
     // Withdraws a share of supply (the borrowable token) of the caller to the specified address
-    function removeAsset(uint256 share, address to) public {
-        // Accrue interest before calculating pool shares in _removeAssetShare
+    function removeAsset(uint256 fraction, address to) public {
+        // Accrue interest before calculating pool shares in _removeAssetFraction
         accrue();
         updateInterestRate();
-        uint256 amount = _removeAssetShare(msg.sender, share);
-        bentoBox.withdrawShare(asset, to, amount);
+        uint256 share = _removeAssetFraction(msg.sender, fraction);
+        bentoBox.withdrawShare(asset, to, share);
     }
 
     // Borrows the given amount from the supply to the specified address
     function borrow(uint256 amount, address to) public {
-        require(amount <= totalAsset.sub(totalBorrow), 'BentoBox: not enough liquidity');
         accrue();
         updateInterestRate();
-        uint256 fee = amount.mul(5) / 10000; // A flat 0.05% fee is charged for any borrow
-        _addBorrow(msg.sender, bentoBox.withdraw(asset, to, amount).add(fee));
-        totalAsset = totalAsset.add(fee);
+        uint256 share = bentoBox.withdraw(asset, to, amount); // TODO: reentrancy issue?
+        uint256 feeShare = share.mul(borrowOpeningFee) / 10000; // A flat 0.05% fee is charged for any borrow
+        _addBorrow(msg.sender, share.add(feeShare));
+        totalAssetShare = totalAssetShare.add(feeShare);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
     // Repays the given share
-    function repay(uint256 share) public {
+    function repay(uint256 fraction) public {
         accrue();
         updateInterestRate();
-        uint256 amount = _removeBorrowShare(msg.sender, share);
-        bentoBox.depositShare(asset, msg.sender, amount);
+        uint256 share = _removeBorrowFraction(msg.sender, fraction);
+        bentoBox.depositShare(asset, msg.sender, share);
     }
 
     // Handles shorting with an approved swapper
-    function short(ISwapper swapper, uint256 amountAsset, uint256 minReturnedCollateral) public {
+    function short(ISwapper swapper, uint256 assetShare, uint256 minCollateralShare) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
         updateInterestRate();
-        _addBorrow(msg.sender, amountAsset);
-        uint256 suppliedAmount = bentoBox.transferShare(asset, address(this), address(swapper), amountAsset);
+        _addBorrow(msg.sender, assetShare);
+        uint256 suppliedAssetAmount = bentoBox.transferShareFrom(asset, address(this), address(swapper), assetShare);
 
         // Swaps the borrowable asset for collateral
-        swapper.swap(asset, collateral, suppliedAmount, bentoBox.toAmount(collateral, minReturnedCollateral));
-        uint256 returnedCollateral = bentoBox.skim(collateral);
-        require(returnedCollateral >= minReturnedCollateral, 'BentoBox: not enough collateral returned');
-        _addCollateral(msg.sender, returnedCollateral);
+        swapper.swap(asset, collateral, suppliedAssetAmount, bentoBox.toAmount(collateral, minCollateralShare));
+        uint256 returnedCollateralShare = bentoBox.skim(collateral);
+        require(returnedCollateralShare >= minCollateralShare, 'BentoBox: not enough collateral returned');
+        _addCollateralShare(msg.sender, returnedCollateralShare);
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
@@ -328,86 +345,89 @@ contract LendingPair is ERC20, Ownable {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
         updateInterestRate();
-        uint suppliedAmount = bentoBox.transferShare(collateral, address(this), address(swapper), maxAmountCollateral);
+        uint suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), maxAmountCollateral);
 
-        uint256 borrowAmount = _removeBorrowShare(msg.sender, borrowShare);
+        uint256 borrowAmount = _removeBorrowFraction(msg.sender, borrowShare);
 
         // Swaps the collateral back for the borrowal asset
         uint256 usedAmount = swapper.swapExact(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, borrowAmount), address(this));
         uint256 returnedAssetShare = bentoBox.skim(asset);
         require(returnedAssetShare >= borrowShare, 'BentoBox: Not enough assets returned');
 
-        _removeCollateral(msg.sender, suppliedAmount.sub(usedAmount));
+        _removeCollateralShare(msg.sender, suppliedAmount.sub(usedAmount));
 
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
     // Handles the liquidation of users' balances, once the users' amount of collateral is too low
-    function liquidate(address[] calldata users, uint256[] calldata borrowShares, address to, ISwapper swapper, bool open) public {
+    function liquidate(address[] calldata users, uint256[] calldata borrowFractions, address to, ISwapper swapper, bool open) public {
         accrue();
         updateExchangeRate();
         updateInterestRate();
 
-        uint256 allCollateralAmount;
-        uint256 allBorrowAmount;
+        uint256 allCollateralShare;
         uint256 allBorrowShare;
+        uint256 allBorrowFraction;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
             if (!isSolvent(user, open)) {
                 // Gets the user's share of the total borrowed amount
-                uint256 borrowShare = borrowShares[i];
+                uint256 borrowFraction = borrowFractions[i];
                 // Calculates the user's amount borrowed
-                uint256 borrowAmount = borrowShare.mul(totalBorrow) / totalBorrowShare;
+                uint256 borrowShare = borrowFraction.mul(totalBorrowShare) / totalBorrowFraction;
                 // Calculates the amount of collateral that's going to be swapped for the asset
-                uint256 collateralAmount = borrowAmount.mul(1e13).mul(112000) / exchangeRate; // liqMultiplier
+                uint256 collateralShare = borrowShare.mul(liquidationMultiplier) / exchangeRate; // liqMultiplier
 
                 // Removes the share of collateral from the user's balance
-                userCollateral[user] = userCollateral[user].sub(collateralAmount);
+                userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
                 // Removes the share of user's borrowed tokens from the user
-                userBorrowShare[user] = userBorrowShare[user].sub(borrowShare);
-                emit RemoveCollateral(user, collateralAmount);
-                emit RemoveBorrow(user, borrowAmount, borrowShare);
+                userBorrowFraction[user] = userBorrowFraction[user].sub(borrowFraction);
+                emit RemoveCollateral(user, collateralShare);
+                emit RemoveBorrow(user, borrowShare, borrowFraction);
 
                 // Keep totals
-                allCollateralAmount = allCollateralAmount.add(collateralAmount);
-                allBorrowAmount = allBorrowAmount.add(borrowAmount);
+                allCollateralShare = allCollateralShare.add(collateralShare);
                 allBorrowShare = allBorrowShare.add(borrowShare);
+                allBorrowFraction = allBorrowFraction.add(borrowFraction);
             }
         }
-        require(allBorrowAmount != 0, 'BentoBox: all users are solvent');
-        totalBorrow = totalBorrow.sub(allBorrowAmount);
+        require(allBorrowShare != 0, 'BentoBox: all users are solvent');
         totalBorrowShare = totalBorrowShare.sub(allBorrowShare);
-        totalCollateral = totalCollateral.sub(allCollateralAmount);
+        totalBorrowFraction = totalBorrowFraction.sub(allBorrowFraction);
+        totalCollateralShare = totalCollateralShare.sub(allCollateralShare);
 
         if (!open) {
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
             require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
 
             // Swaps the users' collateral for the borrowed asset
-            uint256 suppliedAmount = bentoBox.transfer(collateral, address(this), address(swapper), allCollateralAmount);
-            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowAmount));
+            uint256 suppliedAmount = bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralShare);
+            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowShare));
             uint256 returnedAssetShare = bentoBox.skim(asset);
-            uint256 extraAsset = returnedAssetShare.sub(allBorrowAmount);
+            uint256 extraAssetShare = returnedAssetShare.sub(allBorrowShare);
 
             // The extra asset gets added to the pool
-            uint256 feeAmount = extraAsset / 10; // 10% of profit goes to fee
-            feesPending = feesPending.add(feeAmount);
-
-            totalAsset = totalAsset.add(extraAsset.sub(feeAmount));
-            emit AddAsset(address(0), extraAsset, 0);
+            uint256 feeShare = extraAssetShare.mul(protocolFee) / 100; // % of profit goes to fee
+            feesPendingShare = feesPendingShare.add(feeShare);
+            totalAssetShare = totalAssetShare.add(extraAssetShare.sub(feeShare));
+            emit AddAsset(address(0), extraAssetShare, 0);
         } else if (address(swapper) == address(0)) {
             // Open liquidation directly using the caller's funds, without swapping
-            bentoBox.deposit(asset, to, allBorrowAmount);
-            bentoBox.withdraw(collateral, to, allCollateralAmount);
+            bentoBox.deposit(asset, msg.sender, allBorrowShare);
+            bentoBox.withdraw(collateral, to, allCollateralShare);
+        } else if (address(swapper) == address(1)) {
+            // Open liquidation directly using the caller's funds, without swapping
+            bentoBox.transferFrom(asset, msg.sender, to, allBorrowShare);
+            bentoBox.transfer(collateral, to, allCollateralShare);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
-            uint256 suppliedAmount = bentoBox.transfer(collateral, address(this), address(swapper), allCollateralAmount);
-            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowAmount));
+            uint256 suppliedAmount = bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralShare);
+            swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowShare));
             uint256 returnedAssetShare = bentoBox.skim(asset);
-            uint256 extraAsset = returnedAssetShare.sub(allBorrowAmount);
+            uint256 extraAsset = returnedAssetShare.sub(allBorrowShare);
 
-            totalAsset = totalAsset.add(extraAsset);
+            totalAssetShare = totalAssetShare.add(extraAsset);
             emit AddAsset(address(0), extraAsset, 0);
         }
     }

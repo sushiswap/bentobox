@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
+const {e18, encodePrice, getInitData, getDataParameter, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const TokenA = artifacts.require("TokenA");
 const TokenB = artifacts.require("TokenB");
@@ -9,7 +9,7 @@ const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
 const TestOracle = artifacts.require("TestOracle");
-const SushiSwapDelegateSwapper = artifacts.require("SushiSwapDelegateSwapper");
+const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
 
@@ -25,8 +25,8 @@ async function logStatus(bentoBox, pair, a, b, alice, bob) {
     console.log('P', (await pair.balanceOf(bentoBox.address)).toString(), 'of', (await pair.totalSupply()).toString());
     console.log();
     console.log('Pair contract');
-    console.log('A in bentoBox', (await bentoBox.shareOf(a.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(a.address)).toString(), 'total balance is', (await bentoBox.totalBalance(a.address)).toString());
-    console.log('B in bentoBox', (await bentoBox.shareOf(b.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(b.address)).toString(), 'total balance is', (await bentoBox.totalBalance(b.address)).toString());
+    console.log('A in bentoBox', (await bentoBox.shareOf(a.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(a.address)).toString(), 'total balance is', (await bentoBox.totalAmount(a.address)).toString());
+    console.log('B in bentoBox', (await bentoBox.shareOf(b.address, pair.address)).toString(), 'of', (await bentoBox.totalShare(b.address)).toString(), 'total balance is', (await bentoBox.totalAmount(b.address)).toString());
     console.log();
     console.log('Alice');
     console.log('A', (await a.balanceOf(alice)).toString());
@@ -51,8 +51,10 @@ contract('LendingPair', (accounts) => {
   const alice = accounts[1];
   const bob = accounts[2];
   const dummy = accounts[4];
-  const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
-  const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
+  // const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
+  // const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
+  const private_key = "0x328fb00abf72d3c33b7732c3cdfdfd93300fcfef0807952f8f766a1b09f17b94";
+  const public_key = "0xCa6f9b85Ece7F9Dc8e6461cF639992eC7c275aEE";
 
   before(async () => {
     bentoBox = await BentoBox.deployed();
@@ -62,7 +64,7 @@ contract('LendingPair', (accounts) => {
     b = await TokenB.new({ from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
-    swapper = await SushiSwapDelegateSwapper.new(factory.address, { from: accounts[0] });
+    swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
     await pairMaster.setSwapper(swapper.address, true);
 
     let tx = await factory.createPair(a.address, b.address);
@@ -94,7 +96,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should not allow borrowing without any assets', async () => {
-    await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
+    await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
   });
 
   it('should take a deposit of assets', async () => {
@@ -108,6 +110,10 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should execute a permit', async () => {
+    //const p = await signERC2612Permit(pair.address, alice, bob, 10);
+    //console.log(p);
+    //await pair.permit(alice, bob, 10, p.deadline, p.v, p.r, p.s);
+
     let nonce = await pair.nonces(public_key);
     nonce = nonce.toNumber();
     let block = await web3.eth.getBlock("latest");
@@ -122,7 +128,10 @@ contract('LendingPair', (accounts) => {
         Buffer.from(digest.slice(2), 'hex'),
         Buffer.from(private_key.replace('0x', ''), 'hex')
     );
-    await pair.permit(public_key, alice, 10, deadline, v, r, s);
+    // console.log(v, r, s);
+    // let t = await web3.eth.sign(msg, public_key);
+    // console.log(msg, t);
+    await pair.permit(public_key, alice, 10, deadline, v, r, s);    
   });
 
   it('permit should revert on old deadline', async () => {
@@ -175,8 +184,8 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should have correct balances after supply of collateral', async () => {
-    assert.equal((await pair.totalCollateral()).toString(), e18(100).toString());
-    assert.equal((await pair.userCollateral(alice)).toString(), e18(100).toString());
+    assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
+    assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
   })
 
   it('should allow borrowing with collateral up to 75%', async () => {
@@ -223,7 +232,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should allow full repay with funds', async () => {
-    let borrowShareLeft = await pair.userBorrowShare(alice);
+    let borrowShareLeft = await pair.userBorrowFraction(alice);
     await pair.repay(borrowShareLeft, { from: alice });
   });
 
@@ -236,7 +245,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should allow full withdrawal of collateral', async () => {
-    let shareALeft = await pair.userCollateral(alice);
+    let shareALeft = await pair.userCollateralShare(alice);
     await pair.removeCollateral(shareALeft, alice, { from: alice });
   });
 

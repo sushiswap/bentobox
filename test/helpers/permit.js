@@ -40,7 +40,26 @@ getApprovalDigest = async (
   return keccak256(pack);
 }
 
+getApprovalMsg = async (
+  token_address,
+  approve,
+  nonce,
+  deadline
+) => {
+  const DOMAIN_SEPARATOR = getDomainSeparator(token_address);
+  const msg = defaultAbiCoder.encode(
+    ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
+    [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]
+  );
+  const pack = solidityPack(
+    ['bytes1', 'bytes1', 'bytes32', 'bytes32'],
+    ['0x19', '0x01', DOMAIN_SEPARATOR, keccak256(msg)]
+  );
+  return pack;
+}
+
 module.exports = {
-    getApprovalDigest,
-    getDomainSeparator
+  getApprovalDigest,
+  getApprovalMsg,
+  getDomainSeparator
 }

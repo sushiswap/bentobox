@@ -73,7 +73,7 @@ contract SushiSwapSwapper is ISwapper {
             pair.swap(exactAmountTo, 0, address(bentoBox), new bytes(0));
         }
 
-        bentoBox.transfer(from, address(this), refundTo, amountFromMax.sub(amountFrom));
+        bentoBox.transferFrom(from, address(this), refundTo, amountFromMax.sub(amountFrom));
 
         return amountFrom;
     }
