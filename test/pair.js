@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, encodePrice, getInitData, getDataParameter, signERC2612Permit} = require("./helpers/utils");
+const {e18, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const MockERC20 = artifacts.require("MockERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
@@ -11,10 +11,6 @@ const TestOracle = artifacts.require("TestOracle");
 const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
-
-function sansBorrowFee(amount) {
-  return amount.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
-}
 
 async function logStatus(bentoBox, pair, a, b, alice, bob) {
     console.log('BentoBox contract');
