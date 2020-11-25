@@ -94,4 +94,23 @@ contract('CompositeOracle', (accounts) => {
     const rounding = new web3.utils.BN("10000000000000000"); // 10^16
     assert.equal(price.divRound(rounding).toString(), token2Amount.mul(new web3.utils.BN("100")).div(token0Amount).toString());
   });
+
+  it('should update prices after swap', async () => {
+    await compositeOracle.get(oracleData);
+    await timeWarp.advanceTime(61);
+    await compositeOracle.get(oracleData);
+    let price0 = (await compositeOracle.peek(oracleData))[1];
+    await a.transfer(pairA.address, e18(400));
+    await timeWarp.advanceTime(30);
+    await pairA.sync();
+    await timeWarp.advanceTime(30);
+    await compositeOracle.get(oracleData);
+    let price1 = (await compositeOracle.peek(oracleData))[1];
+
+    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
+    const oldPrice = token2Amount.mul(new web3.utils.BN("100")).div(token0Amount);
+    const newPrice = oldPrice.add((token2Amount.mul(new web3.utils.BN("100"))).div(token0Amount.mul(new web3.utils.BN("2")))).divRound(new web3.utils.BN("2"));
+    assert.equal(price0.divRound(rounding).toString(), oldPrice.toString());
+    assert.equal(price1.divRound(rounding).toString(), newPrice.toString(), "prices should be exactly half way between price points");
+  });
 });

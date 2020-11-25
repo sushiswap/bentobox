@@ -80,7 +80,7 @@ contract BentoBox {
         _;
     }
 
-    function deposit(IERC20 token, address from, uint256 amount) public returns (uint256) { return depositTo(token, from, msg.sender, amount); }
+    function deposit(IERC20 token, address from, uint256 amount) public payable returns (uint256) { return depositTo(token, from, msg.sender, amount); }
     function depositTo(IERC20 token, address from, address to, uint256 amount) public allowed(from) returns (uint256) {
         uint256 share = toShare(token, amount);
         _deposit(token, from, to, amount, share);
