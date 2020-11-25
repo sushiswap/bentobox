@@ -84,9 +84,9 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
     let price1 = (await oracle.peek(oracleData))[1];
 
-    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
+    const rounding = new web3.utils.BN("100000000000000000"); // 10^16
 
     assert.equal(price0.toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString(), "token1 should be 0.5x of token0");
-    assert.equal(price1.div(rounding).toString(), token1Amount.mul(new web3.utils.BN(15)).div(new web3.utils.BN(100)).div(rounding).toString(), "prices should be exactly half way between price points");
+    assert.equal(price1.divRound(rounding).toString(), token1Amount.mul(new web3.utils.BN(15)).div(new web3.utils.BN(100)).divRound(rounding).toString(), "prices should be exactly half way between price points");
   });
 });

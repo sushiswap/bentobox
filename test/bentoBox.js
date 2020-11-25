@@ -25,8 +25,8 @@ contract('BentoBox', (accounts) => {
   const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
 
   beforeEach(async () => {
-    weth = await WETH9.deployed();
-    bentoBox = await BentoBox.deployed();
+    weth = await WETH9.new();
+    bentoBox = await BentoBox.new(weth.address);
     a = await TokenA.new({ from: accounts[0] });
     b = await TokenB.new({ from: accounts[0] });
     await a.transfer(alice, e18(1000));
@@ -240,7 +240,7 @@ contract('BentoBox', (accounts) => {
   it('should allow to skim ether', async () => {
     await bentoBox.batch([], true, {from: alice, value: e18(1)})
     await bentoBox.skimETH({from: alice});
-    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(2).toString(), "BentoBox should hold WETH");
+    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
     share = await bentoBox.shareOf(weth.address, alice);
     assert.equal(share.toString(), e18(1).toString(), "alice should have weth");
   });
@@ -248,7 +248,7 @@ contract('BentoBox', (accounts) => {
   it('should allow to skim ether to other address', async () => {
     await bentoBox.batch([], true, {from: alice, value: e18(1)})
     await bentoBox.skimETHTo(bob, {from: alice});
-    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(3).toString(), "BentoBox should hold WETH");
+    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
     share = await bentoBox.shareOf(weth.address, bob);
     assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
   });

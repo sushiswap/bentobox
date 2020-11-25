@@ -72,7 +72,7 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting into insolvency", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }));
+    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), "BentoBox: user insolvent");
   });
 
   it('should have correct balances before short', async () => {
