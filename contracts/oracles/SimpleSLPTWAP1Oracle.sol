@@ -12,7 +12,7 @@ import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
 
 // adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleSlidingWindowOracle.sol
 
-contract SimpleSLPTWAP0Oracle is IOracle {
+contract SimpleSLPTWAP1Oracle is IOracle {
     using FixedPoint for *;
     using BoringMath for uint256;
     uint256 public constant PERIOD = 1 minutes;
@@ -27,12 +27,12 @@ contract SimpleSLPTWAP0Oracle is IOracle {
     mapping(address => IUniswapV2Pair) public callerInfo; // Map of callers to pairs
 
     function _get(IUniswapV2Pair pair, uint32 blockTimestamp) public view returns (uint256) {
-        uint256 priceCumulative = pair.price0CumulativeLast();
+        uint256 priceCumulative = pair.price1CumulativeLast();
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
-            priceCumulative += uint(FixedPoint.fraction(reserve1, reserve0)._x) * (blockTimestamp - blockTimestampLast); // overflows are desired
+            priceCumulative += uint(FixedPoint.fraction(reserve0, reserve1)._x) * (blockTimestamp - blockTimestampLast); // overflows are desired
         }
 
         // overflow is desired, casting never truncates
@@ -49,7 +49,6 @@ contract SimpleSLPTWAP0Oracle is IOracle {
         if (pairs[pair].blockTimestampLast == 0) {
             pairs[pair].blockTimestampLast = blockTimestamp;
             pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
-
             return (false, 0);
         }
         uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
