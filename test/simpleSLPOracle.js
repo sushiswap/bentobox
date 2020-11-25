@@ -68,6 +68,25 @@ contract('SimpleSLPOracle', (accounts) => {
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
     assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.peek(oracleData))[1].toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString());
+    assert.equal((await oracle.peek(oracleData))[1].toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString(), "token1 should be 0.5x of token0");
+  });
+
+  it('should update prices after swap', async () => {
+    const blockTimestamp = (await pair.getReserves())[2];
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(61);
+    await oracle.get(oracleData);
+    let price0 = (await oracle.peek(oracleData))[1];
+    await a.transfer(pair.address, e18(5));
+    await timeWarp.advanceTime(30);
+    await pair.sync();
+    await timeWarp.advanceTime(30);
+    await oracle.get(oracleData);
+    let price1 = (await oracle.peek(oracleData))[1];
+
+    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
+
+    assert.equal(price0.toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString(), "token1 should be 0.5x of token0");
+    assert.equal(price1.div(rounding).toString(), token1Amount.mul(new web3.utils.BN(15)).div(new web3.utils.BN(100)).div(rounding).toString(), "prices should be exactly half way between price points");
   });
 });

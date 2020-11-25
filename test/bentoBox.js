@@ -23,8 +23,9 @@ contract('BentoBox', (accounts) => {
   const public_key = accounts[4];
   let pairMaster;
   const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
+
   beforeEach(async () => {
-    //weth = await WETH9.deployed();
+    weth = await WETH9.deployed();
     bentoBox = await BentoBox.deployed();
     a = await TokenA.new({ from: accounts[0] });
     b = await TokenB.new({ from: accounts[0] });
@@ -32,11 +33,20 @@ contract('BentoBox', (accounts) => {
     await b.transfer(bob, e18(1000));
     pairMaster = await Pair.deployed();
   });
+
   it('should allow deposit', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(1).toString());
+  });
+
+  it('should allow deposit with Ethereum', async () => {
+    await bentoBox.deposit(weth.address, bob, e18(1), { from: bob, value: e18(1) });
+    await bentoBox.skimETH({from: bob});
+    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
+    share = await bentoBox.shareOf(weth.address, bob);
+    assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
   });
 
   it('should allow depositWithPermit', async () => {
@@ -226,15 +236,21 @@ contract('BentoBox', (accounts) => {
     share = await bentoBox.shareOf(a.address, maki);
     assert.equal(share.toString(), e18(1).toString(), "maki should have tokens");
   });
+
   it('should allow to skim ether', async () => {
-    // TODO: look up how to mint ETH to BentoBox
-    //await a.transfer(bentoBox.address, e18(0), {from: alice, value: e18(1)});
-    //await bentoBox.skimETH();
-    //console.log(await weth.balanceOf(bentoBox.address))
+    await bentoBox.batch([], true, {from: alice, value: e18(1)})
+    await bentoBox.skimETH({from: alice});
+    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(2).toString(), "BentoBox should hold WETH");
+    share = await bentoBox.shareOf(weth.address, alice);
+    assert.equal(share.toString(), e18(1).toString(), "alice should have weth");
   });
 
   it('should allow to skim ether to other address', async () => {
-    // TODO: look up how to mint ETH to BentoBox
+    await bentoBox.batch([], true, {from: alice, value: e18(1)})
+    await bentoBox.skimETHTo(bob, {from: alice});
+    assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(3).toString(), "BentoBox should hold WETH");
+    share = await bentoBox.shareOf(weth.address, bob);
+    assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
   });
 
   it('should allow flashloan', async () => {
