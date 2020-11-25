@@ -1,6 +1,6 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
-const {e18, e9, getInitData, getDataParameter} = require("./helpers/utils");
+const {e18, e9, getInitData, getDataParameter, sansBorrowFee} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const MockERC20 = artifacts.require("MockERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
@@ -9,11 +9,6 @@ const Pair = artifacts.require("LendingPair");
 const RebaseToken = artifacts.require("RebaseToken");
 const TestOracle = artifacts.require("TestOracle");
 const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
-
-function netBorrowFee(amount) {
-  const withDecimals = new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
-  return withDecimals.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
-}
 
 contract('LendingPair with Rebase', (accounts) => {
   let a;
@@ -43,10 +38,11 @@ contract('LendingPair with Rebase', (accounts) => {
     await b.transfer(sushiswappair.address, e9("5000"));
     await sushiswappair.mint(accounts[0]);
 
-    await a.transfer(alice, e18(1000));
-    await b.transfer(bob, e9(1000));
+    await a.transfer(alice, e18(1000)); // collateral
+    await b.transfer(bob, e9(1000));    // asset
 
     oracle = await TestOracle.new({ from: accounts[0] });
+    await oracle.set(e18(1000000000), accounts[0]);
     let oracleData = getDataParameter(TestOracle._json.abi, []);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
@@ -94,7 +90,7 @@ contract('LendingPair with Rebase', (accounts) => {
   });
 
   it('should allow borrowing with collateral up to 75%', async () => {
-    await pair.borrow(netBorrowFee(75).div(e9(1)), alice, { from: alice });
+    await pair.borrow(sansBorrowFee(e9(75)), alice, { from: alice });
   });
 
   it('should not allow any more borrowing', async () => {
@@ -113,27 +109,27 @@ contract('LendingPair with Rebase', (accounts) => {
 
   it('should not allow open liquidate yet', async () => {
     await b.approve(bentoBox.address, e9(25), { from: bob });
-    await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+    await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
   });
 
   it('should allow closed liquidate', async () => {
-    let tx = await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
+    let tx = await pair.liquidate([alice], [e9(10)], bob, swapper.address, false, { from: bob });
   });
 
   it('should report open insolvency after oracle rate is updated', async () => {
-    await oracle.set("1100000000000000000", pair.address);
+    await oracle.set(e18(1100000000), pair.address);
     await pair.updateExchangeRate();
     assert.equal(await pair.isSolvent(alice, true), false);
   });
 
   it('should allow open liquidate', async () => {
     await b.approve(bentoBox.address, e9(25), { from: bob });
-    await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+    await pair.liquidate([alice], [e9(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
   });
 
   it('should allow repay', async () => {
     await b.approve(bentoBox.address, e9(100), { from: alice });
-    await pair.repay(e18(50), { from: alice });
+    await pair.repay(e9(50), { from: alice });
   });
 
   it('should allow full repay with funds', async () => {
