@@ -168,22 +168,25 @@ contract LendingPair is ERC20, Ownable {
         if (userBorrowFraction[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
 
-        uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
+        uint256 activeCollateral = userCollateralShare[user].mul(open ? openCollaterizationRate : closedCollaterizationRate) / 1e5;
+        activeCollateral = to18(activeCollateral, collateral.decimals());
 
+        uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowShare;
+        uint256 decimals = asset.decimals();
+        borrow = to18(borrow, decimals).mul(to18(exchangeRate, decimals)) / 1e18;
+        
         // openColRate : colRate
-        return userCollateralShare[user]
-            .mul(open ? openCollaterizationRate : closedCollaterizationRate) / 1e5 >=
-            borrow.mul(exchangeRate) / 1e18;
+        return activeCollateral >= borrow;
     }
 
     function getCreditLine(address user, bool open) public view returns (uint256) {
-        uint256 activeCollateral = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 );
+        uint256 activeCollateral = (userCollateralShare[user].mul(open ? 77000 : 75000)  / 1e5 );
         activeCollateral = to18(activeCollateral, collateral.decimals());
-        uint256 borrow = userBorrowShare[user];
+        uint256 borrow = userBorrowFraction[user];
         if (borrow == 0) {
           return (activeCollateral);
         }
-        borrow = borrow.mul(totalBorrow) / totalBorrowShare;
+        borrow = borrow.mul(totalBorrowShare) / totalBorrowShare;
         uint256 decimals = asset.decimals();
         borrow = to18(borrow, decimals).mul(to18(exchangeRate, decimals)) / 1e18;
         return borrow;
