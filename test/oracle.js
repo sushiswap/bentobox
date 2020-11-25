@@ -8,18 +8,15 @@ const PeggedOracle = artifacts.require("PeggedOracle");
 
 contract('PeggedOracle', (accounts) => {
     let oracle;
+    let data;
 
     before(async () => {
         oracle = await PeggedOracle.new({ from: accounts[0] });
+        data = await oracle.getDataParameter("1000000000000000000");
     });
 
-    // it('should return 0 on rate request for non-existant pair', async () => {
-    //     let result = await oracle.peek("0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E");
-    //     assert.equal(result.toString(), "0");
-    // });
-
-    // it('should return 1e18 on rate request for deployed pair', async () => {
-    //     let result = await oracle.peek(accounts[0]);
-    //     assert.equal(result.toString(), "1000000000000000000");
-    // });
+    it('should return 1e18 on rate request', async () => {
+        let result = await oracle.peek(data);
+        assert.equal(result[1].toString(), "1000000000000000000");
+    });
 });

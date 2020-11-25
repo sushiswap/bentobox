@@ -27,7 +27,7 @@ contract BentoBox {
     mapping(IERC20 => mapping(address => uint256)) public shareOf; // Balance per token per address/contract
     mapping(IERC20 => uint256) public totalShare; // Total share per token
     mapping(IERC20 => uint256) public totalBalance; // Total balance per token
-    IERC20 private WETH; // TODO: Hardcode WETH on final deploy and remove constructor
+    IERC20 public WETH; // TODO: Hardcode WETH on final deploy and remove constructor
     //IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     constructor(IERC20 WETH_) public {
