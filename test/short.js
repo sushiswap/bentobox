@@ -45,6 +45,7 @@ contract('Pair (Shorting)', (accounts) => {
     await b.transfer(bob, e18(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
+    await oracle.set(e18(1), accounts[0]);
     let oracleData = getDataParameter(TestOracle._json.abi, []);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
@@ -70,11 +71,9 @@ contract('Pair (Shorting)', (accounts) => {
     await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapClosedSwapper: return not enough");
   });
 
-  // it("should not allow shorting into insolvency", async () => {
-    // test broken because oracle returns 0 price
-    // await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }));
-  //   throw new Error('oracle error');
-  // });
+  it("should not allow shorting into insolvency", async () => {
+    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }));
+  });
 
   it('should have correct balances before short', async () => {
     assert.equal((await pair.userCollateral(alice)).toString(), e18(100).toString());
