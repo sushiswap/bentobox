@@ -66,7 +66,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any assets', async () => {
-      await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
+      await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
     });
 
     it('should take a deposit of assets', async () => {
@@ -206,7 +206,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any assets', async () => {
-      await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
+      await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
     });
 
     it('should not take deposit without exchange rate', async () => {
