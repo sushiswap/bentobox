@@ -170,14 +170,15 @@ contract LendingPair is ERC20, Ownable {
 
 
     function getCreditLine(address user, bool open) public view returns (uint256) {
-        uint256 collateralAmount = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 ) / exchangeRate;
+        uint256 collateralAmount = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 );
         uint256 borrow = userBorrowShare[user];
         if (borrow == 0) {
           return (collateralAmount);
         }
         borrow = borrow.mul(totalBorrow) / totalBorrowShare;
         borrow = borrow.mul(exchangeRate);
-        return (collateralAmount >= borrow) ? collateralAmount.sub(borrow) : 0;
+        return collateralAmount;
+        //return (collateralAmount >= borrow) ? collateralAmount.sub(borrow) : 0;
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
