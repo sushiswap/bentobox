@@ -13,9 +13,8 @@ const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
 
-function netBorrowFee(amount) {
-  const withDecimals = new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000000000000"));
-  return withDecimals.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
+function sansBorrowFee(amount) {
+  return amount.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
 }
 
 async function logStatus(bentoBox, pair, a, b, alice, bob) {
@@ -75,6 +74,7 @@ contract('LendingPair', (accounts) => {
     await b.transfer(bob, e18(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
+    await oracle.set(e18(1), accounts[0]);
     let oracleData = getDataParameter(TestOracle._json.abi, []);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
@@ -180,17 +180,17 @@ contract('LendingPair', (accounts) => {
   })
 
   it('should allow borrowing with collateral up to 75%', async () => {
-    await pair.borrow(netBorrowFee(75), alice, { from: alice });
+    await pair.borrow(sansBorrowFee(e18(75)), alice, { from: alice });
   });
 
-  // it('should not allow any more borrowing', async () => {
-  //   await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
-  // });
+  it('should not allow any more borrowing', async () => {
+    await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+  });
 
-  // it('should report insolvency due to interest', async () => {
-  //   await pair.accrue();
-  //   assert.equal(await pair.isSolvent(alice, false), false);
-  // })
+  it('should report insolvency due to interest', async () => {
+    await pair.accrue();
+    assert.equal(await pair.isSolvent(alice, false), false);
+  })
 
   it('should not report open insolvency due to interest', async () => {
     await pair.accrue();
@@ -202,9 +202,9 @@ contract('LendingPair', (accounts) => {
     await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
   });
 
-  // it('should allow closed liquidate', async () => {
-  //   let tx = await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
-  // });
+  it('should allow closed liquidate', async () => {
+    let tx = await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
+  });
 
   it('should report open insolvency after oracle rate is updated', async () => {
     await oracle.set("1100000000000000000", pair.address);
