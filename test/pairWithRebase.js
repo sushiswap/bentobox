@@ -89,8 +89,8 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should have correct balances after supply of collateral', async () => {
-      assert.equal((await pair.totalCollateral()).toString(), e18(100).toString());
-      assert.equal((await pair.userCollateral(alice)).toString(), e18(100).toString());
+      assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
+      assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
     });
 
     it('should allow borrowing with collateral up to 75%', async () => {
@@ -138,7 +138,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should allow full repay with funds', async () => {
-      let borrowShareLeft = await pair.userBorrowShare(alice);
+      let borrowShareLeft = await pair.userBorrowFraction(alice);
       await pair.repay(borrowShareLeft, { from: alice });
     });
 
@@ -151,7 +151,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should allow full withdrawal of collateral', async () => {
-      let shareALeft = await pair.userCollateral(alice);
+      let shareALeft = await pair.userCollateralShare(alice);
       await pair.removeCollateral(shareALeft, alice, { from: alice });
     });
 
@@ -233,8 +233,8 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should have correct balances after supply of collateral', async () => {
-      assert.equal((await pair.totalCollateral()).toString(), e9(100).toString());
-      assert.equal((await pair.userCollateral(alice)).toString(), e9(100).toString());
+      assert.equal((await pair.totalCollateralShare()).toString(), e9(100).toString());
+      assert.equal((await pair.userCollateralShare(alice)).toString(), e9(100).toString());
     });
 
     it('should allow borrowing with collateral up to 75%', async () => {
@@ -281,7 +281,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should allow full repay with funds', async () => {
-      let borrowShareLeft = await pair.userBorrowShare(alice);
+      let borrowShareLeft = await pair.userBorrowFraction(alice);
       await pair.repay(borrowShareLeft, { from: alice });
     });
 
@@ -294,7 +294,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should allow full withdrawal of collateral', async () => {
-      let shareALeft = await pair.userCollateral(alice);
+      let shareALeft = await pair.userCollateralShare(alice);
       await pair.removeCollateral(shareALeft, alice, { from: alice });
     });
 
