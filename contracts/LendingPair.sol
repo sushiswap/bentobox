@@ -161,15 +161,16 @@ contract LendingPair is ERC20, Ownable {
             / exchangeRate / 1e5 >= bentoBox.toAmount(asset, borrow);
     }
 
+
     function getCreditLine(address user, bool open) public view returns (uint256) {
-        // accrue must have already been called!
-        if (userBorrowShare[user] == 0) return 0;
-        if (totalCollateral == 0) return 0;
-
-        uint256 borrow = userBorrowShare[user].mul(totalBorrow) / totalBorrowShare;
-
-        // openColRate : colRate
-        return (userCollateral[user].mul(open ? 77000 : 75000) / 1e5) - (borrow.mul(exchangeRate) / 1e18);
+        uint256 collateralAmount = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 ) / exchangeRate;
+        uint256 borrow = userBorrowShare[user];
+        if (borrow == 0) {
+          return (collateralAmount);
+        }
+        borrow = borrow.mul(totalBorrow) / totalBorrowShare;
+        borrow = borrow.mul(exchangeRate);
+        return (collateralAmount >= borrow) ? collateralAmount.sub(borrow) : 0;
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
