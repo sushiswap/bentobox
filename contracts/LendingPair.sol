@@ -147,6 +147,13 @@ contract LendingPair is ERC20, Ownable {
         bentoBox.withdrawShare(asset, masterContract.dev(), devFeeShare);
     }
 
+    function to18(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals > 18) {
+            return amount / 10**(decimals - 18);
+        }
+        return amount.mul(10**(18 - decimals));
+    }
+
     // Checks if the user is solvent.
     // Has an option to check if the user is solvent in an open/closed liquidation case.
     function isSolvent(address user, bool open) public view returns (bool) {
