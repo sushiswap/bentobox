@@ -21,7 +21,7 @@ contract('BentoBox', (accounts) => {
   const maki = accounts[3];
   const daveAddress = accounts[4];
   let pairMaster;
-  const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
+  const davePrivateKey = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
 
   beforeEach(async () => {
     weth = await WETH9.new();

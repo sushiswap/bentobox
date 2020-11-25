@@ -154,6 +154,13 @@ contract LendingPair is ERC20, Ownable {
         return amount.mul(10**(18 - decimals));
     }
 
+    function from18(uint256 amount, uint256 decimals) internal pure returns (uint256) {
+        if (decimals < 18) {
+            return amount / 10**(18 - decimals);
+        }
+        return amount.mul(10**(decimals - 18));
+    }
+
     // Checks if the user is solvent.
     // Has an option to check if the user is solvent in an open/closed liquidation case.
     function isSolvent(address user, bool open) public view returns (bool) {
@@ -169,22 +176,47 @@ contract LendingPair is ERC20, Ownable {
             borrow.mul(exchangeRate) / 1e18;
     }
 
-
     function getCreditLine(address user, bool open) public view returns (uint256) {
-        uint256 collateralAmount = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 );
+        uint256 activeCollateral = (userCollateral[user].mul(open ? 77000 : 75000)  / 1e5 );
+        activeCollateral = to18(activeCollateral, collateral.decimals());
         uint256 borrow = userBorrowShare[user];
         if (borrow == 0) {
-          return (collateralAmount);
+          return (activeCollateral);
         }
         borrow = borrow.mul(totalBorrow) / totalBorrowShare;
-        borrow = borrow.mul(exchangeRate);
-        return collateralAmount;
-        //return (collateralAmount >= borrow) ? collateralAmount.sub(borrow) : 0;
+        uint256 decimals = asset.decimals();
+        borrow = to18(borrow, decimals).mul(to18(exchangeRate, decimals)) / 1e18;
+        return borrow;
+        //return (activeCollateral >= borrow) ? activeCollateral.sub(borrow) : 0;
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
         return oracle.peek(oracleData);
     }
+
+    // this is needed when working with SLPTWAP oracles
+    // see https://github.com/sushiswap/bentobox/issues/19
+    function normalizeRate(uint256 rate, uint256 collateralDecimals, uint256 assetDecimals) internal pure returns (uint256) {
+        // rates we get with different decimals:
+        // collateral 1e21, asset 1e9 => oracle price 1e6
+        // collateral 1e18, asset 1e9 => oracle price 1e9
+        // collateral 1e18, asset 1e18 => oracle price 1e18
+        // collateral 1e9, asset 1e18 => oracle price 1e27
+        // rates we want with different decimals:
+        // collateral 1e21, asset 1e9 => oracle price 1e9
+        // collateral 1e18, asset 1e9 => oracle price 1e9
+        // collateral 1e18, asset 1e18 => oracle price 1e18
+        // collateral 1e9, asset 1e18 => oracle price 1e18
+        if (collateralDecimals > 18) {
+            return rate.mul(10**(collateralDecimals - 18));
+        }
+        if (collateralDecimals < 18) {
+            return rate / (10**(18 - collateralDecimals));
+        }
+        return rate;
+    }
+
+
 
     // Gets the exchange rate. How much collateral to buy 1e18 asset.
     function updateExchangeRate() public returns (uint256) {
@@ -192,6 +224,9 @@ contract LendingPair is ERC20, Ownable {
 
         // TODO: How to deal with unsuccessful fetch
         if (success) {
+            // this is needed when working with SLPTWAP oracles
+            // see https://github.com/sushiswap/bentobox/issues/19
+            //rate = normalizeRate(rate, collateral.decimals(), asset.decimals());
             exchangeRate = rate;
             emit NewExchangeRate(rate);
         }
@@ -396,7 +431,9 @@ contract LendingPair is ERC20, Ownable {
                 // Calculates the user's amount borrowed
                 uint256 borrowShare = borrowFraction.mul(totalBorrowShare) / totalBorrowFraction;
                 // Calculates the amount of collateral that's going to be swapped for the asset
-                uint256 collateralShare = borrowShare.mul(liquidationMultiplier) / exchangeRate; // liqMultiplier
+                uint256 assetDecimals = asset.decimals();
+                uint256 collateralShare = to18(borrowShare, assetDecimals).mul(liquidationMultiplier) / to18(exchangeRate, assetDecimals); // liqMultiplier
+                collateralShare = from18(collateralShare, collateral.decimals());
 
                 // Removes the share of collateral from the user's balance
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
