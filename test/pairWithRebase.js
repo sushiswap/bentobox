@@ -44,28 +44,17 @@ contract('LendingPair with Rebase', (accounts) => {
       await a.transfer(alice, e18(1000)); // collateral
       await b.transfer(bob, e9(1000));    // asset
 
-      // oracle = await TestOracle.new({ from: accounts[0] });
-      // await oracle.set(e9(1), accounts[0]);
-      // let oracleData = getDataParameter(TestOracle._json.abi, []);
+      oracle = await TestOracle.new({ from: accounts[0] });
+      await oracle.set(e9(1), accounts[0]);
+      let oracleData = getDataParameter(TestOracle._json.abi, []);
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-      if (a.address == (await sushiswappair.token0())) {
-             oracle = await SimpleSLPOracle0.new();
-         } else {
-             oracle = await SimpleSLPOracle1.new();
-      }
-      oracleData = await oracle.getDataParameter(sushiswappair.address);
-      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
-
+      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
       pair = await Pair.at(pair_address);
-
-      await oracle.get(oracleData);
-      await timeWarp.advanceTime(30);
-      await oracle.get(oracleData);
 
       await pair.updateExchangeRate();
     });
@@ -79,8 +68,6 @@ contract('LendingPair with Rebase', (accounts) => {
     it('should not allow borrowing without any assets', async () => {
       await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
     });
-
-    it('should not take deposit without exchange rate');
 
     it('should take a deposit of assets', async () => {
       await b.approve(bentoBox.address, e9(300), { from: bob });
@@ -111,8 +98,6 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow any more borrowing', async () => {
-      const rate = await pair.exchangeRate();
-      console.log(rate.toString());
       await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
     });
 
@@ -136,6 +121,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should report open insolvency after oracle rate is updated', async () => {
+
       await oracle.set(e18(1100000000), pair.address);
       await pair.updateExchangeRate();
       assert.equal(await pair.isSolvent(alice, true), false);
@@ -204,6 +190,7 @@ contract('LendingPair with Rebase', (accounts) => {
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
+
       let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
@@ -220,6 +207,10 @@ contract('LendingPair with Rebase', (accounts) => {
 
     it('should not allow borrowing without any assets', async () => {
       await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BentoBox: not enough liquidity');
+    });
+
+    it('should not take deposit without exchange rate', async () => {
+      const rate = await pair.exchangeRate();
     });
 
     it('should take a deposit of assets', async () => {
@@ -247,8 +238,6 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should allow borrowing with collateral up to 75%', async () => {
-      let credit = await pair.getCreditLine(alice, true);
-      console.log(credit.toString());
       await pair.borrow(sansBorrowFee(e18(75)), alice, { from: alice });
     });
 

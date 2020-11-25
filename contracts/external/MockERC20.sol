@@ -33,6 +33,10 @@ contract MockERC20 is ERC20 {
     );
   }
 
+  function setDecimals(uint8 decimals) external {
+    _setupDecimals(decimals);
+  }
+
   function burn(uint256 amount) public{
     _burn(msg.sender, amount);
   }
