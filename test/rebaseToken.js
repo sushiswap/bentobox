@@ -10,7 +10,6 @@ contract('Rebase Token', (accounts) => {
   let rebaseToken;
   const alice = accounts[1];
   const bob = accounts[2];
-  const maki = accounts[3];
 
   beforeEach(async () => {
     bentoBox = await BentoBox.deployed();
@@ -82,6 +81,7 @@ contract('Rebase Token', (accounts) => {
     // sync 
     await bentoBox.sync(rebaseToken.address);
     // withdraw
+    assert.equal((await rebaseToken.balanceOf(alice)).toString(), e9(3998).toString(), "alice balance should have rebased");
     await bentoBox.methods['withdrawShare(address,address,uint256)'](rebaseToken.address, alice, e9(1), { from: alice });
     assert.equal((await rebaseToken.balanceOf(alice)).toString(), e9(4000).toString(), "alice should have all of their tokens back");
     let share = await bentoBox.shareOf(rebaseToken.address, alice);
