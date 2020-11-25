@@ -42,7 +42,7 @@ contract('LendingPair with Rebase', (accounts) => {
     await b.transfer(bob, e9(1000));    // asset
 
     oracle = await TestOracle.new({ from: accounts[0] });
-    await oracle.set(e18(1000000000), accounts[0]);
+    await oracle.set(e9(1), accounts[0]);
     let oracleData = getDataParameter(TestOracle._json.abi, []);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
@@ -113,7 +113,7 @@ contract('LendingPair with Rebase', (accounts) => {
   });
 
   it('should allow closed liquidate', async () => {
-    let tx = await pair.liquidate([alice], [e9(10)], bob, swapper.address, false, { from: bob });
+    await pair.liquidate([alice], [e9(10)], bob, swapper.address, false, { from: bob });
   });
 
   it('should report open insolvency after oracle rate is updated', async () => {
