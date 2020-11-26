@@ -95,10 +95,6 @@ contract('LendingPair with Rebase', (accounts) => {
 
     it('should allow borrowing with collateral up to 75%', async () => {
       await pair.borrow(sansBorrowFee(e9(75)), alice, { from: alice });
-
-      const rsp = await pair.getCredit(alice, false);
-      console.log(rsp['0'].toString());
-      console.log(rsp['1'].toString());
     });
 
     it('should not allow any more borrowing', async () => {
@@ -298,7 +294,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should report open insolvency after oracle rate is updated', async () => {
-      await oracle.set('1100000000000000000', pair.address);
+      await oracle.set('1100000000', pair.address);
       await pair.updateExchangeRate();
       assert.equal(await pair.isSolvent(alice, true), false);
     });
