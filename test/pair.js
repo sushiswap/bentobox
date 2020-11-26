@@ -69,7 +69,7 @@ contract('LendingPair', (accounts) => {
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
-    let oracleData = getDataParameter(TestOracle._json.abi, []);
+    let oracleData = await oracle.getDataParameter(0, false);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });

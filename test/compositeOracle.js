@@ -56,7 +56,7 @@ contract('CompositeOracle', (accounts) => {
        } else {
            oracleA = await SimpleSLPOracle1.new();
     }
-    oracleDataA = await oracleA.getDataParameter(pairA.address);
+    oracleDataA = await oracleA.getDataParameter(pairA.address, 0, false);
 
     // set up second bento pair
     tx = await factory.createPair(b.address, c.address);
@@ -72,7 +72,7 @@ contract('CompositeOracle', (accounts) => {
            oracleB = await SimpleSLPOracle1.new();
     }
 
-    oracleDataB = await oracleB.getDataParameter(pairB.address);
+    oracleDataB = await oracleB.getDataParameter(pairB.address, 0, false);
 
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();
