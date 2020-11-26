@@ -161,6 +161,18 @@ contract LendingPair is ERC20, Ownable {
             / exchangeRate / 1e5 >= bentoBox.toAmount(asset, borrow);
     }
 
+    // Checks if the user is solvent.
+    // Has an option to check if the user is solvent in an open/closed liquidation case.
+    function getCredit(address user, bool open) public view returns (uint256 coll, uint256 borrow) {
+
+        borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
+
+        coll = (bentoBox.toAmount(collateral, userCollateralShare[user])
+            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate)
+            / exchangeRate / 1e5);
+        borrow = bentoBox.toAmount(asset, borrow);
+    }
+
     function peekExchangeRate() public view returns (bool, uint256) {
         return oracle.peek(oracleData);
     }
