@@ -154,8 +154,7 @@ contract LendingPair is ERC20, Ownable {
         if (userBorrowFraction[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
 
-        uint256 activeCollateral = userCollateralShare[user].mul(open ? openCollaterizationRate : closedCollaterizationRate) / 1e5;
-        activeCollateral = to18(activeCollateral, collateral.decimals());
+        uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
 
         return bentoBox.toAmount(collateral, userCollateralShare[user])
             .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate)
