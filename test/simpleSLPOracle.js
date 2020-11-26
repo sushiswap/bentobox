@@ -3,7 +3,7 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const AssertionError = require('./helpers/assertion-error');
 
-const MockERC20 = artifacts.require("MockERC20");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
@@ -34,8 +34,8 @@ contract('SimpleSLPOracle', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    collateral = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    asset = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    collateral = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    asset = await ReturnFalseERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     const factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
 
@@ -48,7 +48,7 @@ contract('SimpleSLPOracle', (accounts) => {
        } else {
            oracle = await SimpleSLPOracle1.new();
     }
-    oracleData = await oracle.getDataParameter(pair.address);
+    oracleData = await oracle.getDataParameter(pair.address, 0, false);
     let initData = getInitData(Pair._json.abi, [collateral.address, asset.address, oracle.address, oracleData])
 
     tx = await bentoBox.deploy(pairMaster.address, initData);
@@ -83,7 +83,7 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
     let price1 = (await oracle.peek(oracleData))[1];
 
-    const rounding = new web3.utils.BN("1000000000000000"); // 10^16
+    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
 
     assert.equal(price0.toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
     assert.equal(price1.divRound(rounding).toString(), e18(1).mul(new web3.utils.BN(75)).div(new web3.utils.BN(100)).divRound(rounding).toString(), "prices should be exactly half way between price points");

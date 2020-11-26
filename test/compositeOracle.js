@@ -3,7 +3,7 @@ const timeWarp = require("./helpers/timeWarp");
 const truffleAssert = require('./helpers/truffle-assertions');
 const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const AssertionError = require('./helpers/assertion-error');
-const MockERC20 = artifacts.require("MockERC20");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
@@ -38,9 +38,9 @@ contract('CompositeOracle', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    collateral = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
-    asset = await MockERC20.new("Token C", "C", e18(10000000), { from: accounts[0] });
+    collateral = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await ReturnFalseERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    asset = await ReturnFalseERC20.new("Token C", "C", e18(10000000), { from: accounts[0] });
 
     const factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
 
@@ -56,7 +56,7 @@ contract('CompositeOracle', (accounts) => {
        } else {
            oracleA = await SimpleSLPOracle1.new();
     }
-    oracleDataA = await oracleA.getDataParameter(pairA.address);
+    oracleDataA = await oracleA.getDataParameter(pairA.address, 0, false);
 
     // set up second bento pair
     tx = await factory.createPair(b.address, asset.address);
@@ -72,7 +72,7 @@ contract('CompositeOracle', (accounts) => {
            oracleB = await SimpleSLPOracle1.new();
     }
 
-    oracleDataB = await oracleB.getDataParameter(pairB.address);
+    oracleDataB = await oracleB.getDataParameter(pairB.address, 0, false);
 
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();

@@ -3,7 +3,8 @@ const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
 const {e18, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const MockERC20 = artifacts.require("MockERC20");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
+const RevertingERC20 = artifacts.require("RevertingERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -51,8 +52,8 @@ contract('LendingPair', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    a = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
@@ -69,7 +70,7 @@ contract('LendingPair', (accounts) => {
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
-    let oracleData = getDataParameter(TestOracle._json.abi, []);
+    let oracleData = await oracle.getDataParameter(0, false);
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });

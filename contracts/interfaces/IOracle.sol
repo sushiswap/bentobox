@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 interface IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false

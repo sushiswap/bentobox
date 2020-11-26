@@ -6,7 +6,8 @@ const Pair = artifacts.require("LendingPair");
 const FlashLoaner = artifacts.require("FlashLoaner");
 const WETH9 = artifacts.require("WETH9");
 const {e18, bn} = require('./helpers/utils');
-const MockERC20 = artifacts.require("MockERC20");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
+const RevertingERC20 = artifacts.require("RevertingERC20");
 const permit = require("./helpers/permit");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
@@ -26,8 +27,8 @@ contract('BentoBox', (accounts) => {
   beforeEach(async () => {
     weth = await WETH9.new();
     bentoBox = await BentoBox.new(weth.address);
-    a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    a = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
     await a.transfer(alice, e18(1000));
     await b.transfer(bob, e18(1000));
     pairMaster = await Pair.deployed();

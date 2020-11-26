@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "./IOracle.sol";
 import "./IERC20.sol";
 import "../BentoBox.sol";

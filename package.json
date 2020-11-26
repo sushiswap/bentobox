@@ -23,8 +23,6 @@
   "dependencies": {
     "@openzeppelin/contracts": "^3.2.0",
     "@truffle/hdwallet-provider": "^1.2.0",
-    "@uniswap/lib": "^2.2.0-alpha",
-    "@uniswap/v2-core": "^1.0.1",
     "ganache-cli": "^6.12.1",
     "global": "^4.4.0"
   },

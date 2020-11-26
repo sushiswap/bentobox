@@ -2,7 +2,7 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const {e18, e9, getInitData, getDataParameter, sansBorrowFee} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const MockERC20 = artifacts.require("MockERC20");
+const RevertingERC20 = artifacts.require("RevertingERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -28,7 +28,7 @@ contract('LendingPair with Rebase', (accounts) => {
       bentoBox = await BentoBox.deployed();
       pairMaster = await Pair.deployed();
 
-      a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+      a = await RevertingERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
       b = await RebaseToken.new("Rebase Token", "RBT", { from: accounts[0] });
 
       let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
@@ -45,8 +45,8 @@ contract('LendingPair with Rebase', (accounts) => {
       await b.transfer(bob, e9(1000));    // asset
 
       oracle = await TestOracle.new({ from: accounts[0] });
-      await oracle.set(e9(1), accounts[0]);
-      let oracleData = getDataParameter(TestOracle._json.abi, []);
+      await oracle.set(e18(1000000000), accounts[0]);
+      let oracleData = await oracle.getDataParameter(9, true);
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
@@ -95,6 +95,10 @@ contract('LendingPair with Rebase', (accounts) => {
 
     it('should allow borrowing with collateral up to 75%', async () => {
       await pair.borrow(sansBorrowFee(e9(75)), alice, { from: alice });
+
+      const rsp = await pair.getCredit(alice, false);
+      console.log(rsp['0'].toString());
+      console.log(rsp['1'].toString());
     });
 
     it('should not allow any more borrowing', async () => {
@@ -169,7 +173,7 @@ contract('LendingPair with Rebase', (accounts) => {
       pairMaster = await Pair.deployed();
 
       a = await RebaseToken.new("Rebase Token", "RBT", { from: accounts[0] });
-      b = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+      b = await RevertingERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
 
       let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
       swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
@@ -185,8 +189,8 @@ contract('LendingPair with Rebase', (accounts) => {
       await b.transfer(bob, e18(1000));  // asset
 
       oracle = await TestOracle.new({ from: accounts[0] });
-      await oracle.set(e18(1), accounts[0]);
-      let oracleData = getDataParameter(TestOracle._json.abi, []);
+      await oracle.set(e9(1), accounts[0]);
+      let oracleData = await oracle.getDataParameter(9, false);
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
