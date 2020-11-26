@@ -2,7 +2,7 @@
 // solium-disable security/no-inline-assembly
 // solium-disable security/no-block-members
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 
 // Data part taken out for building of contracts that receive delegate calls
 contract ERC20Data {

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.12;
+// SPDX-License-Identifier: GNU
+pragma solidity 0.6.12;
 
 contract WETH9 {
     string public name     = "Wrapped Ether";
@@ -14,15 +14,15 @@ contract WETH9 {
     mapping (address => uint)                       public  balanceOf;
     mapping (address => mapping (address => uint))  public  allowance;
 
-    fallback () external payable {
+    /*fallback () external payable {
         deposit();
-    }
+    }*/
     function deposit() public payable {
         balanceOf[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
     function withdraw(uint wad) public {
-        require(balanceOf[msg.sender] >= wad);
+        require(balanceOf[msg.sender] >= wad, 'WETH9: Error');
         balanceOf[msg.sender] -= wad;
         msg.sender.transfer(wad);
         emit Withdrawal(msg.sender, wad);
@@ -46,10 +46,10 @@ contract WETH9 {
         public
         returns (bool)
     {
-        require(balanceOf[src] >= wad);
+        require(balanceOf[src] >= wad, 'WETH9: Error');
 
         if (src != msg.sender && allowance[src][msg.sender] != uint(-1)) {
-            require(allowance[src][msg.sender] >= wad);
+            require(allowance[src][msg.sender] >= wad, 'WETH9: Error');
             allowance[src][msg.sender] -= wad;
         }
 

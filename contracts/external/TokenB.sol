@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // TokenA reverts on errors
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 contract TokenB {
     string public constant symbol = "B";
     string public constant name = "Token B";

@@ -2,7 +2,7 @@
 // solium-disable security/no-tx-origin
 
 // TokenA does not revert on errors, it just returns false
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "../interfaces/IERC20.sol";
 import "../interfaces/IFlashLoaner.sol";
 import "../libraries/BoringMath.sol";

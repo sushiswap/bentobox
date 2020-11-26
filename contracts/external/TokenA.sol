@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // TokenA does not revert on errors, it just returns false
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 contract TokenA {
     string public constant symbol = "A";
     string public constant name = "Token A";

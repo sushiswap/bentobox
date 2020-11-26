@@ -6,7 +6,7 @@
 
 // solium-disable security/no-low-level-calls
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
@@ -90,7 +90,7 @@ contract LendingPair is ERC20, Ownable {
     uint256 public constant minimumInterestPerBlock = 1141552511;
     uint256 public constant maximumInterestPerBlock = 1141552511;
 
-    uint256 public constant liquidationMultiplier = 112e16; // add 12%
+    uint256 public constant liquidationMultiplier = 112000; // add 12%
 
     uint256 public constant protocolFee = 10; // 10%
     uint256 public constant devFee = 10; // 10% of the protocolFee = 1%
@@ -156,10 +156,9 @@ contract LendingPair is ERC20, Ownable {
 
         uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
 
-        // openColRate : colRate
-        return userCollateralShare[user]
-            .mul(open ? openCollaterizationRate : closedCollaterizationRate) / 1e5 >=
-            borrow.mul(exchangeRate) / 1e18;
+        return bentoBox.toAmount(collateral, userCollateralShare[user])
+            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate)
+            / exchangeRate / 1e5 >= bentoBox.toAmount(asset, borrow);
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -376,7 +375,7 @@ contract LendingPair is ERC20, Ownable {
                 // Calculates the user's amount borrowed
                 uint256 borrowShare = borrowFraction.mul(totalBorrowShare) / totalBorrowFraction;
                 // Calculates the amount of collateral that's going to be swapped for the asset
-                uint256 collateralShare = borrowShare.mul(liquidationMultiplier) / exchangeRate; // liqMultiplier
+                uint256 collateralShare = borrowShare.mul(liquidationMultiplier).mul(exchangeRate) / 1e23;
 
                 // Removes the share of collateral from the user's balance
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);

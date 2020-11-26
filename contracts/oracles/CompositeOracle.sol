@@ -1,6 +1,6 @@
 // Using the same Copyleft License as in the original Repository
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
