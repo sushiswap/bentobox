@@ -18,7 +18,6 @@ contract SushiSwapSwapper is ISwapper {
         bentoBox = bentoBox_;
         factory = factory_;
     }
-
     // Given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         uint amountInWithFee = amountIn.mul(997);

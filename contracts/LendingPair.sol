@@ -400,7 +400,7 @@ contract LendingPair is ERC20, Ownable {
             require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
 
             // Swaps the users' collateral for the borrowed asset
-            uint256 suppliedAmount = bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralShare);
+            uint256 suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), allCollateralShare);
             swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowShare));
             uint256 returnedAssetShare = bentoBox.skim(asset);
             uint256 extraAssetShare = returnedAssetShare.sub(allBorrowShare);
@@ -416,12 +416,12 @@ contract LendingPair is ERC20, Ownable {
             bentoBox.withdraw(collateral, to, allCollateralShare);
         } else if (address(swapper) == address(1)) {
             // Open liquidation directly using the caller's funds, without swapping
-            bentoBox.transferFrom(asset, msg.sender, to, allBorrowShare);
-            bentoBox.transfer(collateral, to, allCollateralShare);
+            bentoBox.transferShareFrom(asset, msg.sender, to, allBorrowShare);
+            bentoBox.transferShare(collateral, to, allCollateralShare);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
-            uint256 suppliedAmount = bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralShare);
+            uint256 suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), allCollateralShare);
             swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowShare));
             uint256 returnedAssetShare = bentoBox.skim(asset);
             uint256 extraAsset = returnedAssetShare.sub(allBorrowShare);

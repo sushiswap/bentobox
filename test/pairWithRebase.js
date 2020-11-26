@@ -326,6 +326,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(a.address);
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
+      await pair.updateInterestRate();
 
       await sushiswappair.sync();
       await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
@@ -421,7 +422,6 @@ contract('LendingPair with Rebase', (accounts) => {
       await oracle.set('550000000', pair.address);
       await pair.updateExchangeRate();
 
-      console.log(await pair.isSolvent(alice, true), 'solvent')
       await pair.removeCollateral(e9(60), alice, { from: alice });
 
       await a.rebase(`${total / 2}`);
@@ -458,8 +458,10 @@ contract('LendingPair with Rebase', (accounts) => {
       await oracle.set('550000000', pair.address);
       await pair.updateExchangeRate();
 
+      await pair.updateExchangeRate();
+
       let shareALeft = await pair.userCollateralShare(alice);
-      await pair.removeCollateral(shareALeft, alice, { from: alice });
+      await pair.removeCollateral(shareALeft.sub(new web3.utils.BN(1)), alice, { from: alice });
 
       await a.rebase(`${total / 2}`);
       // sync and check

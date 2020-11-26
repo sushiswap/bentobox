@@ -46,7 +46,7 @@ contract('CompositeOracle', (accounts) => {
        } else {
            oracleA = await SimpleSLPOracle1.new();
     }
-    const oracleDataA = await oracleA.getDataParameter(pairA.address, 0, false);
+    const oracleDataA = await oracleA.getDataParameter(pairA.address);
 
     // set up second uni pair
     tx = await factory.createPair(tokenB.address, asset.address);
@@ -62,7 +62,7 @@ contract('CompositeOracle', (accounts) => {
            oracleB = await SimpleSLPOracle1.new();
     }
 
-    const oracleDataB = await oracleB.getDataParameter(pairB.address, 0, false);
+    const oracleDataB = await oracleB.getDataParameter(pairB.address);
 
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();
