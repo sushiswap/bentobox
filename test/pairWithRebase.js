@@ -241,17 +241,44 @@ contract('LendingPair with Rebase', (accounts) => {
       assert.equal((await pair.userCollateralShare(alice)).toString(), e9(100).toString());
     });
 
+    it('should have correct balances after rebase of collateral', async () => {
+      let total = await a.totalSupply();
+      await a.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
+      assert.equal((await pair.totalCollateralShare()).toString(), e9(100).toString());
+      assert.equal((await pair.userCollateralShare(alice)).toString(), e9(100).toString());
+      await a.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
+      assert.equal(total.toString(), (await a.totalSupply()).toString(), "supply changes not rolled back correctly");
+    });
+
     it('should allow borrowing with collateral up to 75%', async () => {
       await pair.borrow(sansBorrowFee(e18(75)), alice, { from: alice });
     });
 
     it('should not allow any more borrowing', async () => {
+      let total = await a.totalSupply();
+      await a.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
       await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await a.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
     });
 
     it('should report insolvency due to interest', async () => {
+      let total = await a.totalSupply();
+      await a.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
       await pair.accrue();
       assert.equal(await pair.isSolvent(alice, false), false);
+      await a.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(a.address);
     })
 
     it('should not report open insolvency due to interest', async () => {
@@ -260,6 +287,8 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow open liquidate yet', async () => {
+      let borrowShareLeft = await pair.userBorrowFraction(alice);
+      console.log(borrowShareLeft.toString());
       await b.approve(bentoBox.address, e18(25), { from: bob });
       await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
     });
