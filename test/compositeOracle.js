@@ -49,7 +49,7 @@ contract('CompositeOracle', (accounts) => {
        } else {
            oracleSushiEth = await SimpleSLPOracle1.new();
     }
-    const oracleDataA = await oracleSushiEth.getDataParameter(pairSushiEth.address, 0, false);
+    const oracleDataA = await oracleSushiEth.getDataParameter(pairSushiEth.address);
 
     // set up Dai / Eth uni pair
     tx = await factory.createPair(ethToken.address, daiToken.address);
@@ -67,7 +67,7 @@ contract('CompositeOracle', (accounts) => {
        } else {
            oracleDaiEth = await SimpleSLPOracle1.new();
     }
-    const oracleDataB = await oracleDaiEth.getDataParameter(pairDaiEth.address, 0, false);
+    const oracleDataB = await oracleDaiEth.getDataParameter(pairDaiEth.address);
 
     // set up composite oracle
     // Sushi is the collateral

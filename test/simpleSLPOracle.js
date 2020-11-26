@@ -48,7 +48,7 @@ contract('SimpleSLPOracle', (accounts) => {
        } else {
            oracle = await SimpleSLPOracle1.new();
     }
-    oracleData = await oracle.getDataParameter(pair.address, 0, false);
+    oracleData = await oracle.getDataParameter(pair.address);
     let initData = getInitData(Pair._json.abi, [collateral.address, asset.address, oracle.address, oracleData])
 
     tx = await bentoBox.deploy(pairMaster.address, initData);
