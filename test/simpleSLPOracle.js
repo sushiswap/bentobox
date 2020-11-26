@@ -17,16 +17,16 @@ const token1Amount = e18(10);
 contract('SimpleSLPOracle', (accounts) => {
   let bentoBox;
   let pairMaster;
-  let a;
-  let b;
+  let collateral;
+  let asset;
   let pair;
   let oracle;
   let oracleData;
   let bentoPair;
 
   async function addLiquidity() {
-    await a.transfer(pair.address, token0Amount);
-    await b.transfer(pair.address, token1Amount);
+    await collateral.transfer(pair.address, token0Amount);
+    await asset.transfer(pair.address, token1Amount);
     await pair.mint(accounts[0]);
   }
 
@@ -34,22 +34,22 @@ contract('SimpleSLPOracle', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    collateral = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    asset = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     const factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
 
-    let tx = await factory.createPair(a.address, b.address);
+    let tx = await factory.createPair(collateral.address, asset.address);
     pair = await UniswapV2Pair.at(tx.logs[0].args.pair);
 
     await addLiquidity();
-    if (a.address == (await pair.token0())) {
+    if (asset.address == (await pair.token0())) {
            oracle = await SimpleSLPOracle0.new();
        } else {
            oracle = await SimpleSLPOracle1.new();
     }
     oracleData = await oracle.getDataParameter(pair.address);
-    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
+    let initData = getInitData(Pair._json.abi, [collateral.address, asset.address, oracle.address, oracleData])
 
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPair = await Pair.at(tx.logs[0].args[2]);
@@ -66,8 +66,8 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
-    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[0].toString());
-    assert.equal((await oracle.peek(oracleData))[1].toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString(), "token1 should be 0.5x of token0");
+    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
+    assert.equal((await oracle.peek(oracleData))[1].toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
   });
 
   it('should update prices after swap', async () => {
@@ -76,16 +76,16 @@ contract('SimpleSLPOracle', (accounts) => {
     await timeWarp.advanceTime(61);
     await oracle.get(oracleData);
     let price0 = (await oracle.peek(oracleData))[1];
-    await a.transfer(pair.address, e18(5));
+    await collateral.transfer(pair.address, e18(5));
     await timeWarp.advanceTime(30);
     await pair.sync();
     await timeWarp.advanceTime(30);
     await oracle.get(oracleData);
     let price1 = (await oracle.peek(oracleData))[1];
 
-    const rounding = new web3.utils.BN("100000000000000000"); // 10^16
+    const rounding = new web3.utils.BN("1000000000000000"); // 10^16
 
-    assert.equal(price0.toString(), token1Amount.mul(new web3.utils.BN(2)).div(new web3.utils.BN(10)).toString(), "token1 should be 0.5x of token0");
-    assert.equal(price1.divRound(rounding).toString(), token1Amount.mul(new web3.utils.BN(15)).div(new web3.utils.BN(100)).divRound(rounding).toString(), "prices should be exactly half way between price points");
+    assert.equal(price0.toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
+    assert.equal(price1.divRound(rounding).toString(), e18(1).mul(new web3.utils.BN(75)).div(new web3.utils.BN(100)).divRound(rounding).toString(), "prices should be exactly half way between price points");
   });
 });

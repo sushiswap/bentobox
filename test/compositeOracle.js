@@ -12,16 +12,16 @@ const SimpleSLPOracle0 = artifacts.require("SimpleSLPTWAP0Oracle");
 const SimpleSLPOracle1 = artifacts.require("SimpleSLPTWAP1Oracle");
 const CompositeOracle = artifacts.require("CompositeOracle");
 
-const token0Amount = e18(400); // sushi
+const collateralAmount = e18(400); // sushi
 const token1Amount = e18(1);   // eth
-const token2Amount = e18(500); // dai
+const assetAmount = e18(500); // dai
 
 contract('CompositeOracle', (accounts) => {
   let bentoBox;
   let pairMaster;
-  let a;
+  let collateral;
   let b;
-  let c;
+  let asset;
   let pairA;
   let pairB;
   let oracleA;
@@ -38,20 +38,20 @@ contract('CompositeOracle', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    collateral = await MockERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
     b = await MockERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
-    c = await MockERC20.new("Token C", "C", e18(10000000), { from: accounts[0] });
+    asset = await MockERC20.new("Token C", "C", e18(10000000), { from: accounts[0] });
 
     const factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
 
     // set up first bento pair
-    let tx = await factory.createPair(a.address, b.address);
+    let tx = await factory.createPair(collateral.address, b.address);
     pairA = await UniswapV2Pair.at(tx.logs[0].args.pair);
 
-    await a.transfer(pairA.address, token0Amount);
+    await collateral.transfer(pairA.address, collateralAmount);
     await b.transfer(pairA.address, token1Amount);
     await pairA.mint(accounts[0]);
-    if (a.address == (await pairA.token0())) {
+    if (b.address == (await pairA.token0())) {
            oracleA = await SimpleSLPOracle0.new();
        } else {
            oracleA = await SimpleSLPOracle1.new();
@@ -59,14 +59,14 @@ contract('CompositeOracle', (accounts) => {
     oracleDataA = await oracleA.getDataParameter(pairA.address);
 
     // set up second bento pair
-    tx = await factory.createPair(b.address, c.address);
+    tx = await factory.createPair(b.address, asset.address);
     pairB = await UniswapV2Pair.at(tx.logs[0].args.pair);
 
     await b.transfer(pairB.address, token1Amount);
-    await c.transfer(pairB.address, token2Amount);
+    await asset.transfer(pairB.address, assetAmount);
     await pairB.mint(accounts[0]);
 
-    if (b.address == (await pairA.token0())) {
+    if (asset.address == (await pairA.token0())) {
            oracleB = await SimpleSLPOracle0.new();
        } else {
            oracleB = await SimpleSLPOracle1.new();
@@ -77,7 +77,8 @@ contract('CompositeOracle', (accounts) => {
     // set up composite oracle
     compositeOracle = await CompositeOracle.new();
     oracleData = await compositeOracle.getDataParameter(oracleA.address, oracleB.address, oracleDataA, oracleDataB);
-    initData = getInitData(Pair._json.abi, [a.address, c.address, compositeOracle.address, oracleData])
+    console.log(oracleData);
+    initData = getInitData(Pair._json.abi, [collateral.address, asset.address, compositeOracle.address, oracleData])
     tx = await bentoBox.deploy(pairMaster.address, initData);
     bentoPairC = await Pair.at(tx.logs[0].args[2]);
   });
@@ -89,27 +90,31 @@ contract('CompositeOracle', (accounts) => {
     await compositeOracle.get(oracleData);
 
     // check the composite oracle
-    const expectedPrice = encodePrice(token0Amount, token2Amount);
+    const expectedPrice = encodePrice(collateralAmount, assetAmount);
     const price = (await compositeOracle.peek(oracleData))[1];
-    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
-    assert.equal(price.divRound(rounding).toString(), token2Amount.mul(new web3.utils.BN("100")).div(token0Amount).toString());
+    const rounding = new web3.utils.BN("100000000000000000"); // 10^16
+    console.log("price", price.toString());
+    assert.equal(price.divRound(rounding).toString(), collateralAmount.mul(new web3.utils.BN("100")).div(assetAmount).toString());
   });
 
   it('should update prices after swap', async () => {
+    // update both pairs
     await compositeOracle.get(oracleData);
     await timeWarp.advanceTime(61);
     await compositeOracle.get(oracleData);
-    let price0 = (await compositeOracle.peek(oracleData))[1];
-    await a.transfer(pairA.address, e18(400));
+
+    // check the composite oracle
+    const price0 = (await compositeOracle.peek(oracleData))[1];
+    await collateral.transfer(pairA.address, e18(400));
     await timeWarp.advanceTime(30);
     await pairA.sync();
     await timeWarp.advanceTime(30);
     await compositeOracle.get(oracleData);
     let price1 = (await compositeOracle.peek(oracleData))[1];
 
-    const rounding = new web3.utils.BN("10000000000000000"); // 10^16
-    const oldPrice = token2Amount.mul(new web3.utils.BN("100")).div(token0Amount);
-    const newPrice = oldPrice.add((token2Amount.mul(new web3.utils.BN("100"))).div(token0Amount.mul(new web3.utils.BN("2")))).divRound(new web3.utils.BN("2"));
+    const rounding = new web3.utils.BN("100000000000000000"); // 10^16
+    const oldPrice = collateralAmount.mul(new web3.utils.BN("100")).div(assetAmount);
+    const newPrice = oldPrice.add((collateralAmount.mul(new web3.utils.BN("100")).mul(new web3.utils.BN("2"))).div(assetAmount)).divRound(new web3.utils.BN("2"));
     assert.equal(price0.divRound(rounding).toString(), oldPrice.toString());
     assert.equal(price1.divRound(rounding).toString(), newPrice.toString(), "prices should be exactly half way between price points");
   });
