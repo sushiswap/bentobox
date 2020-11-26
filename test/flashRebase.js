@@ -10,7 +10,7 @@ const TestOracle = artifacts.require("TestOracle");
 const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const FlashLoanRebaseSkimmer = artifacts.require("FlashLoanRebaseSkimmer");
 
-contract('FlashLoanRebaseSkimmer', (accounts) => {
+contract('FlashRebase', (accounts) => {
   let a;
   let b;
   let pair_address;
@@ -47,24 +47,27 @@ contract('FlashLoanRebaseSkimmer', (accounts) => {
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-    let oracleData = await oracle.getDataParameter();
-    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
+    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, "0x"]);
     tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
   });
 
 
-  it('should handle rebase of both tokens during loan', async () => {
-    console.log('here');
-    // create floashloan liquidity
-    await a.approve(bentoBox.address, e9(1000));
-    await bentoBox.deposit(a.address, alice, e9(1000));
+  it('rebase token without sync() breaks bento', async () => {
+    // add liquidity
+    await a.approve(bentoBox.address, e9(1000), {from: alice});
+    await bentoBox.deposit(a.address, alice, e9(1000), {from: alice});
 
-    const flrs = new FlashLoanRebaseSkimmer();
-    const tx = await bentoBox.flashLoan(a.address, e9(500), flrs.address, "");
-    const balance = await a.balanceOf(alice);
-    console.log(balance.toString());
+    // call flashloan
+    const flrs = await FlashLoanRebaseSkimmer.new();
+    const tx = await bentoBox.flashLoan(a.address, e9(500), flrs.address, "0x");
+
+    // check profits
+    const balance = await a.balanceOf(accounts[0]);
+    assert.equal(balance.toString(), "99988499750000000");
   });
+
+  
 
 });

