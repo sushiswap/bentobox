@@ -18,19 +18,15 @@ contract TestOracle is IOracle {
         rate = rate_;
     }
 
-    function getDataParameter(uint256 decimalDifference, bool negative) public pure returns (bytes memory) { return abi.encode(decimalDifference, negative); }
+    function getDataParameter() public pure returns (bytes memory) { return abi.encode(); }
 
     // Get the latest exchange rate
     function get(bytes calldata) public override returns (bool, uint256) {
-        if (rate == 0) {
-            return (false, rate);
-        }
         return (true, rate);
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata data) public override view returns (bool, uint256) {
-        (uint256 decimalDifference, bool negative) = abi.decode(data, (uint256, bool));
+    function peek(bytes calldata) public override view returns (bool, uint256) {
         return (true, rate);
     }
 }
