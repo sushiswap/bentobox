@@ -46,7 +46,7 @@ contract('LendingPair with Rebase', (accounts) => {
 
       oracle = await TestOracle.new({ from: accounts[0] });
       await oracle.set(e18(1000000000), accounts[0]);
-      let oracleData = await oracle.getDataParameter(9, true);
+      let oracleData = await oracle.getDataParameter();
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
@@ -186,7 +186,7 @@ contract('LendingPair with Rebase', (accounts) => {
 
       oracle = await TestOracle.new({ from: accounts[0] });
       await oracle.set(e9(1), accounts[0]);
-      let oracleData = await oracle.getDataParameter(9, false);
+      let oracleData = await oracle.getDataParameter();
 
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });

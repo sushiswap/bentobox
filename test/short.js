@@ -46,7 +46,7 @@ contract('Pair (Shorting)', (accounts) => {
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
-    let oracleData = await oracle.getDataParameter(0, false);
+    let oracleData = await oracle.getDataParameter();
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
