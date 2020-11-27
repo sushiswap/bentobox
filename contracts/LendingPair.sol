@@ -181,7 +181,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     function getAssetBalance(address user) external view returns (uint256) {
-        if (totalSupply == 0) {return 0;}
+        if (totalSupply == 0 || totalAssetShare == 0) {return 0;}
         uint256 remainingBoxShare = bentoBox.shareOf(asset, address(this));
         uint256 totalBoxShare = remainingBoxShare.mul(totalAssetShare) / totalAssetShare.sub(totalBorrowShare);
         uint256 boxShare = balanceOf[user].mul(totalBoxShare) / totalSupply;
@@ -235,8 +235,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     // Handles internal variable updates when supply (the borrowable token) is deposited
     function _addAssetShare(address user, uint256 boxShare) private {
         // Calculates what share of the pool the user gets for the amount deposited
-        uint256 boxTotalBefore = bentoBox.shareOf(asset, address(this)).sub(boxShare);
-        uint256 newFraction = totalSupply == 0 ? boxShare : boxShare.mul(totalSupply) / boxTotalBefore;
+        uint256 boxShareBefore = bentoBox.shareOf(asset, address(this)).sub(boxShare);
+        uint256 totalBoxShare = totalAssetShare == 0 ? 0 : boxShareBefore.mul(totalAssetShare) / totalAssetShare.sub(totalBorrowShare);
+        uint256 newFraction = totalSupply == 0 ? boxShare : boxShare.mul(totalSupply) / totalBoxShare;
         // Adds this share to user
         balanceOf[user] = balanceOf[user].add(newFraction);
         // Adds this share to the total of supply shares
@@ -246,7 +247,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // new investors don't get a fraction of assetShare, as their capical hasn't had time to work yet
         // Adds the amount deposited to the total of supply
         totalAssetShare = totalAssetShare.add(newFraction);
-        emit AddAsset(msg.sender, newFraction, newFraction);
+        emit AddAsset(msg.sender, newFraction, boxShare);
     }
 
     // Handles internal variable updates when supply (the borrowable token) is borrowed
