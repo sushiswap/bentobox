@@ -23,7 +23,7 @@ contract('LendingPair with Rebase', (accounts) => {
   let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
-  /*
+
   describe('rebase as asset', () => {
     before(async () => {
       bentoBox = await BentoBox.deployed();
@@ -37,7 +37,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pairMaster.setSwapper(swapper.address, true);
 
       let tx = await factory.createPair(a.address, b.address);
-      let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
+      sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
       await a.transfer(sushiswappair.address, e18("5000"));
       await b.transfer(sushiswappair.address, e9("5000"));
       await sushiswappair.mint(accounts[0]);
@@ -99,61 +99,207 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow any more borrowing', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should report insolvency due to interest', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await pair.accrue();
       assert.equal(await pair.isSolvent(alice, false), false);
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000), accounts[0]);
+      await pair.updateExchangeRate();
     })
 
     it('should not report open insolvency due to interest', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await pair.accrue();
       assert.equal(await pair.isSolvent(alice, true), true);
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should not allow open liquidate yet', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await b.approve(bentoBox.address, e9(25), { from: bob });
       await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow closed liquidate', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
+      await sushiswappair.sync();
+
       await pair.liquidate([alice], [e9(10)], bob, swapper.address, false, { from: bob });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1000000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should report open insolvency after oracle rate is updated', async () => {
-
-      await oracle.set(e18(1100000000), pair.address);
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
       await pair.updateExchangeRate();
+
       assert.equal(await pair.isSolvent(alice, true), false);
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow open liquidate', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       await b.approve(bentoBox.address, e9(25), { from: bob });
       await pair.liquidate([alice], [e9(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow repay', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       await b.approve(bentoBox.address, e9(100), { from: alice });
       await pair.repay(e9(50), { from: alice });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow full repay with funds', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       let borrowShareLeft = await pair.userBorrowFraction(alice);
       await pair.repay(borrowShareLeft, { from: alice });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow partial withdrawal of collateral', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       await pair.removeCollateral(e18(60), alice, { from: alice });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should not allow withdrawal of more than collateral', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       await truffleAssert.reverts(pair.removeCollateral(e18(100), alice, { from: alice }), "BoringMath: Underflow");
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should allow full withdrawal of collateral', async () => {
+      let total = await b.totalSupply();
+      await b.rebase(`-${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(2200000000), pair.address);
+      await pair.updateExchangeRate();
+
       let shareALeft = await pair.userCollateralShare(alice);
       await pair.removeCollateral(shareALeft, alice, { from: alice });
+
+      await b.rebase(`${total / 2}`);
+      // sync and check
+      await bentoBox.sync(b.address);
+      await oracle.set(e18(1100000000), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should update the interest rate', async () => {
@@ -163,7 +309,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateInterestRate({ from: alice });
     });
   });
-*/
+
   describe('rebase as collateral', () => {
     before(async () => {
       bentoBox = await BentoBox.deployed();
@@ -260,10 +406,14 @@ contract('LendingPair with Rebase', (accounts) => {
       await a.rebase(`-${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
+      await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
+      await oracle.set(e9(1), accounts[0]);
+      await pair.updateExchangeRate();
     });
 
     it('should report insolvency due to interest', async () => {
@@ -271,11 +421,15 @@ contract('LendingPair with Rebase', (accounts) => {
       await a.rebase(`-${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
+      await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
+      await pair.updateExchangeRate();
       await pair.accrue();
       assert.equal(await pair.isSolvent(alice, false), false);
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
+      await oracle.set(e9(1), accounts[0]);
+      await pair.updateExchangeRate();
     })
 
     it('should not report open insolvency due to interest', async () => {
@@ -288,8 +442,6 @@ contract('LendingPair with Rebase', (accounts) => {
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
       await pair.accrue();
-      //accrue adds old interest rate
-      //puts account into insolvency
       assert.equal(await pair.isSolvent(alice, true), true);
 
       await a.rebase(`${total / 2}`);
