@@ -329,8 +329,8 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateInterestRate();
 
       await sushiswappair.sync();
-      await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
 
+      await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);

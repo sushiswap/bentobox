@@ -18,7 +18,6 @@ contract SushiSwapSwapper is ISwapper {
         bentoBox = bentoBox_;
         factory = factory_;
     }
-    event PreSwap(uint amountFrom, uint amountFromMax, uint exactAmountTo, uint reserve0, uint reserve1);
     // Given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
         uint amountInWithFee = amountIn.mul(997);
@@ -63,15 +62,11 @@ contract SushiSwapSwapper is ISwapper {
         uint256 amountFrom;
         if (pair.token0() == address(from)) {
             amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
-            emit PreSwap(uint amountFrom, uint amountFromMax, uint exactAmountTo, uint reserve0, uint reserve1);
-            return;
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
             bentoBox.withdraw(from, address(pair), amountFrom);
             pair.swap(0, exactAmountTo, address(bentoBox), new bytes(0));
         } else {
             amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
-            emit PreSwap(uint amountFrom, uint amountFromMax, uint exactAmountTo, uint reserve0, uint reserve1);
-            return;
             require(amountFrom <= amountFromMax, 'SushiSwapClosedSwapper: return not enough');
             bentoBox.withdraw(from, address(pair), amountFrom);
             pair.swap(exactAmountTo, 0, address(bentoBox), new bytes(0));

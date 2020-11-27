@@ -375,7 +375,7 @@ contract LendingPair is ERC20, Ownable {
                 // Calculates the user's amount borrowed
                 uint256 borrowShare = borrowFraction.mul(totalBorrowShare) / totalBorrowFraction;
                 // Calculates the amount of collateral that's going to be swapped for the asset
-                uint256 collateralShare = borrowShare.mul(liquidationMultiplier).mul(exchangeRate) / 1e23;
+                uint256 collateralShare = bentoBox.toShare(collateral, (bentoBox.toAmount(asset, borrowShare).mul(liquidationMultiplier).mul(exchangeRate) / 1e23));
 
                 // Removes the share of collateral from the user's balance
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
