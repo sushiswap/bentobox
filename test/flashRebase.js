@@ -20,6 +20,7 @@ contract('FlashRebase', (accounts) => {
   let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
+  const eve = accounts[3];
 
   before(async () => {
     bentoBox = await BentoBox.deployed();
@@ -61,11 +62,11 @@ contract('FlashRebase', (accounts) => {
 
     // call flashloan
     const flrs = await FlashLoanRebaseSkimmer.new();
-    const tx = await bentoBox.flashLoan(a.address, e9(500), flrs.address, "0x");
+    const tx = await bentoBox.flashLoan(a.address, e9(500), flrs.address, "0x", {from: eve});
 
     // check profits
-    const balance = await a.balanceOf(accounts[0]);
-    assert.equal(balance.toString(), "99988499750000000");
+    const balance = await a.balanceOf(eve);
+    assert.equal(balance.toString(), "499750000000");
   });
 
   
