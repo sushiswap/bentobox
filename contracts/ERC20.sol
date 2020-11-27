@@ -6,6 +6,7 @@ pragma solidity 0.6.12;
 
 // Data part taken out for building of contracts that receive delegate calls
 contract ERC20Data {
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping (address => uint256)) allowance;
     mapping(address => uint256) public nonces;

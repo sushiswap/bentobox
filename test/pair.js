@@ -67,6 +67,7 @@ contract('LendingPair', (accounts) => {
 
     await a.transfer(alice, e18(1000));
     await b.transfer(bob, e18(1000));
+    await b.transfer(alice, e18(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
@@ -270,4 +271,39 @@ contract('LendingPair', (accounts) => {
     rate2 = await pair.interestPerBlock();
     assert(rate2.gt(rate1), "rate has not adjusted up with high utilization");
   });
+
+  it('should allow full withdrawal of asset', async () => {
+    let bb = await pair.balanceOf(bob);
+    await pair.removeAsset(bb, bob, { from: bob });
+  });
+
+  it('deposits to pair through bento should be split over LPs', async () => {
+    // make propper deposit of 300
+    await b.approve(bentoBox.address, e18(300), { from: alice });
+    await pair.addAsset(e18(300), { from: alice });
+    // make propper deposit of 300
+    await b.approve(bentoBox.address, e18(300), { from: bob });
+    await pair.addAsset(e18(300), { from: bob });
+
+    // make rogue deposit of 300
+    await b.approve(bentoBox.address, e18(300), { from: bob });
+    await bentoBox.depositTo(b.address, bob, pair.address, e18(300), {from: bob});
+
+    // check
+    let balance = await pair.getAssetBalance({from: bob});
+    assert.equal(balance.toString(), e18(450).toString());
+
+
+    // withdraw 450
+    balance = await pair.balanceOf(alice);
+    await pair.removeAsset(balance, alice, { from: alice });
+
+    // withdraw 450
+    balance = await pair.balanceOf(bob);
+    await pair.removeAsset(balance, bob, { from: bob });
+
+    balance = await b.balanceOf(bentoBox.address, {from: bob});
+    assert.equal(balance.toString(), "0");
+  });
+
 });
