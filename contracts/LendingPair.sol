@@ -407,11 +407,11 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             totalAssetShare = totalAssetShare.add(extraAssetShare.sub(feeShare));
             emit AddAsset(address(0), extraAssetShare, 0);
         } else if (address(swapper) == address(0)) {
-            // Open liquidation directly using the caller's funds, without swapping
+            // Open liquidation directly using the caller's funds, without swapping using token transfers
             bentoBox.depositShare(asset, msg.sender, allBorrowShare);
             bentoBox.withdrawShare(collateral, to, allCollateralShare);
         } else if (address(swapper) == address(1)) {
-            // Open liquidation directly using the caller's funds, without swapping
+            // Open liquidation directly using the caller's funds, without swapping using funds in BentoBox
             bentoBox.transferShareFrom(asset, msg.sender, to, allBorrowShare);
             bentoBox.transferShare(collateral, to, allCollateralShare);
         } else {
@@ -427,7 +427,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         }
     }
 
-    function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory, bytes[] memory) {
+    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory, bytes[] memory) {
         bool[] memory successes = new bool[](calls.length);
         bytes[] memory results = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {

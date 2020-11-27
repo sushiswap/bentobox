@@ -246,7 +246,7 @@ contract BentoBox {
         }
     }
 
-    function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory successes, bytes[] memory results) {
+    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory successes, bytes[] memory results) {
         successes = new bool[](calls.length);
         results = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
