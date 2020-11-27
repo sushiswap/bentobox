@@ -1,7 +1,20 @@
 // SPDX-License-Identifier: UNLICENSED
-// Copyright 2020 BoringCrypto - All rights reserved
 
-// WARNING!!! DO NOT USE!!! NOT YET TESTED + NOT YET SECURITY CONSIDERED + DEF. NOT YET AUDITED!!!
+// Medium Risk LendingPair
+
+// ▄▄▌  ▄▄▄ . ▐ ▄ ·▄▄▄▄  ▪   ▐ ▄  ▄▄ •  ▄▄▄· ▄▄▄· ▪  ▄▄▄
+// ██•  ▀▄.▀·•█▌▐███▪ ██ ██ •█▌▐█▐█ ▀ ▪▐█ ▄█▐█ ▀█ ██ ▀▄ █·
+// ██▪  ▐▀▀▪▄▐█▐▐▌▐█· ▐█▌▐█·▐█▐▐▌▄█ ▀█▄ ██▀·▄█▀▀█ ▐█·▐▀▀▄
+// ▐█▌▐▌▐█▄▄▌██▐█▌██. ██ ▐█▌██▐█▌▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐█▌▐█•█▌
+// .▀▀▀  ▀▀▀ ▀▀ █▪▀▀▀▀▀• ▀▀▀▀▀ █▪·▀▀▀▀ .▀    ▀  ▀ ▀▀▀.▀  ▀
+
+// Copyright (c) 2020 BoringCrypto - All rights reserved
+// Twitter: @Boring_Crypto
+
+// Special thanks to:
+// @burger_crypto - for the idea of trying to let the LPs benefit from liquidations
+
+// WARNING!!! DO NOT USE!!! NOT YET AUDITED!!!
 // FOR CONCEPT TESTING ONLY!
 
 // solium-disable security/no-low-level-calls
@@ -17,8 +30,6 @@ import "./BentoBox.sol";
 import "./ERC20.sol";
 import "./interfaces/ISwapper.sol";
 
-// Special thanks to:
-// https://twitter.com/burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
 // TODO: ensure BoringMath is always used
@@ -87,8 +98,8 @@ contract LendingPair is ERC20, Ownable {
     uint256 public constant minimumTargetUtilization = 7e17; // 70%
     uint256 public constant maximumTargetUtilization = 8e17; // 80%
 
-    uint256 public constant minimumInterestPerBlock = 1141552511;
-    uint256 public constant maximumInterestPerBlock = 1141552511;
+    uint256 public constant minimumInterestPerBlock = 1141552511; // 0.25% APR
+    uint256 public constant maximumInterestPerBlock = 4566210045000;  // 1000% APR
 
     uint256 public constant liquidationMultiplier = 112000; // add 12%
 
@@ -157,8 +168,8 @@ contract LendingPair is ERC20, Ownable {
         uint256 borrow = userBorrowFraction[user].mul(totalBorrowShare) / totalBorrowFraction;
 
         return bentoBox.toAmount(collateral, userCollateralShare[user])
-            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate)
-            / exchangeRate / 1e5 >= bentoBox.toAmount(asset, borrow);
+            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate) /
+            exchangeRate / 1e5 >= bentoBox.toAmount(asset, borrow);
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -194,7 +205,7 @@ contract LendingPair is ERC20, Ownable {
             uint256 overFactor = utilization.sub(8e17).mul(1e18) / uint256(1e18).sub(8e17);
             uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
             newInterestPerBlock = interestPerBlock.mul(scale) / 2000e36;
-            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 0.25% APR maximum
+            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
         } else {return;}
 
         interestPerBlock = newInterestPerBlock;
@@ -314,7 +325,7 @@ contract LendingPair is ERC20, Ownable {
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
 
-    // Repays the given share
+    // Repays the given fraction
     function repay(uint256 fraction) public {
         accrue();
         updateInterestRate();

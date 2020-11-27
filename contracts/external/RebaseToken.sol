@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.9;
 
 import "./SafeMath.sol";
@@ -60,7 +61,7 @@ contract RebaseToken is IERC20 {
         pure
         returns (int256)
     {
-        require(a != int256(1) << 255);
+        require(a != int256(1) << 255, 'Error');
         return a < 0 ? -a : a;
     }
 
@@ -155,7 +156,7 @@ contract RebaseToken is IERC20 {
      * @return True on success, false otherwise.
      */
     function transfer(address to, uint256 value)
-        public override 
+        public override
         returns (bool)
     {
 

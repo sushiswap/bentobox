@@ -13,6 +13,9 @@
 // Copyright (c) 2020 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
+// WARNING!!! DO NOT USE!!! NOT YET AUDITED!!!
+// FOR CONCEPT TESTING ONLY!
+
 // solium-disable security/no-inline-assembly
 // solium-disable security/no-low-level-calls
 pragma solidity 0.6.12;
@@ -257,12 +260,12 @@ contract BentoBox {
         }
     }
 
-    // *** Internal functions *** //
-    function _approveWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) internal {
+    // *** Private functions *** //
+    function _approveWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) private {
         token.permit(from, address(this), amount, deadline, v, r, s);
     }
 
-    function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
+    function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][to] = shareOf[token][to].add(share);
         totalShare[token] = totalShare[token].add(share);
@@ -277,7 +280,7 @@ contract BentoBox {
         emit LogDeposit(token, from, to, amount, share);
     }
 
-    function _withdraw(IERC20 token, address from, address to, uint256 amount, uint256 share) internal {
+    function _withdraw(IERC20 token, address from, address to, uint256 amount, uint256 share) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][from] = shareOf[token][from].sub(share);
         totalShare[token] = totalShare[token].sub(share);
