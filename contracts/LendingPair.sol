@@ -275,34 +275,20 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // Subtracts the fraction from user
         balanceOf[user] = balanceOf[user].sub(fraction);
 
+        uint256 remainingBoxShare = bentoBox.shareOf(asset, address(this));
+        uint256 totalBoxShare = remainingBoxShare.mul(totalAssetShare) / totalAssetShare.sub(totalBorrowShare);
+
         // Subtracts the share from the total of supply shares
         uint256 assetShare = fraction.mul(totalAssetShare) / totalSupply;
         totalAssetShare = totalAssetShare.sub(assetShare);
-        emit RemoveAsset(msg.sender, assetShare, fraction);
+        emit RemoveAsset(msg.sender, fraction, assetShare);
 
         // Calculates the share of tokens to withdraw
-        boxShare = fraction.mul(bentoBox.shareOf(asset, address(this))) / totalSupply;
+        boxShare = fraction.mul(totalBoxShare) / totalSupply;
 
         // Subtracts the calculated fraction from the total of supply   
         totalSupply = totalSupply.sub(fraction);
     }
-
-    // Handles internal variable updates when supply is withdrawn and returns the amount of supply withdrawn
-    // function _removeAssetFraction(address user, uint256 fraction) private returns (uint256 boxShare) {
-    //     // Subtracts the fraction from user
-    //     balanceOf[user] = balanceOf[user].sub(fraction);
-
-    //     // Subtracts the share from the total of supply shares
-    //     uint256 assetShare = fraction.mul(totalAssetShare) / totalSupply;
-    //     totalAssetShare = totalAssetShare.sub(assetShare);
-    //     emit RemoveAsset(msg.sender, assetShare, fraction);
-
-    //     // Calculates the share of tokens to withdraw
-    //     boxShare = fraction.mul(bentoBox.shareOf(asset, address(this))) / totalSupply;
-
-    //     // Subtracts the calculated fraction from the total of supply   
-    //     totalSupply = totalSupply.sub(fraction);
-    // }
 
     // Handles internal variable updates when supply is repaid
     function _removeBorrowFraction(address user, uint256 fraction) private returns (uint256 share) {
