@@ -49,7 +49,7 @@ contract BentoBox {
     }
 
     // Deploys a given master Contract as a clone.
-    function deploy(address masterContract, bytes calldata data) public {
+    function deploy(address masterContract, bytes calldata data) external {
         bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
         address clone_address; // Address where the clone contract will reside.
 
@@ -225,7 +225,7 @@ contract BentoBox {
         emit LogFlashLoan(user, token, amount, feeAmount);
     }
 
-    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public checkEntry {
+    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) external checkEntry {
         uint256[] memory feeAmounts = new uint256[](tokens.length);
         uint256[] memory returnAmounts = new uint256[](tokens.length);
 
@@ -249,7 +249,7 @@ contract BentoBox {
         }
     }
 
-    function batch(bytes[] calldata calls, bool revertOnFail) public payable returns(bool[] memory successes, bytes[] memory results) {
+    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory successes, bytes[] memory results) {
         successes = new bool[](calls.length);
         results = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
