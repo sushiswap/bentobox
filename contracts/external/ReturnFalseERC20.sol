@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-// TokenA does not revert on errors, it just returns false
+// ReturnFalseERC20 does not revert on errors, it just returns false
 pragma solidity 0.6.12;
-contract TokenA {
-    string public constant symbol = "A";
-    string public constant name = "Token A";
+contract ReturnFalseERC20 {
+    string public symbol;
+    string public name;
     uint8 public constant decimals = 18;
-    uint256 public totalSupply = 1e25;
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping (address => uint256)) allowance;
     mapping(address => uint256) public nonces;
@@ -13,8 +13,15 @@ contract TokenA {
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-    constructor() public {
-        balanceOf[msg.sender] = totalSupply;
+    constructor(
+        string memory name,
+        string memory symbol,
+        uint256 supply
+    ) public {
+        symbol = symbol;
+        name = name;
+        totalSupply = supply;
+        balanceOf[msg.sender] = supply;
     }
 
     function transfer(address to, uint256 amount) public returns (bool success) {

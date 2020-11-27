@@ -6,6 +6,14 @@ e18 = (amount) => {
     return bn(amount).mul(bn("1000000000000000000"));
 }
 
+e9 = (amount) => {
+    return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000"));
+}
+
+sansBorrowFee = (amount) => {
+  return amount.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
+}
+
 encodePrice = (reserve0, reserve1) => {
     return [reserve1.mul(bn('2').pow(bn('112'))).div(reserve0), reserve0.mul(bn('2').pow(bn('112'))).div(reserve1)];
 }
@@ -77,6 +85,8 @@ signERC2612Permit = async (token, owner, spender, value, deadline, nonce) => {
 module.exports = {
     e18,
     bn,
+    e9,
+    sansBorrowFee,
     encodePrice,
     getInitData,
     getDataParameter,

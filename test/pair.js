@@ -1,10 +1,10 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, encodePrice, getInitData, getDataParameter, signERC2612Permit} = require("./helpers/utils");
+const {e18, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const TokenA = artifacts.require("TokenA");
-const TokenB = artifacts.require("TokenB");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
+const RevertingERC20 = artifacts.require("RevertingERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -12,10 +12,6 @@ const TestOracle = artifacts.require("TestOracle");
 const SushiSwapSwapper = artifacts.require("SushiSwapSwapper");
 const ethereumjsUtil = require('ethereumjs-util');
 const {ecsign} = ethereumjsUtil;
-
-function sansBorrowFee(amount) {
-  return amount.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
-}
 
 async function logStatus(bentoBox, pair, a, b, alice, bob) {
     console.log('BentoBox contract');
@@ -49,18 +45,15 @@ contract('LendingPair', (accounts) => {
   let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
-  const dummy = accounts[4];
-  // const private_key = "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f";
-  // const public_key = "0xb65CC031e6D92333BfDC441F5E36c4118Fe6838E";
-  const private_key = "0x328fb00abf72d3c33b7732c3cdfdfd93300fcfef0807952f8f766a1b09f17b94";
-  const public_key = "0xCa6f9b85Ece7F9Dc8e6461cF639992eC7c275aEE";
+  const charliePrivateKey = "0x328fb00abf72d3c33b7732c3cdfdfd93300fcfef0807952f8f766a1b09f17b94";
+  const charlieAddress = "0xCa6f9b85Ece7F9Dc8e6461cF639992eC7c275aEE";
 
   before(async () => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await TokenA.new({ from: accounts[0] });
-    b = await TokenB.new({ from: accounts[0] });
+    a = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
@@ -77,7 +70,7 @@ contract('LendingPair', (accounts) => {
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
-    let oracleData = getDataParameter(TestOracle._json.abi, []);
+    let oracleData = await oracle.getDataParameter();
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
@@ -114,57 +107,57 @@ contract('LendingPair', (accounts) => {
     //console.log(p);
     //await pair.permit(alice, bob, 10, p.deadline, p.v, p.r, p.s);
 
-    let nonce = await pair.nonces(public_key);
+    let nonce = await pair.nonces(charlieAddress);
     nonce = nonce.toNumber();
     let block = await web3.eth.getBlock("latest");
     const deadline = Number(block.timestamp)+10000;
     const digest = await permit.getApprovalDigest(
-        pair_address,
-        {owner: public_key, spender: alice, value: 10},
+        pair,
+        {owner: charlieAddress, spender: alice, value: 10},
         nonce,
         deadline
       );
     const {v, r, s} = ecsign(
         Buffer.from(digest.slice(2), 'hex'),
-        Buffer.from(private_key.replace('0x', ''), 'hex')
+        Buffer.from(charliePrivateKey.replace('0x', ''), 'hex')
     );
     // console.log(v, r, s);
-    // let t = await web3.eth.sign(msg, public_key);
+    // let t = await web3.eth.sign(msg, charlieAddress);
     // console.log(msg, t);
-    await pair.permit(public_key, alice, 10, deadline, v, r, s);    
+    await pair.permit(charlieAddress, alice, 10, deadline, v, r, s);
   });
 
   it('permit should revert on old deadline', async () => {
-    let nonce = await pair.nonces(public_key);
+    let nonce = await pair.nonces(charlieAddress);
     nonce = nonce.toNumber();
     const deadline = 0;
     const digest = await permit.getApprovalDigest(
-        pair_address,
-        {owner: public_key, spender: alice, value: 10},
+        pair,
+        {owner: charlieAddress, spender: alice, value: 10},
         nonce,
         deadline
       );
     const {v, r, s} = ecsign(
         Buffer.from(digest.slice(2), 'hex'),
-        Buffer.from(private_key.replace('0x', ''), 'hex')
+        Buffer.from(charliePrivateKey.replace('0x', ''), 'hex')
     );
-    await truffleAssert.reverts(pair.permit(public_key, alice, 10, deadline, v, r, s), 'BentoBox: Expired');
+    await truffleAssert.reverts(pair.permit(charlieAddress, alice, 10, deadline, v, r, s), 'BentoBox: Expired');
   });
 
   it('permit should revert on incorrect signer', async () => {
-    let nonce = await pair.nonces(public_key);
+    let nonce = await pair.nonces(charlieAddress);
     nonce = nonce.toNumber();
     let block = await web3.eth.getBlock("latest");
     const deadline = Number(block.timestamp)+10000;
     const digest = await permit.getApprovalDigest(
-        pair_address,
-        {owner: public_key, spender: alice, value: 10},
+        pair,
+        {owner: charlieAddress, spender: alice, value: 10},
         nonce,
         deadline
       );
     const {v, r, s} = ecsign(
         Buffer.from(digest.slice(2), 'hex'),
-        Buffer.from(private_key.replace('0x', ''), 'hex')
+        Buffer.from(charliePrivateKey.replace('0x', ''), 'hex')
     );
     await truffleAssert.reverts(pair.permit(bob, alice, 10, deadline, v, r, s), 'BentoBox: Invalid Signature');
   });

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "truffle build",
-    "test": "./test.sh"
+    "test": "./test.sh $TRUFFLE_TEST"
   },
   "repository": {
     "type": "git",
