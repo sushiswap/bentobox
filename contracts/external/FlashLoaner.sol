@@ -8,14 +8,14 @@ import "../interfaces/IFlashLoaner.sol";
 import "../libraries/BoringMath.sol";
 
 contract FlashLoaner is IFlashLoaner{
-    using BoringMath for uint;
+    using BoringMath for uint256;
 
-    function executeOperation(IERC20 token, uint amount, uint fee, bytes calldata) public override {
+    function executeOperation(IERC20 token, uint256 amount, uint256 fee, bytes calldata) public override {
         address bentoBox = address(msg.sender);
-        uint payback = amount.add(fee);
-        uint money = token.balanceOf(address(this));
+        uint256 payback = amount.add(fee);
+        uint256 money = token.balanceOf(address(this));
         token.approve(address(bentoBox), payback);
-        uint winnings = money.sub(payback);
+        uint256 winnings = money.sub(payback);
         token.transfer(address(tx.origin), winnings);
     }
 

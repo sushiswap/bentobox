@@ -17,5 +17,5 @@ interface IERC20 {
     function decimals() external view returns (uint8);
 
     // EIP 2612
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
 }

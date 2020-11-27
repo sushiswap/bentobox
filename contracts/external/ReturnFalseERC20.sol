@@ -59,7 +59,7 @@ contract ReturnFalseERC20 {
       return keccak256(abi.encode(keccak256("EIP712Domain(uint256 chainId,address verifyingContract)"), chainId, address(this)));
     }
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
         require(block.timestamp < deadline, 'BentoBox: Expired');
         bytes32 digest = keccak256(abi.encodePacked(
             '\x19\x01', DOMAIN_SEPARATOR(),

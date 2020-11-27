@@ -18,12 +18,12 @@ encodePrice = (reserve0, reserve1) => {
     return [reserve1.mul(bn('2').pow(bn('112'))).div(reserve0), reserve0.mul(bn('2').pow(bn('112'))).div(reserve1)];
 }
 
-getInitData = (abi, parameters) => {
-    const init = abi.find(element => element.name == "init");
-    return web3.eth.abi.encodeFunctionCall(init, parameters);
+getInitData = (abi, ...parameters) => {
+    const init = abi.find(element => element.name == "getInitData");
+    return web3.eth.abi.encodeFunctionCall(init, parameters).substr(10);
 }
 
-getDataParameter = (abi, parameters) => {
+getDataParameter = (abi, ...parameters) => {
     const init = abi.find(element => element.name == "getDataParameter");
     return "0x" + web3.eth.abi.encodeFunctionCall(init, parameters).substr(10);
 }

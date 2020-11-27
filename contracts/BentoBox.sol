@@ -63,10 +63,7 @@ contract BentoBox {
         }
         masterContractOf[clone_address] = masterContract;
 
-        // TODO: Roll init call and setBentoBox call into one and fix signature to init
-        (bool success,) = clone_address.call(data);
-        require(success, 'BentoBox: contract init failed.');
-        IMasterContract(clone_address).setBentoBox(address(this), masterContract);
+        IMasterContract(clone_address).init(address(this), masterContract, data);
 
         emit LogDeploy(masterContract, data, clone_address);
     }
@@ -107,15 +104,15 @@ contract BentoBox {
         _deposit(token, from, to, amount, share);
     }
 
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 share) { share = depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); }
-    function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 share) {
+    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 share) { share = depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); }
+    function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 share) {
         share = toShare(token, amount);
         _approveWithPermit(token, from, amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
     }
 
-    function depositShareWithPermit(IERC20 token, address from, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 amount) { amount = depositShareWithPermitTo(token, from, msg.sender, share, deadline, v, r, s); }
-    function depositShareWithPermitTo(IERC20 token, address from, address to, uint256 share, uint deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 amount) {
+    function depositShareWithPermit(IERC20 token, address from, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 amount) { amount = depositShareWithPermitTo(token, from, msg.sender, share, deadline, v, r, s); }
+    function depositShareWithPermitTo(IERC20 token, address from, address to, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 amount) {
         amount = toAmount(token, share);
         _approveWithPermit(token, from, amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
@@ -229,7 +226,7 @@ contract BentoBox {
         uint256[] memory feeAmounts = new uint256[](tokens.length);
         uint256[] memory returnAmounts = new uint256[](tokens.length);
 
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             uint256 amount = amounts[i];
             feeAmounts[i] = amount.mul(5) / 10000;
             returnAmounts[i] = amount.add(feeAmounts[i]);
@@ -240,7 +237,7 @@ contract BentoBox {
 
         IFlashLoaner(user).executeOperationMultiple(tokens, amounts, feeAmounts, params);
 
-        for (uint i = 0; i < tokens.length; i++) {
+        for (uint256 i = 0; i < tokens.length; i++) {
             (bool success, bytes memory data) = address(tokens[i]).call(abi.encodeWithSelector(0x23b872dd, user, address(this), returnAmounts[i]));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
             totalAmount[tokens[i]] = totalAmount[tokens[i]] + feeAmounts[i];

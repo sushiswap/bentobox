@@ -52,7 +52,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
+      let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
       pair = await Pair.at(pair_address);
@@ -160,7 +160,7 @@ contract('LendingPair with Rebase', (accounts) => {
       for (let i = 0; i < 20; i++) {
         await timeWarp.advanceBlock()
       }
-      await pair.updateInterestRate({ from: alice });
+      await pair.accrue({ from: alice });
     });
   });
 */
@@ -192,7 +192,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
+      let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
       pair = await Pair.at(pair_address);
@@ -326,7 +326,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(a.address);
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await pair.updateInterestRate();
+      await pair.accrue();
 
       await sushiswappair.sync();
 
@@ -482,7 +482,7 @@ contract('LendingPair with Rebase', (accounts) => {
       for (let i = 0; i < 20; i++) {
         await timeWarp.advanceBlock()
       }
-      await pair.updateInterestRate({ from: alice });
+      await pair.accrue({ from: alice });
 
       await a.rebase(`${total / 2}`);
       // sync and check

@@ -38,14 +38,12 @@ interface ILendingPair {
     function userCollateralShare(address) external view returns (uint256);
     function bentoBox() external view returns (BentoBox);
     function decimals() external view returns (uint8);
-    function init(IERC20 collateral_address, IERC20 asset_address, IOracle oracle_address, bytes calldata oracleData) external;
-    function setBentoBox(address bentoBox_, address masterContract_) external;
+    function init(address bentoBox_, address masterContract_, bytes calldata data) external;
     function accrue() external;
     function withdrawFees() external;
     function isSolvent(address user, bool open) external view returns (bool);
     function peekExchangeRate() external view returns (bool, uint256);
     function updateExchangeRate() external returns (uint256);
-    function updateInterestRate() external;
     function addCollateral(uint256 amount) external;
     function addAsset(uint256 amount) external;
     function removeCollateral(uint256 share, address to) external;

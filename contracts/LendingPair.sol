@@ -28,6 +28,7 @@ import "./interfaces/IOracle.sol";
 import "./libraries/Ownable.sol";
 import "./BentoBox.sol";
 import "./ERC20.sol";
+import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";
 
 // TODO: check all reentrancy paths
@@ -37,7 +38,7 @@ import "./interfaces/ISwapper.sol";
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
 // We do allow supplying assets and borrowing, but the asset does NOT provide collateral as it's just silly and no UI should allow this
 
-contract LendingPair is ERC20, Ownable {
+contract LendingPair is ERC20, Ownable, IMasterContract {
     using BoringMath for uint256;
 
     BentoBox public bentoBox;
@@ -76,6 +77,7 @@ contract LendingPair is ERC20, Ownable {
     string public constant name = "Bento Medium Risk Lending Pool";
 
     function decimals() public view returns (uint8) {
+        // TODO: protect against revert in asset.decimals. Default to 18.
         return asset.decimals();
     }
 
@@ -108,23 +110,18 @@ contract LendingPair is ERC20, Ownable {
     uint256 public constant borrowOpeningFee = 5; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
-    function init(IERC20 collateral_, IERC20 asset_, IOracle oracle_address, bytes calldata oracleData_) public {
+    function init(address bentoBox_, address masterContract_, bytes calldata data) public override {
         require(address(bentoBox) == address(0), 'BentoBox: already initialized');
-
-        collateral = collateral_;
-        asset = asset_;
-
-        oracle = oracle_address;
-        oracleData = oracleData_;
+        bentoBox = BentoBox(bentoBox_);
+        masterContract = LendingPair(masterContract_);
+        (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
         interestPerBlock = 4566210045;  // 1% APR, with 1e18 being 100%
         lastInterestBlock = block.number;
     }
 
-    function setBentoBox(BentoBox bentoBox_, address masterContract_) public {
-        require(address(bentoBox) == address(0), 'BentoBox: already initialized');
-        bentoBox = bentoBox_;
-        masterContract = LendingPair(masterContract_);
+    function getInitData(IERC20 collateral_, IERC20 asset_, IOracle oracle_, bytes calldata oracleData_) public pure returns(bytes memory data) {
+        return abi.encode(collateral_, asset_, oracle_, oracleData_);
     }
 
     function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
@@ -139,13 +136,33 @@ contract LendingPair is ERC20, Ownable {
         // Number of blocks since accrue was called
         uint256 blocks = block.number - lastBlockAccrued;
         if (blocks == 0) {return;}
-        // The first time lastBlockAccrued will be 0, but also borrowed will be 0, so all good
+
+        lastBlockAccrued = block.number;
+        if (totalBorrowShare == 0) {return;}
+
+        // Accrue interest
         uint256 extraShare = totalBorrowShare.mul(interestPerBlock).mul(blocks) / 1e18;
         uint256 feeShare = extraShare.mul(protocolFee) / 100; // % of interest paid goes to fee
         totalBorrowShare = totalBorrowShare.add(extraShare);
         totalAssetShare = totalAssetShare.add(extraShare.sub(feeShare));
         feesPendingShare = feesPendingShare.add(feeShare);
-        lastBlockAccrued = block.number;
+
+        // Update interest rate
+        uint256 utilization = totalBorrowShare.mul(1e18) / totalAssetShare;
+        uint256 newInterestPerBlock;
+        if (utilization < minimumTargetUtilization) {
+            uint256 underFactor = uint256(7e17).sub(utilization).mul(1e18) / 7e17;
+            uint256 scale = uint256(2000e36).add(underFactor.mul(underFactor).mul(blocks));
+            newInterestPerBlock = interestPerBlock.mul(2000e36) / scale;
+            if (newInterestPerBlock < minimumInterestPerBlock) {newInterestPerBlock = minimumInterestPerBlock;} // 0.25% APR minimum
+        } else if (utilization > maximumTargetUtilization) {
+            uint256 overFactor = utilization.sub(8e17).mul(1e18) / uint256(1e18).sub(8e17);
+            uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
+            newInterestPerBlock = interestPerBlock.mul(scale) / 2000e36;
+            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
+        } else {return;}
+
+        interestPerBlock = newInterestPerBlock;
     }
 
     // Withdraws the fees accumulated
@@ -188,29 +205,6 @@ contract LendingPair is ERC20, Ownable {
         return exchangeRate;
     }
 
-    function updateInterestRate() public {
-        if (totalAssetShare == 0) {return;}
-
-        uint256 blocks = block.number - lastInterestBlock; // Number of blocks since accrue was called
-        if (blocks == 0) {return;}
-        lastInterestBlock = block.number;
-        uint256 utilization = totalBorrowShare.mul(1e18) / totalAssetShare;
-        uint256 newInterestPerBlock;
-        if (utilization < minimumTargetUtilization) {
-            uint256 underFactor = uint256(7e17).sub(utilization).mul(1e18) / 7e17;
-            uint256 scale = uint256(2000e36).add(underFactor.mul(underFactor).mul(blocks));
-            newInterestPerBlock = interestPerBlock.mul(2000e36) / scale;
-            if (newInterestPerBlock < minimumInterestPerBlock) {newInterestPerBlock = minimumInterestPerBlock;} // 0.25% APR minimum
-        } else if (utilization > maximumTargetUtilization) {
-            uint256 overFactor = utilization.sub(8e17).mul(1e18) / uint256(1e18).sub(8e17);
-            uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
-            newInterestPerBlock = interestPerBlock.mul(scale) / 2000e36;
-            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
-        } else {return;}
-
-        interestPerBlock = newInterestPerBlock;
-    }
-
     // Handles internal variable updates when collateral is deposited
     function _addCollateralShare(address user, uint256 share) private {
         // Adds this share to user
@@ -234,7 +228,7 @@ contract LendingPair is ERC20, Ownable {
     }
 
     // Handles internal variable updates when supply (the borrowable token) is borrowed
-    function _addBorrow(address user, uint256 share) private {
+    function _addBorrowShare(address user, uint256 share) private {
         // Calculates what share of the borrowed funds the user gets for the amount borrowed
         uint256 newFraction = totalBorrowFraction == 0 ? share : share.mul(totalBorrowFraction) / totalBorrowShare;
         // Adds this share to the user
@@ -292,7 +286,6 @@ contract LendingPair is ERC20, Ownable {
     function addAsset(uint256 amount) public {
         // Accrue interest before calculating pool shares in _addAssetShare
         accrue();
-        updateInterestRate();
         _addAssetShare(msg.sender, bentoBox.deposit(asset, msg.sender, amount));
     }
 
@@ -309,7 +302,6 @@ contract LendingPair is ERC20, Ownable {
     function removeAsset(uint256 fraction, address to) public {
         // Accrue interest before calculating pool shares in _removeAssetFraction
         accrue();
-        updateInterestRate();
         uint256 share = _removeAssetFraction(msg.sender, fraction);
         bentoBox.withdrawShare(asset, to, share);
     }
@@ -317,10 +309,9 @@ contract LendingPair is ERC20, Ownable {
     // Borrows the given amount from the supply to the specified address
     function borrow(uint256 amount, address to) public {
         accrue();
-        updateInterestRate();
         uint256 share = bentoBox.withdraw(asset, to, amount); // TODO: reentrancy issue?
         uint256 feeShare = share.mul(borrowOpeningFee) / 10000; // A flat 0.05% fee is charged for any borrow
-        _addBorrow(msg.sender, share.add(feeShare));
+        _addBorrowShare(msg.sender, share.add(feeShare));
         totalAssetShare = totalAssetShare.add(feeShare);
         require(isSolvent(msg.sender, false), 'BentoBox: user insolvent');
     }
@@ -328,7 +319,6 @@ contract LendingPair is ERC20, Ownable {
     // Repays the given fraction
     function repay(uint256 fraction) public {
         accrue();
-        updateInterestRate();
         uint256 share = _removeBorrowFraction(msg.sender, fraction);
         bentoBox.depositShare(asset, msg.sender, share);
     }
@@ -337,8 +327,7 @@ contract LendingPair is ERC20, Ownable {
     function short(ISwapper swapper, uint256 assetShare, uint256 minCollateralShare) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
-        updateInterestRate();
-        _addBorrow(msg.sender, assetShare);
+        _addBorrowShare(msg.sender, assetShare);
         uint256 suppliedAssetAmount = bentoBox.transferShareFrom(asset, address(this), address(swapper), assetShare);
 
         // Swaps the borrowable asset for collateral
@@ -354,8 +343,7 @@ contract LendingPair is ERC20, Ownable {
     function unwind(ISwapper swapper, uint256 borrowShare, uint256 maxAmountCollateral) public {
         require(masterContract.swappers(swapper), 'BentoBox: Invalid swapper');
         accrue();
-        updateInterestRate();
-        uint suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), maxAmountCollateral);
+        uint256 suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), maxAmountCollateral);
 
         uint256 borrowAmount = _removeBorrowFraction(msg.sender, borrowShare);
 
@@ -373,7 +361,6 @@ contract LendingPair is ERC20, Ownable {
     function liquidate(address[] calldata users, uint256[] calldata borrowFractions, address to, ISwapper swapper, bool open) public {
         accrue();
         updateExchangeRate();
-        updateInterestRate();
 
         uint256 allCollateralShare;
         uint256 allBorrowShare;
@@ -423,8 +410,8 @@ contract LendingPair is ERC20, Ownable {
             emit AddAsset(address(0), extraAssetShare, 0);
         } else if (address(swapper) == address(0)) {
             // Open liquidation directly using the caller's funds, without swapping
-            bentoBox.deposit(asset, msg.sender, allBorrowShare);
-            bentoBox.withdraw(collateral, to, allCollateralShare);
+            bentoBox.depositShare(asset, msg.sender, allBorrowShare);
+            bentoBox.withdrawShare(collateral, to, allCollateralShare);
         } else if (address(swapper) == address(1)) {
             // Open liquidation directly using the caller's funds, without swapping
             bentoBox.transferShareFrom(asset, msg.sender, to, allBorrowShare);

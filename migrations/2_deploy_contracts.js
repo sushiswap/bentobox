@@ -4,6 +4,7 @@ const WETH9 = artifacts.require("WETH9");
 const {e18} = require("../test/helpers/utils");
 
 const DEFAULT_WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+                     
 
 module.exports = async function (deployer, network, accounts) {
 
@@ -19,5 +20,6 @@ module.exports = async function (deployer, network, accounts) {
   // Get the contracts
   let bentoBox = await BentoBox.deployed();
   let pairMaster = await Pair.deployed();
-  pairMaster.setBentoBox(bentoBox.address, pairMaster.address);
+  let initData = await pairMaster.getInitData("0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0x0");
+  pairMaster.init(bentoBox.address, pairMaster.address, initData);
 };

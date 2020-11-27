@@ -51,7 +51,7 @@ contract('Pair (Shorting)', (accounts) => {
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);

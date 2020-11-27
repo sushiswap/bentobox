@@ -27,7 +27,7 @@ library FixedPoint {
         return uint144(self._x >> RESOLUTION);
     }
 
-    // multiply a UQ112x112 by a uint, returning a UQ144x112
+    // multiply a UQ112x112 by a uint256, returning a UQ144x112
     // reverts on overflow
     function mul(uq112x112 memory self, uint256 y) internal pure returns (uq144x112 memory) {
         uint256 z = 0;
