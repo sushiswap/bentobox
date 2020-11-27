@@ -141,7 +141,7 @@ contract('LendingPair', (accounts) => {
         Buffer.from(digest.slice(2), 'hex'),
         Buffer.from(charliePrivateKey.replace('0x', ''), 'hex')
     );
-    await truffleAssert.reverts(pair.permit(charlieAddress, alice, 10, deadline, v, r, s), 'BentoBox: Expired');
+    await truffleAssert.reverts(pair.permit(charlieAddress, alice, 10, deadline, v, r, s), 'Expired');
   });
 
   it('permit should revert on incorrect signer', async () => {
@@ -159,7 +159,7 @@ contract('LendingPair', (accounts) => {
         Buffer.from(digest.slice(2), 'hex'),
         Buffer.from(charliePrivateKey.replace('0x', ''), 'hex')
     );
-    await truffleAssert.reverts(pair.permit(bob, alice, 10, deadline, v, r, s), 'BentoBox: Invalid Signature');
+    await truffleAssert.reverts(pair.permit(bob, alice, 10, deadline, v, r, s), 'Invalid Signature');
   });
 
   it('should have correct balances after supply of assets', async () => {
@@ -168,7 +168,7 @@ contract('LendingPair', (accounts) => {
   })
 
   it('should not allow borrowing without any collateral', async () => {
-    await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'BentoBox: user insolvent');
+    await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'user insolvent');
   });
 
   it('should take a deposit of collateral', async () => {
@@ -186,7 +186,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should not allow any more borrowing', async () => {
-    await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+    await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'user insolvent');
   });
 
   it('should report insolvency due to interest', async () => {
@@ -201,7 +201,7 @@ contract('LendingPair', (accounts) => {
 
   it('should not allow open liquidate yet', async () => {
     await b.approve(bentoBox.address, e18(25), { from: bob });
-    await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+    await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
   });
 
   it('should allow closed liquidate', async () => {

@@ -81,7 +81,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any collateral', async () => {
-      await truffleAssert.reverts(pair.borrow(e9(1), alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(e9(1), alice, { from: alice }), 'user insolvent');
     });
 
     it('should take a deposit of collateral', async () => {
@@ -105,7 +105,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(b.address);
       await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'user insolvent');
       await b.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(b.address);
@@ -153,7 +153,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
       await b.approve(bentoBox.address, e9(25), { from: bob });
-      await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+      await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
       await b.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(b.address);
@@ -371,7 +371,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any collateral', async () => {
-      await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'user insolvent');
     });
 
     it('should take a deposit of collateral', async () => {
@@ -408,7 +408,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(a.address);
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'user insolvent');
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
@@ -462,7 +462,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.accrue();
       let borrowShareLeft = await pair.userBorrowFraction(alice);
       await b.approve(bentoBox.address, e18(25), { from: bob });
-      await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+      await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);

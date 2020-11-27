@@ -72,7 +72,7 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting into insolvency", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), "BentoBox: user insolvent");
+    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), "user insolvent");
   });
 
   it('should have correct balances before short', async () => {
@@ -129,7 +129,7 @@ contract('Pair (Shorting)', (accounts) => {
     // 750 still too much, as 250 should be kept to rewind all shorts
     await truffleAssert.reverts(pair.removeAsset(e18(750), bob, {from: bob}), 'BoringMath: Underflow');
     // 500 still too much, as some dust has been accrued in interest
-    // await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'BentoBox: not enough liquidity');
+    // await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'not enough liquidity');
     await pair.removeAsset(e18(499), bob, {from: bob});
   });
 

@@ -71,7 +71,7 @@ contract('BentoBox', (accounts) => {
   });
 
   it('should not allow deposit without approve', async () => {
-    truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "BentoBox: TransferFrom failed at ERC20");
+    truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "TransferFrom failed at ERC20");
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(0).toString());
   });
@@ -307,7 +307,7 @@ contract('BentoBox', (accounts) => {
     deposit = web3.eth.abi.encodeFunctionCall(deposit, [a.address, alice, e18(1).toString()]);
     let transferFrom = BentoBox._json.abi.find(element => element.name == "transferFrom");
     transferFrom = web3.eth.abi.encodeFunctionCall(transferFrom, [a.address, alice, bob, e18(2).toString()]);
-    truffleAssert.reverts(bentoBox.batch([deposit, transferFrom], true, { from: alice }), 'BentoBox: Transaction failed');
+    truffleAssert.reverts(bentoBox.batch([deposit, transferFrom], true, { from: alice }), 'Transaction failed');
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(0).toString(), "alice should not have tokens");
     share = await bentoBox.shareOf(a.address, bob);
