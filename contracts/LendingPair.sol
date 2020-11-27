@@ -282,11 +282,23 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         _addCollateralShare(msg.sender, bentoBox.deposit{value: msg.value}(collateral, msg.sender, amount));
     }
 
+    function addCollateralFromBento(uint256 share) public {
+        bentoBox.transferShareFrom(collateral, msg.sender, address(this), share);
+        _addCollateralShare(msg.sender, share);
+    }
+
     // Deposits an amount of supply (the borrowable token) from the caller
     function addAsset(uint256 amount) public payable {
         // Accrue interest before calculating pool shares in _addAssetShare
         accrue();
         _addAssetShare(msg.sender, bentoBox.deposit{value: msg.value}(asset, msg.sender, amount));
+    }
+
+    function addAssetFromBento(uint256 share) public payable {
+        // Accrue interest before calculating pool shares in _addAssetShare
+        accrue();
+        bentoBox.transferShareFrom(asset, msg.sender, address(this), share);
+        _addAssetShare(msg.sender, share);
     }
 
     // Withdraws a share of collateral of the caller to the specified address
@@ -298,12 +310,27 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         bentoBox.withdrawShare(collateral, to, share);
     }
 
+    function removeCollateralToBento(uint256 share, address to) public {
+        accrue();
+        _removeCollateralShare(msg.sender, share);
+        // Only allow withdrawing if user is solvent (in case of a closed liquidation)
+        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        bentoBox.transferShare(collateral, to, share);
+    }
+
     // Withdraws a share of supply (the borrowable token) of the caller to the specified address
     function removeAsset(uint256 fraction, address to) public {
         // Accrue interest before calculating pool shares in _removeAssetFraction
         accrue();
         uint256 share = _removeAssetFraction(msg.sender, fraction);
         bentoBox.withdrawShare(asset, to, share);
+    }
+
+    function removeAssetToBento(uint256 fraction, address to) public {
+        // Accrue interest before calculating pool shares in _removeAssetFraction
+        accrue();
+        uint256 share = _removeAssetFraction(msg.sender, fraction);
+        bentoBox.transferShare(asset, to, share);
     }
 
     // Borrows the given amount from the supply to the specified address
@@ -316,11 +343,26 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
     }
 
+    function borrowToBento(uint256 share, address to) public {
+        accrue();
+        bentoBox.transferShare(asset, to, share);
+        uint256 feeShare = share.mul(borrowOpeningFee) / 10000; // A flat 0.05% fee is charged for any borrow
+        _addBorrowShare(msg.sender, share.add(feeShare));
+        totalAssetShare = totalAssetShare.add(feeShare);
+        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+    }
+
     // Repays the given fraction
     function repay(uint256 fraction) public {
         accrue();
         uint256 share = _removeBorrowFraction(msg.sender, fraction);
         bentoBox.depositShare(asset, msg.sender, share);
+    }
+
+    function repayFromBento(uint256 fraction) public {
+        accrue();
+        uint256 share = _removeBorrowFraction(msg.sender, fraction);
+        bentoBox.transferShareFrom(asset, msg.sender, address(this), share);
     }
 
     // Handles shorting with an approved swapper
