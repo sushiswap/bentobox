@@ -134,12 +134,15 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             // or a contract destructs itself and send the remains to this address
 
         // swipe token
-        IERC20 token = IERC20(token);
         token.transfer(owner, token.balanceOf(address(this)));
         
         // swipe excess box balance
-            // we use share as totalSupply, so there can never be excessive supply
+        if (token != asset && token != collateral) {
+            bentoBox.transferShare(token, owner, bentoBox.shareOf(token, address(this)));
+        } else {
+            // asset and collateral can not have excessive box balances
             // if some-one deposits into BentoBox giving the Pair as "to", then funds are shared among all LPs
+        }
     }
 
     function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
