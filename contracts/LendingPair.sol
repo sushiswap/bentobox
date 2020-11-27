@@ -256,31 +256,29 @@ contract LendingPair is ERC20, Ownable {
     }
 
     // Handles internal variable updates when supply is withdrawn and returns the amount of supply withdrawn
-    function _removeAssetFraction(address user, uint256 share) private returns (uint256) {
-        // Subtracts the share from user
-        balanceOf[user] = balanceOf[user].sub(share);
-        // Calculates the amount of tokens to withdraw
-        uint256 amount = share.mul(totalAssetShare) / totalSupply;
-        // Subtracts the calculated amount from the total of supply
-        totalSupply = totalSupply.sub(share);
+    function _removeAssetFraction(address user, uint256 fraction) private returns (uint256 share) {
+        // Subtracts the fraction from user
+        balanceOf[user] = balanceOf[user].sub(fraction);
+        // Calculates the share of tokens to withdraw
+        share = fraction.mul(totalAssetShare) / totalSupply;
+        // Subtracts the calculated fraction from the total of supply
+        totalSupply = totalSupply.sub(fraction);
         // Subtracts the share from the total of supply shares
-        totalAssetShare = totalAssetShare.sub(amount);
-        emit RemoveAsset(msg.sender, amount, share);
-        return amount;
+        totalAssetShare = totalAssetShare.sub(share);
+        emit RemoveAsset(msg.sender, share, fraction);
     }
 
     // Handles internal variable updates when supply is repaid
-    function _removeBorrowFraction(address user, uint256 share) private returns (uint256) {
-        // Subtracts the share from user
-        userBorrowFraction[user] = userBorrowFraction[user].sub(share);
-        // Calculates the amount of tokens to repay
-        uint256 amount = share.mul(totalBorrowShare) / totalBorrowFraction;
-        // Subtracts the share from the total of shares borrowed
-        totalBorrowFraction = totalBorrowFraction.sub(share);
-        // Subtracts the calculated amount from the total amount borrowed
-        totalBorrowShare = totalBorrowShare.sub(amount);
-        emit RemoveBorrow(msg.sender, amount, share);
-        return amount;
+    function _removeBorrowFraction(address user, uint256 fraction) private returns (uint256 share) {
+        // Subtracts the fraction from user
+        userBorrowFraction[user] = userBorrowFraction[user].sub(fraction);
+        // Calculates the share of tokens to repay
+        share = fraction.mul(totalBorrowShare) / totalBorrowFraction;
+        // Subtracts the fraction from the total of shares borrowed
+        totalBorrowFraction = totalBorrowFraction.sub(fraction);
+        // Subtracts the calculated share from the total share borrowed
+        totalBorrowShare = totalBorrowShare.sub(share);
+        emit RemoveBorrow(msg.sender, share, fraction);
     }
 
     // Deposits an amount of collateral from the caller
