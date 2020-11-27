@@ -22,14 +22,11 @@ contract TestOracle is IOracle {
 
     // Get the latest exchange rate
     function get(bytes calldata) public override returns (bool, uint256) {
-        if (rate == 0) {
-            return (false, rate);
-        }
         return (true, rate);
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata data) public override view returns (bool, uint256) {
+    function peek(bytes calldata) public override view returns (bool, uint256) {
         return (true, rate);
     }
 }

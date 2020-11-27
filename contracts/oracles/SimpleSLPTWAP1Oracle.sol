@@ -49,7 +49,6 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         if (pairs[pair].blockTimestampLast == 0) {
             pairs[pair].blockTimestampLast = blockTimestamp;
             pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
-
             return (false, 0);
         }
         uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
