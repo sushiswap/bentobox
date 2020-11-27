@@ -290,7 +290,7 @@ contract('LendingPair', (accounts) => {
     await bentoBox.depositTo(b.address, bob, pair.address, e18(300), {from: bob});
 
     // check
-    let balance = await pair.getAssetBalance({from: bob});
+    let balance = await pair.getAssetBalance(bob);
     assert.equal(balance.toString(), e18(450).toString());
 
 
@@ -302,7 +302,7 @@ contract('LendingPair', (accounts) => {
     balance = await pair.balanceOf(bob);
     await pair.removeAsset(balance, bob, { from: bob });
 
-    balance = await b.balanceOf(bentoBox.address, {from: bob});
+    balance = await b.balanceOf(bentoBox.address);
     assert.equal(balance.toString(), "0");
   });
 

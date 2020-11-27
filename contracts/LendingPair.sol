@@ -180,16 +180,16 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         return bentoBox.shareOf(collateral, address(this));
     }
 
-    function getAssetBalance() external view returns (uint256) {
+    function getAssetBalance(address user) external view returns (uint256) {
         if (totalSupply == 0) {return 0;}
-        uint256 boxShare = balanceOf[msg.sender].mul(bentoBox.shareOf(asset, address(this))) / totalSupply;
+        uint256 boxShare = balanceOf[user].mul(bentoBox.shareOf(asset, address(this))) / totalSupply;
         return bentoBox.toAmount(asset, boxShare);
     }
 
-    function getCollateralBalance() external view returns (uint256) {
+    function getCollateralBalance(address user) external view returns (uint256) {
         uint256 totalCollateralShare = bentoBox.shareOf(collateral, address(this));
         if (totalCollateralShare == 0) {return 0;}
-        uint256 boxShare = userCollateralShare[msg.sender].mul(1e18) / totalCollateralShare;
+        uint256 boxShare = userCollateralShare[user].mul(1e18) / totalCollateralShare;
         return bentoBox.toAmount(asset, boxShare);
     }
 
@@ -237,11 +237,11 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         uint256 newFraction = totalSupply == 0 ? boxShare : boxShare.mul(totalSupply) / boxTotalBefore;
         // Adds this share to user
         balanceOf[user] = balanceOf[user].add(newFraction);
-        // Adds this share to the total of supply shares    
+        // Adds this share to the total of supply shares
         totalSupply = totalSupply.add(newFraction);
         
         // uint256 assetShare = totalAssetShare == 0 ? newFraction : newFraction.mul(totalAssetShare) / totalSupply;
-        // new don't get afraction of assetShare, as new investors' capical hasn't had time to work yet
+        // new investors don't get a fraction of assetShare, as their capical hasn't had time to work yet
         // Adds the amount deposited to the total of supply
         totalAssetShare = totalAssetShare.add(newFraction);
         emit AddAsset(msg.sender, newFraction, newFraction);
