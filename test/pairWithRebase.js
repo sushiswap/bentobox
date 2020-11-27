@@ -23,7 +23,7 @@ contract('LendingPair with Rebase', (accounts) => {
   let swapper;
   const alice = accounts[1];
   const bob = accounts[2];
-
+  /*
   describe('rebase as asset', () => {
     before(async () => {
       bentoBox = await BentoBox.deployed();
@@ -163,7 +163,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateInterestRate({ from: alice });
     });
   });
-
+*/
   describe('rebase as collateral', () => {
     before(async () => {
       bentoBox = await BentoBox.deployed();
