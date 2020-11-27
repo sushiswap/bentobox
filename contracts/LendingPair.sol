@@ -136,16 +136,18 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // Number of blocks since accrue was called
         uint256 blocks = block.number - lastBlockAccrued;
         if (blocks == 0) {return;}
-
         lastBlockAccrued = block.number;
-        if (totalBorrowShare == 0) {return;}
 
-        // Accrue interest
-        uint256 extraShare = totalBorrowShare.mul(interestPerBlock).mul(blocks) / 1e18;
-        uint256 feeShare = extraShare.mul(protocolFee) / 100; // % of interest paid goes to fee
-        totalBorrowShare = totalBorrowShare.add(extraShare);
-        totalAssetShare = totalAssetShare.add(extraShare.sub(feeShare));
-        feesPendingShare = feesPendingShare.add(feeShare);
+        if (totalBorrowShare > 0) {
+            // Accrue interest
+            uint256 extraShare = totalBorrowShare.mul(interestPerBlock).mul(blocks) / 1e18;
+            uint256 feeShare = extraShare.mul(protocolFee) / 100; // % of interest paid goes to fee
+            totalBorrowShare = totalBorrowShare.add(extraShare);
+            totalAssetShare = totalAssetShare.add(extraShare.sub(feeShare));
+            feesPendingShare = feesPendingShare.add(feeShare);
+        }
+
+        if (totalAssetShare == 0) {return;}
 
         // Update interest rate
         uint256 utilization = totalBorrowShare.mul(1e18) / totalAssetShare;

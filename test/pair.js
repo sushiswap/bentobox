@@ -172,7 +172,7 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should take a deposit of collateral', async () => {
-    await a.approve(bentoBox.address, e18(100), { from: alice });
+    await a.approve(bentoBox.address, e18(1000), { from: alice });
     await pair.addCollateral(e18(100), { from: alice });
   });
 
@@ -242,10 +242,32 @@ contract('LendingPair', (accounts) => {
     await pair.removeCollateral(shareALeft, alice, { from: alice });
   });
 
-  it('should update the interest rate', async () => {
+  it('should update the interest rate according to utilization', async () => {
+    // run for a while with 0 utilization
+    let rate1 = await pair.interestPerBlock();
     for (let i = 0; i < 20; i++) {
       await timeWarp.advanceBlock()
     }
     await pair.accrue({ from: alice });
+    
+    // check results
+    let rate2 = await pair.interestPerBlock();
+    assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");
+
+    // then increase utilization to 90%
+    await pair.addCollateral(e18(400), { from: alice });
+    // 300 * 0.9 = 270
+    await pair.borrow(sansBorrowFee(e18(270)), alice, { from: alice });
+
+    // and run a while again
+    rate1 = await pair.interestPerBlock();
+    for (let i = 0; i < 20; i++) {
+      await timeWarp.advanceBlock()
+    }
+
+    // check results
+    await pair.accrue({ from: alice });
+    rate2 = await pair.interestPerBlock();
+    assert(rate2.gt(rate1), "rate has not adjusted up with high utilization");
   });
 });
