@@ -331,6 +331,9 @@ contract('LendingPair with Rebase', (accounts) => {
       await sushiswappair.sync();
 
       await pair.liquidate([alice], [e18(10)], bob, swapper.address, false, { from: bob });
+
+      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
+
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
@@ -367,7 +370,7 @@ contract('LendingPair with Rebase', (accounts) => {
 
       await b.approve(bentoBox.address, e18(25), { from: bob });
       await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
-
+      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
@@ -423,6 +426,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
 
       await pair.removeCollateral(e9(60), alice, { from: alice });
+      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
 
       await a.rebase(`${total / 2}`);
       // sync and check
@@ -441,6 +445,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
 
       await truffleAssert.reverts(pair.removeCollateral(e9(100), alice, { from: alice }), "BoringMath: Underflow");
+      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
 
       await a.rebase(`${total / 2}`);
       // sync and check
@@ -461,7 +466,9 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
 
       let shareALeft = await pair.userCollateralShare(alice);
-      await pair.removeCollateral(shareALeft.sub(new web3.utils.BN(1)), alice, { from: alice });
+      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
+      console.log("alice share", shareALeft.toString(), "total", (await pair.totalCollateralShare()).toString(), "bento Shares", (await bentoBox.shareOf(a.address, pair.address)).toString());
+      await pair.removeCollateral(shareALeft, alice, { from: alice });
 
       await a.rebase(`${total / 2}`);
       // sync and check
