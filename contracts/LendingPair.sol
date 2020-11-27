@@ -421,8 +421,8 @@ contract LendingPair is ERC20, Ownable {
             emit AddAsset(address(0), extraAssetShare, 0);
         } else if (address(swapper) == address(0)) {
             // Open liquidation directly using the caller's funds, without swapping
-            bentoBox.deposit(asset, msg.sender, allBorrowShare);
-            bentoBox.withdraw(collateral, to, allCollateralShare);
+            bentoBox.depositShare(asset, msg.sender, allBorrowShare);
+            bentoBox.withdrawShare(collateral, to, allCollateralShare);
         } else if (address(swapper) == address(1)) {
             // Open liquidation directly using the caller's funds, without swapping
             bentoBox.transferShareFrom(asset, msg.sender, to, allBorrowShare);

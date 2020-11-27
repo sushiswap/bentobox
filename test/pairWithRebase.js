@@ -467,7 +467,6 @@ contract('LendingPair with Rebase', (accounts) => {
 
       let shareALeft = await pair.userCollateralShare(alice);
       assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
-      console.log("alice share", shareALeft.toString(), "total", (await pair.totalCollateralShare()).toString(), "bento Shares", (await bentoBox.shareOf(a.address, pair.address)).toString());
       await pair.removeCollateral(shareALeft, alice, { from: alice });
 
       await a.rebase(`${total / 2}`);
