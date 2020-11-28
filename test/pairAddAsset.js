@@ -78,7 +78,7 @@ contract('LendingPair', (accounts) => {
     await pair.addCollateral(e18(1000), { from: alice });
   });
 
-  it('should allow borrowing with collateral up to 100%', async () => {
+  it('should allow borrowing taking up 100% of all assets', async () => {
     await pair.borrow(e9(100), alice, { from: alice });
     console.log((await b.balanceOf(bentoBox.address)).toString(), "bentoBox amount");
   });
@@ -92,5 +92,6 @@ contract('LendingPair', (accounts) => {
     let assetShare = await bentoBox.toShare(b.address, e9(50));
     await pair.addAsset(e9(50), { from: charlie });
     console.log("assetShare", assetShare.toString(), "total Supply", (await pair.totalSupply()).toString(), "bob", (await pair.balanceOf(bob)).toString(), "charlie", (await pair.balanceOf(charlie)).toString());
+    assertBN(await pair.balanceOf(bob), await pair.balanceOf(charlie));
   });
 });
