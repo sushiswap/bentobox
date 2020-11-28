@@ -33,10 +33,7 @@ import "./interfaces/ISwapper.sol";
 
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
-// TODO: ensure BoringMath is always used
-// TODO: turn magic number back into constants
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
-// We do allow supplying assets and borrowing, but the asset does NOT provide collateral as it's just silly and no UI should allow this
 
 contract LendingPair is ERC20, Ownable, IMasterContract {
     using BoringMath for uint256;
@@ -64,12 +61,10 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     // totalAssetFraction is called totalSupply for ERC20 compatibility
     uint256 public totalBorrowFraction;
 
-    // TODO: Consider always updating interest and accrue together to reduce one update, but sometimes add one
     uint256 public exchangeRate;
     uint256 public lastBlockAccrued;
 
     uint256 public interestPerBlock;
-    uint256 public lastInterestBlock; // Last block when the interest rate was updated
 
     uint256 public feesPendingShare;
 
@@ -77,8 +72,8 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     string public constant name = "Bento Medium Risk Lending Pool";
 
     function decimals() public view returns (uint8) {
-        // TODO: protect against revert in asset.decimals. Default to 18.
-        return asset.decimals();
+        (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x313ce567));
+        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     event Initialized(address indexed masterContract, address clone_address);
@@ -95,19 +90,23 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         feeTo = msg.sender;
     }
 
+    // Settings for the Medium Risk LendingPair
     uint256 public constant closedCollaterizationRate = 75000; // 75%
     uint256 public constant openCollaterizationRate = 77000; // 77%
     uint256 public constant minimumTargetUtilization = 7e17; // 70%
     uint256 public constant maximumTargetUtilization = 8e17; // 80%
 
-    uint256 public constant minimumInterestPerBlock = 1141552511; // 0.25% APR
-    uint256 public constant maximumInterestPerBlock = 4566210045000;  // 1000% APR
+    uint256 public constant startingInterestPerBlock = 4566210045; // approx 1% APR
+    uint256 public constant minimumInterestPerBlock = 1141552511; // approx 0.25% APR
+    uint256 public constant maximumInterestPerBlock = 4566210045000;  // approx 1000% APR
+    uint256 public constant interestElasticity = 2000e36; // Half or double in 2000 blocks (approx 8 hours)
 
     uint256 public constant liquidationMultiplier = 112000; // add 12%
 
-    uint256 public constant protocolFee = 10; // 10%
-    uint256 public constant devFee = 10; // 10% of the protocolFee = 1%
-    uint256 public constant borrowOpeningFee = 5; // 0.05%
+    // Fees
+    uint256 public constant protocolFee = 10000; // 10%
+    uint256 public constant devFee = 10000; // 10% of the protocolFee = 1%
+    uint256 public constant borrowOpeningFee = 50; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
     function init(address bentoBox_, address masterContract_, bytes calldata data) public override {
@@ -116,8 +115,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         masterContract = LendingPair(masterContract_);
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
-        interestPerBlock = 4566210045;  // 1% APR, with 1e18 being 100%
-        lastInterestBlock = block.number;
+        interestPerBlock = startingInterestPerBlock;  // 1% APR, with 1e18 being 100%
     }
 
     function getInitData(IERC20 collateral_, IERC20 asset_, IOracle oracle_, bytes calldata oracleData_) public pure returns(bytes memory data) {
@@ -141,26 +139,31 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (totalBorrowShare > 0) {
             // Accrue interest
             uint256 extraShare = totalBorrowShare.mul(interestPerBlock).mul(blocks) / 1e18;
-            uint256 feeShare = extraShare.mul(protocolFee) / 100; // % of interest paid goes to fee
+            uint256 feeShare = extraShare.mul(protocolFee) / 1e5; // % of interest paid goes to fee
             totalBorrowShare = totalBorrowShare.add(extraShare);
             totalAssetShare = totalAssetShare.add(extraShare.sub(feeShare));
             feesPendingShare = feesPendingShare.add(feeShare);
         }
 
-        if (totalAssetShare == 0) {return;}
+        if (totalAssetShare == 0) {
+            if (interestPerBlock != startingInterestPerBlock) {
+                interestPerBlock = startingInterestPerBlock;
+            }
+            return;
+        }
 
         // Update interest rate
         uint256 utilization = totalBorrowShare.mul(1e18) / totalAssetShare;
         uint256 newInterestPerBlock;
         if (utilization < minimumTargetUtilization) {
-            uint256 underFactor = uint256(7e17).sub(utilization).mul(1e18) / 7e17;
-            uint256 scale = uint256(2000e36).add(underFactor.mul(underFactor).mul(blocks));
-            newInterestPerBlock = interestPerBlock.mul(2000e36) / scale;
+            uint256 underFactor = uint256(minimumTargetUtilization).sub(utilization).mul(1e18) / minimumTargetUtilization;
+            uint256 scale = uint256(interestElasticity).add(underFactor.mul(underFactor).mul(blocks));
+            newInterestPerBlock = interestPerBlock.mul(interestElasticity) / scale;
             if (newInterestPerBlock < minimumInterestPerBlock) {newInterestPerBlock = minimumInterestPerBlock;} // 0.25% APR minimum
         } else if (utilization > maximumTargetUtilization) {
-            uint256 overFactor = utilization.sub(8e17).mul(1e18) / uint256(1e18).sub(8e17);
-            uint256 scale = uint256(2000e36).add(overFactor.mul(overFactor).mul(blocks));
-            newInterestPerBlock = interestPerBlock.mul(scale) / 2000e36;
+            uint256 overFactor = utilization.sub(maximumTargetUtilization).mul(1e18) / uint256(1e18).sub(maximumTargetUtilization);
+            uint256 scale = uint256(interestElasticity).add(overFactor.mul(overFactor).mul(blocks));
+            newInterestPerBlock = interestPerBlock.mul(scale) / interestElasticity;
             if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
         } else {return;}
 
@@ -171,7 +174,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function withdrawFees() public {
         accrue();
         uint256 feeShare = feesPendingShare.sub(1);
-        uint256 devFeeShare = feeShare.mul(devFee) / 100;
+        uint256 devFeeShare = feeShare.mul(devFee) / 1e5;
         feesPendingShare = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
         bentoBox.withdrawShare(asset, masterContract.feeTo(), feeShare.sub(devFeeShare));
         bentoBox.withdrawShare(asset, masterContract.dev(), devFeeShare);
@@ -337,7 +340,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function borrow(uint256 amount, address to) public {
         accrue();
         uint256 share = bentoBox.withdraw(asset, to, amount); // TODO: reentrancy issue?
-        uint256 feeShare = share.mul(borrowOpeningFee) / 10000; // A flat 0.05% fee is charged for any borrow
+        uint256 feeShare = share.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowShare(msg.sender, share.add(feeShare));
         totalAssetShare = totalAssetShare.add(feeShare);
         require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
@@ -346,7 +349,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function borrowToBento(uint256 share, address to) public {
         accrue();
         bentoBox.transferShare(asset, to, share);
-        uint256 feeShare = share.mul(borrowOpeningFee) / 10000; // A flat 0.05% fee is charged for any borrow
+        uint256 feeShare = share.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowShare(msg.sender, share.add(feeShare));
         totalAssetShare = totalAssetShare.add(feeShare);
         require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
@@ -446,7 +449,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             uint256 extraAssetShare = returnedAssetShare.sub(allBorrowShare);
 
             // The extra asset gets added to the pool
-            uint256 feeShare = extraAssetShare.mul(protocolFee) / 100; // % of profit goes to fee
+            uint256 feeShare = extraAssetShare.mul(protocolFee) / 1e5; // % of profit goes to fee
             feesPendingShare = feesPendingShare.add(feeShare);
             totalAssetShare = totalAssetShare.add(extraAssetShare.sub(feeShare));
             emit AddAsset(address(0), extraAssetShare, 0);

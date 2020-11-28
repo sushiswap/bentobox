@@ -60,6 +60,9 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
     });
 
+    it('should have 9 decimals', async () => {
+      assert.equal((await pair.decimals()).toString(), "9");
+    });
 
     it('should not allow any remove without assets', async () => {
       await truffleAssert.reverts(pair.removeCollateral(e18(1), bob), 'BoringMath: Underflow');

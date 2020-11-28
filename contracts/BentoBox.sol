@@ -217,7 +217,7 @@ contract BentoBox {
         IFlashLoaner(user).executeOperation(token, amount, feeAmount, params);
         (success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), returnAmount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
-        totalAmount[token] = totalAmount[token] + feeAmount;
+        totalAmount[token] = totalAmount[token].add(feeAmount);
 
         emit LogFlashLoan(user, token, amount, feeAmount);
     }
@@ -240,7 +240,7 @@ contract BentoBox {
         for (uint256 i = 0; i < tokens.length; i++) {
             (bool success, bytes memory data) = address(tokens[i]).call(abi.encodeWithSelector(0x23b872dd, user, address(this), returnAmounts[i]));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
-            totalAmount[tokens[i]] = totalAmount[tokens[i]] + feeAmounts[i];
+            totalAmount[tokens[i]] = totalAmount[tokens[i]].add(feeAmounts[i]);
 
             emit LogFlashLoan(user, tokens[i], amounts[i], feeAmounts[i]);
         }
