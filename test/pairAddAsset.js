@@ -1,9 +1,9 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, assertBN, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
+const {e9, assertBN, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
+const RebaseToken = artifacts.require("RebaseToken");
 const RevertingERC20 = artifacts.require("RevertingERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
@@ -31,8 +31,8 @@ contract('LendingPair', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
-    b = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    a = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
+    b = await RebaseToken.new("Rebase Token", "RBT", { from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
@@ -41,15 +41,15 @@ contract('LendingPair', (accounts) => {
     let tx = await factory.createPair(a.address, b.address);
     let sushiswappair = await UniswapV2Pair.at(tx.logs[0].args.pair);
     await a.transfer(sushiswappair.address, e18("5000"));
-    await b.transfer(sushiswappair.address, e18("5000"));
+    await b.transfer(sushiswappair.address, e9("5000"));
     await sushiswappair.mint(accounts[0]);
 
     await a.transfer(alice, e18(1000));
-    await b.transfer(bob, e18(1000));
-    await b.transfer(charlie, e18(1000));
+    await b.transfer(bob, e9(1000));
+    await b.transfer(charlie, e9(1000));
 
     oracle = await TestOracle.new({ from: accounts[0] });
-    await oracle.set(e18(1), accounts[0]);
+    await oracle.set(e18(1000000000), accounts[0]);
     let oracleData = await oracle.getDataParameter();
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
@@ -64,28 +64,33 @@ contract('LendingPair', (accounts) => {
   });
 
   it('should take a deposit of assets', async () => {
-    await b.approve(bentoBox.address, e18(100), { from: bob });
-    await pair.addAsset(e18(100), { from: bob });
+    await b.approve(bentoBox.address, e9(100), { from: bob });
+    await pair.addAsset(e9(100), { from: bob });
   });
 
   it('should have correct balances after supply of assets', async () => {
-    assertBN(await pair.totalSupply(), e18(100));
-    assertBN(await pair.balanceOf(bob)).toString(), e18(100));
+    assertBN(await pair.totalSupply(), e9(100));
+    assertBN(await pair.balanceOf(bob), e9(100));
   })
 
   it('should take a deposit of collateral', async () => {
     await a.approve(bentoBox.address, e18(1000), { from: alice });
-    await pair.addCollateral(e18(100), { from: alice });
+    await pair.addCollateral(e18(1000), { from: alice });
   });
 
-  it('should allow borrowing with collateral up to 75%', async () => {
-    await pair.borrow(sansBorrowFee(e18(75)), alice, { from: alice });
+  it('should allow borrowing with collateral up to 100%', async () => {
+    await pair.borrow(e9(100), alice, { from: alice });
+    console.log((await b.balanceOf(bentoBox.address)).toString(), "bentoBox amount");
   });
 
   it('should allow charlie to add assets and get same share', async () => {
-    await b.approve(bentoBox.address, e18(100), { from: charlie });
-    let assetShare = await bentoBox.toShare(b.address, e18(100));
-    await pair.addAsset(e18(100), { from: charlie });
+    let total = await b.totalSupply();
+    await b.rebase(`-${total / 2}`);
+    // sync and check
+    await bentoBox.sync(b.address);
+    await b.approve(bentoBox.address, e18(50), { from: charlie });
+    let assetShare = await bentoBox.toShare(b.address, e9(50));
+    await pair.addAsset(e9(50), { from: charlie });
     console.log("assetShare", assetShare.toString(), "total Supply", (await pair.totalSupply()).toString(), "bob", (await pair.balanceOf(bob)).toString(), "charlie", (await pair.balanceOf(charlie)).toString());
   });
 });
