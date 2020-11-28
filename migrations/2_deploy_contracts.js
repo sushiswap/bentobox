@@ -15,11 +15,11 @@ module.exports = async function (deployer, network, accounts) {
     wethAddress = DEFAULT_WETH;
   }
   await deployer.deploy(BentoBox, wethAddress);
-  await deployer.deploy(Pair);
+  let bentoBox = await BentoBox.deployed();
+  await deployer.deploy(Pair, bentoBox.address);
 
   // Get the contracts
-  let bentoBox = await BentoBox.deployed();
   let pairMaster = await Pair.deployed();
   let initData = await pairMaster.getInitData("0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", "0x0");
-  pairMaster.init(bentoBox.address, pairMaster.address, initData);
+  pairMaster.init(initData);
 };

@@ -5,15 +5,14 @@ import "./IERC20.sol";
 import "../BentoBox.sol";
 
 interface ILendingPair {
-    event AddAsset(address indexed user, uint256 amount, uint256 share);
-    event AddBorrow(address indexed user, uint256 amount, uint256 share);
-    event AddCollateral(address indexed user, uint256 amount, uint256 share);
+    event LogAddAsset(address indexed user, uint256 amount, uint256 share);
+    event LogAddBorrow(address indexed user, uint256 amount, uint256 share);
+    event LogAddCollateral(address indexed user, uint256 amount, uint256 share);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
-    event Initialized(address indexed masterContract, address clone_address);
-    event NewExchangeRate(uint256 rate);
-    event RemoveAsset(address indexed user, uint256 amount, uint256 share);
-    event RemoveBorrow(address indexed user, uint256 amount, uint256 share);
-    event RemoveCollateral(address indexed user, uint256 amount, uint256 share);
+    event LogExchangeRate(uint256 rate);
+    event LogRemoveAsset(address indexed user, uint256 amount, uint256 share);
+    event LogRemoveBorrow(address indexed user, uint256 amount, uint256 share);
+    event LogRemoveCollateral(address indexed user, uint256 amount, uint256 share);
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     function approve(address spender, uint256 amount) external returns (bool success);
     function balanceOf(address) external view returns (uint256);
@@ -38,7 +37,7 @@ interface ILendingPair {
     function userCollateralShare(address) external view returns (uint256);
     function bentoBox() external view returns (BentoBox);
     function decimals() external view returns (uint8);
-    function init(address bentoBox_, address masterContract_, bytes calldata data) external;
+    function init(address masterContract_, bytes calldata data) external;
     function accrue() external;
     function withdrawFees() external;
     function isSolvent(address user, bool open) external view returns (bool);

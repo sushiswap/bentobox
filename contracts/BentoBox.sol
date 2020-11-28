@@ -41,8 +41,7 @@ contract BentoBox {
     mapping(IERC20 => mapping(address => uint256)) public shareOf; // Balance per token per address/contract
     mapping(IERC20 => uint256) public totalShare; // Total share per token
     mapping(IERC20 => uint256) public totalAmount; // Total balance per token
-    IERC20 public WETH; // TODO: Hardcode WETH on final deploy and remove constructor
-    //IERC20 private constant WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    IERC20 public immutable WETH;
 
     constructor(IERC20 WETH_) public {
         WETH = WETH_;
@@ -63,7 +62,7 @@ contract BentoBox {
         }
         masterContractOf[clone_address] = masterContract;
 
-        IMasterContract(clone_address).init(address(this), masterContract, data);
+        IMasterContract(clone_address).init(data);
 
         emit LogDeploy(masterContract, data, clone_address);
     }
@@ -73,7 +72,6 @@ contract BentoBox {
         uint256 _totalShare = totalShare[token];
         amount = _totalShare == 0 ? share : share.mul(totalAmount[token]) / _totalShare;
     }
-
 
     function toShare(IERC20 token, uint256 amount) public view returns (uint256 share) {
         uint256 _totalShare = totalShare[token];
@@ -107,14 +105,14 @@ contract BentoBox {
     function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 share) { share = depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); }
     function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 share) {
         share = toShare(token, amount);
-        _approveWithPermit(token, from, amount, deadline, v, r, s);
+        token.permit(from, address(this), amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
     }
 
     function depositShareWithPermit(IERC20 token, address from, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable returns (uint256 amount) { amount = depositShareWithPermitTo(token, from, msg.sender, share, deadline, v, r, s); }
     function depositShareWithPermitTo(IERC20 token, address from, address to, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) returns (uint256 amount) {
         amount = toAmount(token, share);
-        _approveWithPermit(token, from, amount, deadline, v, r, s);
+        token.permit(from, address(this), amount, deadline, v, r, s);
         _deposit(token, from, to, amount, share);
     }
 
@@ -258,10 +256,6 @@ contract BentoBox {
     }
 
     // *** Private functions *** //
-    function _approveWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) private {
-        token.permit(from, address(this), amount, deadline, v, r, s);
-    }
-
     function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][to] = shareOf[token][to].add(share);

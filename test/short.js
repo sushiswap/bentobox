@@ -68,7 +68,7 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting if it doesn't return enough of token A", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapClosedSwapper: return not enough");
+    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapSwapper: return not enough");
   });
 
   it("should not allow shorting into insolvency", async () => {
