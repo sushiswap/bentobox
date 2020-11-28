@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, assertBN, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
+const {e18, assertBN, depositToBento, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const RevertingERC20 = artifacts.require("RevertingERC20");
@@ -51,6 +51,7 @@ class BentoBoxTestEnvironment {
 
         await this.a.transfer(alice, e18(1000));
         await this.b.transfer(bob, e18(1000));
+        await this.b.transfer(charlie, e18(1000));
 
         oracle = await TestOracle.new({ from: accounts[0] });
         await oracle.set(e18(1), accounts[0]);
@@ -131,9 +132,21 @@ contract('LendingPair', (accounts) => {
         await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
     });
 
+    it('should revert if MasterContract is not approved', async () => {
+      await b.approve(bentoBox.address, e18(300), { from: charlie });
+      await truffleAssert.reverts(pair.addAsset(e18(290), { from: charlie }), 'BentoBox: Transfer not approved');
+    });
+
     it('should take a deposit of assets', async () => {
-        await b.approve(bentoBox.address, e18(300), { from: bob });
-        await pair.addAsset(e18(300), { from: bob });
+      await b.approve(bentoBox.address, e18(300), { from: bob });
+      await pair.addAsset(e18(290), { from: bob });
+      assertBN(await pair.balanceOf(bob), e18(290));
+    });
+
+    it('should take a deposit of assets from BentoBox', async () => {
+      let share = await depositToBento(b, bentoBox, e18(10), bob);
+      await pair.addAssetFromBento(share, { from: bob });
+      assertBN(await pair.balanceOf(bob), e18(300));
     });
 
     it('should give back correct DOMAIN_SEPARATOR', async () => {

@@ -34,6 +34,10 @@ contract('BentoBox', (accounts) => {
     pairMaster = await Pair.deployed();
   });
 
+  it('should not allow to approve MasterContract at zero address', async () => {
+    await truffleAssert.reverts(bentoBox.setMasterContractApproval("0x0000000000000000000000000000000000000000", true), 'BentoBox: masterContract must be set');
+  });
+
   it('should allow deposit', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
