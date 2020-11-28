@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
+const {e18, assertBN, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const RevertingERC20 = artifacts.require("RevertingERC20");
@@ -63,7 +63,7 @@ class BentoBoxTestEnvironment {
         pair_address = tx.logs[0].args[2];
         pair = await Pair.at(pair_address);
 
-        await pair.updateExchangeRate();    
+        await pair.updateExchangeRate();
     }
 
     async createSwapPair(tokenA, tokenB, amountA, amountB) {
@@ -248,7 +248,13 @@ contract('LendingPair', (accounts) => {
 
     it('should allow open liquidate', async () => {
         await b.approve(bentoBox.address, e18(25), { from: bob });
-        await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+        await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+    });
+
+    it('should allow open liquidate from Bento', async () => {
+      await b.approve(bentoBox.address, e18(25), { from: bob });
+      await bentoBox.deposit(b.address, bob, e18(20), { from: bob });
+      await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
     });
 
     it('should allow repay', async () => {
@@ -281,7 +287,7 @@ contract('LendingPair', (accounts) => {
             await timeWarp.advanceBlock()
         }
         await pair.accrue({ from: alice });
-        
+
         // check results
         let rate2 = await pair.interestPerBlock();
         assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");
