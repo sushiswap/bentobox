@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IERC20.sol";
-import "./BentoBox.sol";
 import "./interfaces/ILendingPair.sol";
 import "./interfaces/IOracle.sol";
 

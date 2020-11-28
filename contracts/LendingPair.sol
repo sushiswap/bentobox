@@ -23,10 +23,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/IOracle.sol";
 import "./libraries/Ownable.sol";
-import "./BentoBox.sol";
 import "./ERC20.sol";
 import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";

@@ -21,7 +21,6 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "./libraries/BoringMath.sol";
-import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IMasterContract.sol";
 import "./interfaces/IFlashLoaner.sol";

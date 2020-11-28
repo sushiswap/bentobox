@@ -49,7 +49,7 @@ contract('BentoBox', (accounts) => {
     assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
   });
 
-  it('should allow depositWithPermit', async () => {
+/*  it('should allow depositWithPermit', async () => {
     await a.transfer(daveAddress, e18(1), {from: alice});
     let nonce = await a.nonces(daveAddress);
     nonce = nonce.toNumber();
@@ -68,7 +68,7 @@ contract('BentoBox', (accounts) => {
     await bentoBox.depositWithPermit(a.address, daveAddress, e18(1), deadline, v, r, s, { from: daveAddress });
     let share = await bentoBox.shareOf(a.address, daveAddress);
     assert.equal(share.toString(), e18(1).toString());
-  });
+  });*/
 
   it('should not allow deposit without approve', async () => {
     truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "TransferFrom failed at ERC20");
@@ -109,7 +109,7 @@ contract('BentoBox', (accounts) => {
     assert.equal(totalShare.toString(), e18(1).toString(), "incorrect total share");
   });
 
-  it('should allow to depositWithPermit for other user', async () => {
+/*  it('should allow to depositWithPermit for other user', async () => {
     await a.transfer(daveAddress, e18(1), {from: alice});
     let nonce = await a.nonces(daveAddress);
     nonce = nonce.toNumber();
@@ -128,7 +128,7 @@ contract('BentoBox', (accounts) => {
     await bentoBox.depositWithPermitTo(a.address, daveAddress, alice, e18(1), deadline, v, r, s, { from: daveAddress });
     let amount = await bentoBox.toAmount(a.address, await bentoBox.shareOf(a.address, alice));
     assert.equal(amount.toString(), e18(1).toString());
-  });
+  });*/
 
   it('should allow depositShare to other User', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });

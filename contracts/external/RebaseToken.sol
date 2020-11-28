@@ -8,7 +8,7 @@ import "./interfaces/IERC20.sol";
  * @title Rebase Token
  * @dev taken from ampleforth
  */
-contract RebaseToken is IERC20 {
+contract RebaseToken is IERC20External {
     using SafeMath for uint256;
 
     string private _name;

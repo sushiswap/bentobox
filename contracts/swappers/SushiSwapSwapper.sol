@@ -3,7 +3,6 @@ pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../libraries/Ownable.sol";
 import "../external/SushiSwapFactory.sol";
-import "../BentoBox.sol";
 import "../ERC20.sol";
 import "../interfaces/ISwapper.sol";
 
@@ -12,9 +11,9 @@ contract SushiSwapSwapper is ISwapper {
 
     // Local variables
     BentoBox public bentoBox;
-    IUniswapV2Factory public factory;
+    ISushiSwapFactory public factory;
 
-    constructor(BentoBox bentoBox_, IUniswapV2Factory factory_) public {
+    constructor(BentoBox bentoBox_, ISushiSwapFactory factory_) public {
         bentoBox = bentoBox_;
         factory = factory_;
     }

@@ -1,4 +1,7 @@
 // SPDX-License-Identifier: MIT
+// solium-disable security/no-inline-assembly
+// solium-disable security/no-block-members
+
 // ReturnFalseERC20 does not revert on errors, it just returns false
 pragma solidity 0.6.12;
 contract ReturnFalseERC20 {
@@ -14,12 +17,12 @@ contract ReturnFalseERC20 {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     constructor(
-        string memory name,
-        string memory symbol,
+        string memory name_,
+        string memory symbol_,
         uint256 supply
     ) public {
-        symbol = symbol;
-        name = name;
+        name = name_;
+        symbol = symbol_;
         totalSupply = supply;
         balanceOf[msg.sender] = supply;
     }
