@@ -150,6 +150,12 @@ contract('BentoBox', (accounts) => {
     assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
+  it('should not allow to withdraw larger share than available', async () => {
+    await a.approve(bentoBox.address, e18(1), { from: alice });
+    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
+    truffleAssert.underflow(bentoBox.methods['withdraw(address,address,uint256)'](a.address, alice, e18(5), { from: alice }));
+  });
+
   it('should allow to withdrawShare', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
@@ -177,6 +183,16 @@ contract('BentoBox', (accounts) => {
     assert.equal((await a.balanceOf(bob)).toString(), e18(1).toString(), "bob should have received their tokens");
     let share = await bentoBox.shareOf(a.address, alice);
     assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
+  });
+
+  it('should not allow transfer from bob', async () => {
+    await a.approve(bentoBox.address, e18(1), { from: bob });
+    truffleAssert.underflow(bentoBox.transfer(a.address, alice, e18(1), { from: bob }));
+  });
+
+  it('should not allow transferShare from bob', async () => {
+    await a.approve(bentoBox.address, e18(1), { from: bob });
+    truffleAssert.underflow(bentoBox.transferShare(a.address, alice, e18(1), { from: bob }));
   });
 
   it('should allow transfer to bob by alice', async () => {
@@ -255,6 +271,21 @@ contract('BentoBox', (accounts) => {
     assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
     share = await bentoBox.shareOf(weth.address, bob);
     assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
+  });
+
+  it('should revert on flashloan if not enough funds are available', async () => {
+    let param = web3.eth.abi.encodeParameter('bool', true);
+    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
+    truffleAssert.reverts(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }), "BentoBox: Transfer failed at ERC20");
+  });
+
+  it('should revert on flashloan if fee can not be paid', async () => {
+    await a.transfer(bentoBox.address, e18(2), { from: alice });
+    await a.approve(bentoBox.address, e18(2), { from: alice });
+    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
+    let param = web3.eth.abi.encodeParameter('bool', true);
+    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
+    truffleAssert.underflow(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }));
   });
 
   it('should allow flashloan', async () => {
