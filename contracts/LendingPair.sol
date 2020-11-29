@@ -14,8 +14,8 @@
 // Special thanks to:
 // @burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 
-// WARNING!!! DO NOT USE!!! NOT YET AUDITED!!!
-// FOR CONCEPT TESTING ONLY!
+// WARNING!!! DO NOT USE!!! BEING AUDITED!!!
+// THERE IS A KNOWN MAJOR EXPLOIT IN THIS VERSION, LEAVING IT IN FOR THE AUDITORS TO SPOT :P
 
 // solium-disable security/no-low-level-calls
 

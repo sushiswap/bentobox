@@ -53,7 +53,9 @@ contract SushiSwapSwapper is ISwapper {
     }
 
     // Swaps to an exact amount, from a flexible input amount
-    function swapExact(IERC20 from, IERC20 to, uint256 amountFromMax, uint256 exactAmountTo, address refundTo) public override returns (uint256) {
+    function swapExact(
+        IERC20 from, IERC20 to, uint256 amountFromMax, uint256 exactAmountTo, address refundTo
+    ) public override returns (uint256) {
         UniswapV2Pair pair = UniswapV2Pair(factory.getPair(address(from), address(to)));
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
