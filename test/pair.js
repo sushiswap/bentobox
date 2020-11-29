@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
+const {e18, assertBN, depositToBento, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const RevertingERC20 = artifacts.require("RevertingERC20");
@@ -51,6 +51,7 @@ class BentoBoxTestEnvironment {
 
         await this.a.transfer(alice, e18(1000));
         await this.b.transfer(bob, e18(1000));
+        await this.b.transfer(charlie, e18(1000));
 
         oracle = await TestOracle.new({ from: accounts[0] });
         await oracle.set(e18(1), accounts[0]);
@@ -63,7 +64,7 @@ class BentoBoxTestEnvironment {
         pair_address = tx.logs[0].args[2];
         pair = await Pair.at(pair_address);
 
-        await pair.updateExchangeRate();    
+        await pair.updateExchangeRate();
     }
 
     async createSwapPair(tokenA, tokenB, amountA, amountB) {
@@ -85,6 +86,7 @@ contract('LendingPair', (accounts) => {
     let swapper;
     const alice = accounts[1];
     const bob = accounts[2];
+    const charlie = accounts[3];
     const charliePrivateKey = "0x328fb00abf72d3c33b7732c3cdfdfd93300fcfef0807952f8f766a1b09f17b94";
     const charlieAddress = "0xCa6f9b85Ece7F9Dc8e6461cF639992eC7c275aEE";
 
@@ -107,6 +109,7 @@ contract('LendingPair', (accounts) => {
 
         await a.transfer(alice, e18(1000));
         await b.transfer(bob, e18(1000));
+        await b.transfer(charlie, e18(1000));
 
         oracle = await TestOracle.new({ from: accounts[0] });
         await oracle.set(e18(1), accounts[0]);
@@ -131,9 +134,21 @@ contract('LendingPair', (accounts) => {
         await truffleAssert.reverts(pair.borrow(e18(1), bob), 'BoringMath: Underflow');
     });
 
+    it('should revert if MasterContract is not approved', async () => {
+      await b.approve(bentoBox.address, e18(300), { from: charlie });
+      await truffleAssert.reverts(pair.addAsset(e18(290), { from: charlie }), 'BentoBox: Transfer not approved');
+    });
+
     it('should take a deposit of assets', async () => {
-        await b.approve(bentoBox.address, e18(300), { from: bob });
-        await pair.addAsset(e18(300), { from: bob });
+      await b.approve(bentoBox.address, e18(300), { from: bob });
+      await pair.addAsset(e18(290), { from: bob });
+      assertBN(await pair.balanceOf(bob), e18(290));
+    });
+
+    it('should take a deposit of assets from BentoBox', async () => {
+      let share = await depositToBento(b, bentoBox, e18(10), bob);
+      await pair.addAssetFromBento(share, { from: bob });
+      assertBN(await pair.balanceOf(bob), e18(300));
     });
 
     it('should give back correct DOMAIN_SEPARATOR', async () => {
@@ -248,7 +263,13 @@ contract('LendingPair', (accounts) => {
 
     it('should allow open liquidate', async () => {
         await b.approve(bentoBox.address, e18(25), { from: bob });
-        await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+        await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
+    });
+
+    it('should allow open liquidate from Bento', async () => {
+      await b.approve(bentoBox.address, e18(25), { from: bob });
+      await bentoBox.deposit(b.address, bob, e18(20), { from: bob });
+      await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
     });
 
     it('should allow repay', async () => {
@@ -281,7 +302,7 @@ contract('LendingPair', (accounts) => {
             await timeWarp.advanceBlock()
         }
         await pair.accrue({ from: alice });
-        
+
         // check results
         let rate2 = await pair.interestPerBlock();
         assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");

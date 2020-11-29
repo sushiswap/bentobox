@@ -2,6 +2,16 @@ bn = (amount) => {
     return new web3.utils.BN(amount);
 }
 
+assertBN = (a,b, errorMessage) => {
+  assert.equal(a.toString(), b.toString(), errorMessage);
+}
+
+depositToBento = async (token, bentoBox, amount, fromAddress) => {
+  await token.approve(bentoBox.address, amount, { from: fromAddress });
+  await bentoBox.deposit(token.address, fromAddress, amount, { from: fromAddress });
+  return (await bentoBox.toShare(token.address, amount));
+}
+
 e18 = (amount) => {
     return bn(amount).mul(bn("1000000000000000000"));
 }
@@ -39,7 +49,7 @@ signERC2612Permit = async (token, owner, spender, value, deadline, nonce) => {
         nonce: nonce || parseInt(await new web3.eth.Contract(pair_abi, token).methods.nonces(owner).call()),
         deadline: deadline || MAX_INT
     }
-    
+
     const typedData = {
         types: {
             EIP712Domain: [
@@ -86,6 +96,8 @@ module.exports = {
     e18,
     bn,
     e9,
+    depositToBento,
+    assertBN,
     sansBorrowFee,
     encodePrice,
     getInitData,
