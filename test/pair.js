@@ -86,6 +86,7 @@ contract('LendingPair', (accounts) => {
     let swapper;
     const alice = accounts[1];
     const bob = accounts[2];
+    const charlie = accounts[3];
     const charliePrivateKey = "0x328fb00abf72d3c33b7732c3cdfdfd93300fcfef0807952f8f766a1b09f17b94";
     const charlieAddress = "0xCa6f9b85Ece7F9Dc8e6461cF639992eC7c275aEE";
 
@@ -108,6 +109,7 @@ contract('LendingPair', (accounts) => {
 
         await a.transfer(alice, e18(1000));
         await b.transfer(bob, e18(1000));
+        await b.transfer(charlie, e18(1000));
 
         oracle = await TestOracle.new({ from: accounts[0] });
         await oracle.set(e18(1), accounts[0]);

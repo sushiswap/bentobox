@@ -52,7 +52,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
+      let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
       pair = await Pair.at(pair_address);
@@ -84,7 +84,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any collateral', async () => {
-      await truffleAssert.reverts(pair.borrow(e9(1), alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(e9(1), alice, { from: alice }), 'user insolvent');
     });
 
     it('should take a deposit of collateral', async () => {
@@ -108,7 +108,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(b.address);
       await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'user insolvent');
       await b.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(b.address);
@@ -156,7 +156,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await oracle.set(e18(1000000000).mul(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
       await b.approve(bentoBox.address, e9(25), { from: bob });
-      await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+      await truffleAssert.reverts(pair.liquidate([alice], [e9(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
       await b.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(b.address);
@@ -208,26 +208,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
 
       await b.approve(bentoBox.address, e9(25), { from: bob });
-      await pair.liquidate([alice], [e9(5)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
-
-      await b.rebase(`${total / 2}`);
-      // sync and check
-      await bentoBox.sync(b.address);
-      await oracle.set(e18(1100000000), accounts[0]);
-      await pair.updateExchangeRate();
-    });
-
-    it('should allow open liquidate from Bento', async () => {
-      let total = await b.totalSupply();
-      await b.rebase(`-${total / 2}`);
-      // sync and check
-      await bentoBox.sync(b.address);
-      await oracle.set(e18(2200000000), pair.address);
-      await pair.updateExchangeRate();
-
-      await b.approve(bentoBox.address, e9(25), { from: bob });
-      await bentoBox.deposit(b.address, bob, e9(20), { from: bob });
-      await pair.liquidate([alice], [e9(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
+      await pair.liquidate([alice], [e9(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
 
       await b.rebase(`${total / 2}`);
       // sync and check
@@ -328,7 +309,7 @@ contract('LendingPair with Rebase', (accounts) => {
       for (let i = 0; i < 20; i++) {
         await timeWarp.advanceBlock()
       }
-      await pair.updateInterestRate({ from: alice });
+      await pair.accrue({ from: alice });
     });
   });
 
@@ -360,7 +341,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
       await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-      let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData]);
+      let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
       tx = await bentoBox.deploy(pairMaster.address, initData);
       pair_address = tx.logs[0].args[2];
       pair = await Pair.at(pair_address);
@@ -393,7 +374,7 @@ contract('LendingPair with Rebase', (accounts) => {
     });
 
     it('should not allow borrowing without any collateral', async () => {
-      await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(e18(1), alice, { from: alice }), 'user insolvent');
     });
 
     it('should take a deposit of collateral', async () => {
@@ -430,7 +411,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(a.address);
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'BentoBox: user insolvent');
+      await truffleAssert.reverts(pair.borrow(100, alice, { from: alice }), 'user insolvent');
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
@@ -484,7 +465,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.accrue();
       let borrowShareLeft = await pair.userBorrowFraction(alice);
       await b.approve(bentoBox.address, e18(25), { from: bob });
-      await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'BentoBox: all users are solvent');
+      await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
       await a.rebase(`${total / 2}`);
       // sync and check
       await bentoBox.sync(a.address);
@@ -500,7 +481,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await bentoBox.sync(a.address);
       await oracle.set(e9(1).div(new web3.utils.BN(2)), accounts[0]);
       await pair.updateExchangeRate();
-      await pair.updateInterestRate();
+      await pair.accrue();
 
       await sushiswappair.sync();
 
@@ -543,28 +524,7 @@ contract('LendingPair with Rebase', (accounts) => {
       await pair.updateExchangeRate();
 
       await b.approve(bentoBox.address, e18(25), { from: bob });
-      await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
-      assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
-      await a.rebase(`${total / 2}`);
-      // sync and check
-      await bentoBox.sync(a.address);
-      await oracle.set(e9(1), accounts[0]);
-      await pair.updateExchangeRate();
-    });
-
-    it('should allow open liquidate from Bento', async () => {
-      //total supply is halved through a rebase
-      let total = await a.totalSupply();
-      await a.rebase(`-${total / 2}`);
-      // sync and check
-      await bentoBox.sync(a.address);
-      await oracle.set('550000000', pair.address);
-      await pair.updateExchangeRate();
-
-      await b.approve(bentoBox.address, e18(25), { from: bob });
-      await bentoBox.deposit(b.address, bob, e18(20), { from: bob });
-      await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
-
+      await pair.liquidate([alice], [e18(10)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob });
       assert.equal((await pair.userCollateralShare(alice)).toString(), (await bentoBox.shareOf(a.address, pair.address)).toString(), "incorrect shares in BentoBox");
       await a.rebase(`${total / 2}`);
       // sync and check
@@ -683,7 +643,7 @@ contract('LendingPair with Rebase', (accounts) => {
       for (let i = 0; i < 20; i++) {
         await timeWarp.advanceBlock()
       }
-      await pair.updateInterestRate({ from: alice });
+      await pair.accrue({ from: alice });
 
       await a.rebase(`${total / 2}`);
       // sync and check
