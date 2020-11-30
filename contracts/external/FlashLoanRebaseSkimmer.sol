@@ -6,7 +6,7 @@ pragma solidity 0.6.12;
 import "../interfaces/IFlashLoaner.sol";
 import "../libraries/BoringMath.sol";
 import {RebaseToken} from "./RebaseToken.sol";
-import "../BentoBox.sol";
+import "../interfaces/IBentoBox.sol";
 
 contract FlashLoanRebaseSkimmer is IFlashLoaner{
     using BoringMath for uint;
@@ -14,7 +14,7 @@ contract FlashLoanRebaseSkimmer is IFlashLoaner{
     function executeOperation(IERC20 token, uint amount, uint fee, bytes calldata) public override {
         address bentoBox = address(msg.sender);
         uint payback = amount.add(fee);
-        BentoBox bb = BentoBox(bentoBox);
+        IBentoBox bb = IBentoBox(bentoBox);
 
         // double supply
         uint256 supply = token.totalSupply();
@@ -25,8 +25,8 @@ contract FlashLoanRebaseSkimmer is IFlashLoaner{
 
         // call skim
         bb.skim(token);
-        
-        // pay out 
+
+        // pay out
         uint money = token.balanceOf(address(this));
         token.approve(address(bentoBox), payback);
         uint winnings = money.sub(payback);
@@ -34,7 +34,7 @@ contract FlashLoanRebaseSkimmer is IFlashLoaner{
     }
 
     function executeOperationMultiple(
-        IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) external override {
-
+        IERC20[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata) external override {
+        return;
     }
 }

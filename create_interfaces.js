@@ -84,7 +84,7 @@ function createInterface(name) {
             }
         }
         console.log(header.join("\r\n") + "\r\n" + lines.join("\r\n"));
-        fs.writeFile('./contracts/interfaces/I' + name + ".sol",
+        fs.writeFile('./contracts/interfaces/genI' + name + ".sol",
             header.join("\r\n") + "\r\n" + lines.join("\r\n"),
             function (err) { });
     });

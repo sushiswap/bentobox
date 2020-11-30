@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
-import "../libraries/Ownable.sol";
-import "../external/SushiSwapFactory.sol";
-import "../ERC20.sol";
+import "../external/interfaces/IUniswapV2Pair.sol";
+import "../external/interfaces/IUniswapV2Factory.sol";
+import "../interfaces/IERC20.sol";
 import "../interfaces/ISwapper.sol";
 
 contract SushiSwapSwapper is ISwapper {
     using BoringMath for uint256;
 
     // Local variables
-    BentoBox public bentoBox;
-    ISushiSwapFactory public factory;
+    IBentoBox public bentoBox;
+    IUniswapV2Factory public factory;
 
-    constructor(BentoBox bentoBox_, ISushiSwapFactory factory_) public {
+    constructor(IBentoBox bentoBox_, IUniswapV2Factory factory_) public {
         bentoBox = bentoBox_;
         factory = factory_;
     }
@@ -34,7 +34,7 @@ contract SushiSwapSwapper is ISwapper {
 
     // Swaps to a flexible amount, from an exact input amount
     function swap(IERC20 from, IERC20 to, uint256 amountFrom, uint256 amountToMin) public override returns (uint256) {
-        UniswapV2Pair pair = UniswapV2Pair(factory.getPair(address(from), address(to)));
+        IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(from), address(to)));
 
         bentoBox.withdraw(from, address(pair), amountFrom);
 
@@ -56,7 +56,7 @@ contract SushiSwapSwapper is ISwapper {
     function swapExact(
         IERC20 from, IERC20 to, uint256 amountFromMax, uint256 exactAmountTo, address refundTo
     ) public override returns (uint256) {
-        UniswapV2Pair pair = UniswapV2Pair(factory.getPair(address(from), address(to)));
+        IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(from), address(to)));
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
 
