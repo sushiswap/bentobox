@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "../BentoBox.sol";
+import "./IBentoBox.sol";
 
 interface ISwapper {
     // Withdraws 'amountFrom' of token 'from' from the BentoBox account for this swapper

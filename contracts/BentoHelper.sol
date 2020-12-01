@@ -8,7 +8,7 @@ contract BentoHelper {
     struct PairInfo {
         ILendingPair pair;
         IOracle oracle;
-        BentoBox bentoBox;
+        IBentoBox bentoBox;
         IERC20 tokenAsset;
         IERC20 tokenCollateral;
 
@@ -23,7 +23,6 @@ contract BentoHelper {
         uint256 totalBorrowFraction;
 
         uint256 interestPerBlock;
-        uint256 lastInterestBlock;
 
         uint256 feesPendingShare;
 
@@ -57,7 +56,6 @@ contract BentoHelper {
             info[i].totalBorrowFraction = pair.totalBorrowFraction();
 
             info[i].interestPerBlock = pair.interestPerBlock();
-            info[i].lastInterestBlock = pair.lastInterestBlock();
 
             info[i].feesPendingShare = pair.feesPendingShare();
 

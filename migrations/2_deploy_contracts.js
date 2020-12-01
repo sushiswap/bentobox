@@ -7,12 +7,13 @@ const DEFAULT_WETH = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
                      
 
 module.exports = async function (deployer, network, accounts) {
-
-  await deployer.deploy(WETH9);
-  let weth = await WETH9.deployed();
-  let wethAddress = weth.address;
+  let wethAddress;
   if (process.env.NOT_TESTNET) {
     wethAddress = DEFAULT_WETH;
+  } else {
+    await deployer.deploy(WETH9);
+    let weth = await WETH9.deployed();
+    wethAddress = weth.address;
   }
   await deployer.deploy(BentoBox, wethAddress);
   let bentoBox = await BentoBox.deployed();
