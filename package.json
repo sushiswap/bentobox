@@ -9,8 +9,7 @@
   "scripts": {
     "build": "truffle build",
     "test": "./test.sh $TRUFFLE_TEST",
-    "flatten": "./flatten.sh",
-    "flatten:windows": "flatten.bat"
+    "flatten": "node scripts/flatten.js"
   },
   "repository": {
     "type": "git",
@@ -24,8 +23,12 @@
   "homepage": "https://github.com/sushiswap-core/bentobox#readme",
   "dependencies": {
     "@truffle/hdwallet-provider": "^1.2.0",
+    "child_process": "^1.0.2",
+    "fs": "^0.0.1-security",
     "ganache-cli": "^6.12.1",
-    "global": "^4.4.0"
+    "global": "^4.4.0",
+    "mkdirp": "^1.0.4",
+    "path": "^0.12.7"
   },
   "devDependencies": {
     "ethereumjs-util": "^7.0.7",
