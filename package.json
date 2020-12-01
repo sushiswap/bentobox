@@ -8,7 +8,9 @@
   },
   "scripts": {
     "build": "truffle build",
-    "test": "./test.sh $TRUFFLE_TEST"
+    "test": "./test.sh $TRUFFLE_TEST",
+    "flatten": "./flatten.sh",
+    "flatten:windows": "flatten.bat"
   },
   "repository": {
     "type": "git",
