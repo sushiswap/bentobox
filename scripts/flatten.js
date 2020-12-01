@@ -56,11 +56,10 @@ function flattenFile(filePath) {
 async function optimize(filePath) {
   const data = fs.readFileSync(filePath, 'UTF-8');
   const lines = data.split("\n");
-  let parseMode = false;
   let lastSpdxPos = 0;
-
   let foundExperimental = false;
   const filtered = []; // array of arrays.
+  
   filtered.push('pragma solidity 0.6.12;');
   filtered.push('');  // space for experimental
   let outPos = 2;
