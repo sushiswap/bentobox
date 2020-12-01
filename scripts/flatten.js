@@ -1,18 +1,11 @@
 // Concatenate Solidity source code of contracts and their transitive dependencies
-// Optimize SPDX tags and move pramas to top
+// Optimize SPDX tags and move pragmas to top
 // ./node_modules/.bin/truffle-flattener SOLIDITY_SOURCE > FLATTENDED_SOLIDITY_SOURCE
 
 const path = require('path');
 const fs = require('fs');
 const child_process = require('child_process');
 const mkdirp = require('mkdirp');
-
-(async function() {
-  let files = await flatten('contracts');
-  files = files.concat(await flatten('contracts/oracles'));
-  files = files.concat(await flatten('contracts/swappers'));
-  files.forEach(file => optimize(file));
-})();
 
 /* flatten: flatten every .sol file in contracts/ */
 async function flatten(folder) {
@@ -105,3 +98,12 @@ async function optimize(filePath) {
     });
   });
 }
+
+
+(async function() {
+  let files = await flatten('contracts');
+  files = files.concat(await flatten('contracts/oracles'));
+  files = files.concat(await flatten('contracts/swappers'));
+  files.forEach(file => optimize(file));
+})();
+
