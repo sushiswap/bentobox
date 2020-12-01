@@ -104,6 +104,7 @@ async function optimize(filePath) {
   let files = await flatten('contracts');
   files = files.concat(await flatten('contracts/oracles'));
   files = files.concat(await flatten('contracts/swappers'));
-  files.forEach(file => optimize(file));
+  for (const file of files) {
+    await optimize(file);
+  }
 })();
-
