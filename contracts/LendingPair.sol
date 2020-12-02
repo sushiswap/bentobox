@@ -83,6 +83,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     event LogExchangeRate(uint256 rate);
+    event LogInterestRate(uint256 rate);
     event LogAddCollateral(address indexed user, uint256 share);
     event LogAddAsset(address indexed user, uint256 share, uint256 fraction);
     event LogAddBorrow(address indexed user, uint256 share, uint256 fraction);
@@ -166,6 +167,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         } else {return;}
 
         interestPerBlock = newInterestPerBlock;
+        emit LogInterestRate(newInterestPerBlock);
     }
 
     // Checks if the user is solvent.
@@ -520,5 +522,5 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             uint256 excessShare = bentoBox.shareOf(token, address(this)).sub(token == asset ? totalAssetShare : totalCollateralShare);
             bentoBox.transferShare(token, owner, excessShare);
         }
-    }    
+    }
 }
