@@ -211,6 +211,9 @@ module.exports = {
   reverts: async (asyncFn, reason, message) => (
     fails(asyncFn, ErrorType.REVERT, reason, message)
   ),
+  underflow: async (asyncFn, reason, message) => (
+    fails(asyncFn, ErrorType.REVERT, 'BoringMath: Underflow', message)
+  ),
   ErrorType,
   InvalidTxResultError,
 };

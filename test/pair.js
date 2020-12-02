@@ -84,6 +84,8 @@ contract('LendingPair', (accounts) => {
     let bentoBox;
     let bentoFactory;
     let swapper;
+    let factory;
+    let initData;
     const alice = accounts[1];
     const bob = accounts[2];
     const charlie = accounts[3];
@@ -97,7 +99,7 @@ contract('LendingPair', (accounts) => {
         a = await ReturnFalseERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
         b = await RevertingERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
-        let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
+        factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
         swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
         await pairMaster.setSwapper(swapper.address, true);
 
@@ -117,13 +119,20 @@ contract('LendingPair', (accounts) => {
 
         await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
         await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
-        let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
+        initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
         tx = await bentoBox.deploy(pairMaster.address, initData);
         pair_address = tx.logs[0].args[2];
         pair = await Pair.at(pair_address);
 
         await pair.updateExchangeRate();
     });
+    it('should not allow to init initialized pair', async () => {
+      await truffleAssert.reverts(pair.init(initData),  'LendingPair: already initialized');
+    });
+
+    it('should not allow nonDev to setDev', async () => {
+      await truffleAssert.reverts(pair.setDev(bob, {from: bob}), 'LendingPair: Not dev');
+    })
 
     it('should not allow any remove without assets', async () => {
         await truffleAssert.reverts(pair.removeCollateral(e18(1), bob), 'BoringMath: Underflow');
@@ -249,6 +258,11 @@ contract('LendingPair', (accounts) => {
     it('should not allow open liquidate yet', async () => {
         await b.approve(bentoBox.address, e18(25), { from: bob });
         await truffleAssert.reverts(pair.liquidate([alice], [e18(20)], bob, "0x0000000000000000000000000000000000000000", true, { from: bob }), 'all users are solvent');
+    });
+
+    it('should not allow closed liquidate with invalid swapper', async () => {
+        let invalidSwapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
+        truffleAssert.reverts(pair.liquidate([alice], [e18(10)], bob, invalidSwapper.address, false, { from: bob }), 'LendingPair: Invalid swapper');
     });
 
     it('should allow closed liquidate', async () => {
