@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
@@ -32,7 +32,9 @@ contract ChainLinkOracle is IOracle {
         return price / decimals;
     }
 
-    function getDataParameter(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) { return abi.encode(multiply, divide, decimals); }
+    function getDataParameter(address multiply, address divide, uint256 decimals) public pure returns (bytes memory) {
+        return abi.encode(multiply, divide, decimals);
+    }
 
     // Get the latest exchange rate
     function get(bytes calldata data) public override returns (bool, uint256) {

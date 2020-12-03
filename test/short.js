@@ -3,8 +3,8 @@ const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const {e18, encodePrice, getInitData, getDataParameter} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
-const TokenA = artifacts.require("TokenA");
-const TokenB = artifacts.require("TokenB");
+const RevertingERC20 = artifacts.require("RevertingERC20");
+const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const SushiSwapFactory = artifacts.require("UniswapV2Factory");
 const UniswapV2Pair = artifacts.require("UniswapV2Pair");
 const Pair = artifacts.require("LendingPair");
@@ -28,8 +28,8 @@ contract('Pair (Shorting)', (accounts) => {
     bentoBox = await BentoBox.deployed();
     pairMaster = await Pair.deployed();
 
-    a = await TokenA.new({ from: accounts[0] });
-    b = await TokenB.new({ from: accounts[0] });
+    a = await RevertingERC20.new("Token A", "A", e18(10000000), { from: accounts[0] });
+    b = await ReturnFalseERC20.new("Token B", "B", e18(10000000), { from: accounts[0] });
 
     let factory = await SushiSwapFactory.new(accounts[0], { from: accounts[0] });
     swapper = await SushiSwapSwapper.new(bentoBox.address, factory.address, { from: accounts[0] });
@@ -46,12 +46,12 @@ contract('Pair (Shorting)', (accounts) => {
 
     oracle = await TestOracle.new({ from: accounts[0] });
     await oracle.set(e18(1), accounts[0]);
-    let oracleData = getDataParameter(TestOracle._json.abi, []);
+    let oracleData = await oracle.getDataParameter();
 
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: alice });
     await bentoBox.setMasterContractApproval(pairMaster.address, true, { from: bob });
 
-    let initData = getInitData(Pair._json.abi, [a.address, b.address, oracle.address, oracleData])
+    let initData = await pairMaster.getInitData(a.address, b.address, oracle.address, oracleData);
     tx = await bentoBox.deploy(pairMaster.address, initData);
     pair_address = tx.logs[0].args[2];
     pair = await Pair.at(pair_address);
@@ -68,11 +68,11 @@ contract('Pair (Shorting)', (accounts) => {
   });
 
   it("should not allow shorting if it doesn't return enough of token A", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapClosedSwapper: return not enough");
+    await truffleAssert.reverts(pair.short(swapper.address, e18(200), e18(200), { from: alice }), "SushiSwapSwapper: return not enough");
   });
 
   it("should not allow shorting into insolvency", async () => {
-    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), "BentoBox: user insolvent");
+    await truffleAssert.reverts(pair.short(swapper.address, e18(300), e18(200), { from: alice }), "user insolvent");
   });
 
   it('should have correct balances before short', async () => {
@@ -129,7 +129,7 @@ contract('Pair (Shorting)', (accounts) => {
     // 750 still too much, as 250 should be kept to rewind all shorts
     await truffleAssert.reverts(pair.removeAsset(e18(750), bob, {from: bob}), 'BoringMath: Underflow');
     // 500 still too much, as some dust has been accrued in interest
-    // await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'BentoBox: not enough liquidity');
+    // await truffleAssert.reverts(pair.removeAsset(e18(500), bob, {from: bob}), 'not enough liquidity');
     await pair.removeAsset(e18(499), bob, {from: bob});
   });
 

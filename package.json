@@ -8,7 +8,8 @@
   },
   "scripts": {
     "build": "truffle build",
-    "test": "./test.sh",
+    "test": "./test.sh $TRUFFLE_TEST",
+    "flatten": "node scripts/flatten.js"
     "test:cover": "node --max-old-space-size=4096 ./node_modules/.bin/truffle run coverage"
   },
   "repository": {
@@ -29,6 +30,7 @@
     "ethereumjs-util": "^7.0.7",
     "ethers": "^5.0.19",
     "ganache-cli": "^6.12.1",
+    "mkdirp": "^1.0.4",
     "solidity-coverage": "^0.7.12",
     "truffle": "^5.1.55",
     "truffle-plugin-verify": "^0.5.2"

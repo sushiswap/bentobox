@@ -2,20 +2,38 @@ bn = (amount) => {
     return new web3.utils.BN(amount);
 }
 
+assertBN = (a,b, errorMessage) => {
+  assert.equal(a.toString(), b.toString(), errorMessage);
+}
+
+depositToBento = async (token, bentoBox, amount, fromAddress) => {
+  await token.approve(bentoBox.address, amount, { from: fromAddress });
+  await bentoBox.deposit(token.address, fromAddress, amount, { from: fromAddress });
+  return (await bentoBox.toShare(token.address, amount));
+}
+
 e18 = (amount) => {
     return bn(amount).mul(bn("1000000000000000000"));
+}
+
+e9 = (amount) => {
+    return new web3.utils.BN(amount).mul(new web3.utils.BN("1000000000"));
+}
+
+sansBorrowFee = (amount) => {
+  return amount.mul(new web3.utils.BN("2000")).div(new web3.utils.BN("2001"));
 }
 
 encodePrice = (reserve0, reserve1) => {
     return [reserve1.mul(bn('2').pow(bn('112'))).div(reserve0), reserve0.mul(bn('2').pow(bn('112'))).div(reserve1)];
 }
 
-getInitData = (abi, parameters) => {
-    const init = abi.find(element => element.name == "init");
-    return web3.eth.abi.encodeFunctionCall(init, parameters);
+getInitData = (abi, ...parameters) => {
+    const init = abi.find(element => element.name == "getInitData");
+    return web3.eth.abi.encodeFunctionCall(init, parameters).substr(10);
 }
 
-getDataParameter = (abi, parameters) => {
+getDataParameter = (abi, ...parameters) => {
     const init = abi.find(element => element.name == "getDataParameter");
     return "0x" + web3.eth.abi.encodeFunctionCall(init, parameters).substr(10);
 }
@@ -31,7 +49,7 @@ signERC2612Permit = async (token, owner, spender, value, deadline, nonce) => {
         nonce: nonce || parseInt(await new web3.eth.Contract(pair_abi, token).methods.nonces(owner).call()),
         deadline: deadline || MAX_INT
     }
-    
+
     const typedData = {
         types: {
             EIP712Domain: [
@@ -77,6 +95,10 @@ signERC2612Permit = async (token, owner, spender, value, deadline, nonce) => {
 module.exports = {
     e18,
     bn,
+    e9,
+    depositToBento,
+    assertBN,
+    sansBorrowFee,
     encodePrice,
     getInitData,
     getDataParameter,

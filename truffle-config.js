@@ -15,8 +15,8 @@ module.exports = {
           providerOrUrl: "https://mainnet.infura.io/v3/" + infuraKey,
         });
       },
-      gasPrice: 60 * 1000000000,
-      network_id: 1,
+      gasPrice: 120 * 1000000000,
+      network_id: 1
     },
     ropsten: {
       provider: function () {

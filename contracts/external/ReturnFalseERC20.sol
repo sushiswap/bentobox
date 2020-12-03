@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
-// TokenA does not revert on errors, it just returns false
-pragma solidity ^0.6.12;
-contract TokenA {
-    string public constant symbol = "A";
-    string public constant name = "Token A";
+// solium-disable security/no-inline-assembly
+// solium-disable security/no-block-members
+
+// ReturnFalseERC20 does not revert on errors, it just returns false
+pragma solidity 0.6.12;
+contract ReturnFalseERC20 {
+    string public symbol;
+    string public name;
     uint8 public constant decimals = 18;
-    uint256 public totalSupply = 1e25;
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping (address => uint256)) allowance;
     mapping(address => uint256) public nonces;
@@ -13,8 +16,15 @@ contract TokenA {
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-    constructor() public {
-        balanceOf[msg.sender] = totalSupply;
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 supply
+    ) public {
+        name = name_;
+        symbol = symbol_;
+        totalSupply = supply;
+        balanceOf[msg.sender] = supply;
     }
 
     function transfer(address to, uint256 amount) public returns (bool success) {
@@ -52,14 +62,14 @@ contract TokenA {
       return keccak256(abi.encode(keccak256("EIP712Domain(uint256 chainId,address verifyingContract)"), chainId, address(this)));
     }
 
-    function permit(address owner, address spender, uint value, uint deadline, uint8 v, bytes32 r, bytes32 s) external {
-        require(block.timestamp < deadline, 'BentoBox: Expired');
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(block.timestamp < deadline, 'ReturnFalseERC20: Expired');
         bytes32 digest = keccak256(abi.encodePacked(
             '\x19\x01', DOMAIN_SEPARATOR(),
             keccak256(abi.encode(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9, owner, spender, value, nonces[owner]++, deadline))
         ));
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress == owner, 'BentoBox: Invalid Signature');
+        require(recoveredAddress == owner, 'ReturnFalseERC20: Invalid Signature');
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }

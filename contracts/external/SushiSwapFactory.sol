@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIXED
-pragma solidity =0.6.12;
+pragma solidity 0.6.12;
+import "../external/interfaces/IUniswapV2Callee.sol";
 
-interface IUniswapV2Factory {
+
+interface ISushiSwapFactory {
     event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
     function feeTo() external view returns (address);
@@ -182,11 +184,6 @@ interface IERC20Uniswap {
     function transferFrom(address from, address to, uint value) external returns (bool);
 }
 
-// File: contracts/uniswapv2/interfaces/IUniswapV2Callee.sol
-interface IUniswapV2Callee {
-    function uniswapV2Call(address sender, uint amount0, uint amount1, bytes calldata data) external;
-}
-
 // File: contracts/uniswapv2/UniswapV2Pair.sol
 interface IMigrator {
     // Return the desired amount of liquidity token that the migrator wants.
@@ -272,7 +269,7 @@ contract UniswapV2Pair is UniswapV2ERC20 {
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
     function _mintFee(uint112 _reserve0, uint112 _reserve1) private returns (bool feeOn) {
-        address feeTo = IUniswapV2Factory(factory).feeTo();
+        address feeTo = ISushiSwapFactory(factory).feeTo();
         feeOn = feeTo != address(0);
         uint _kLast = kLast; // gas savings
         if (feeOn) {
@@ -302,7 +299,7 @@ contract UniswapV2Pair is UniswapV2ERC20 {
         bool feeOn = _mintFee(_reserve0, _reserve1);
         uint _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
         if (_totalSupply == 0) {
-            address migrator = IUniswapV2Factory(factory).migrator();
+            address migrator = ISushiSwapFactory(factory).migrator();
             if (msg.sender == migrator) {
                 liquidity = IMigrator(migrator).desiredLiquidity();
                 require(liquidity > 0 && liquidity != uint256(-1), "Bad desired liquidity");
@@ -393,7 +390,7 @@ contract UniswapV2Pair is UniswapV2ERC20 {
 }
 
 // File: contracts/uniswapv2/UniswapV2Factory.sol
-contract UniswapV2Factory is IUniswapV2Factory {
+contract UniswapV2Factory is ISushiSwapFactory {
     address public override feeTo;
     address public override feeToSetter;
     address public override migrator;

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "./interfaces/IERC20.sol";
-import "./BentoBox.sol";
 import "./interfaces/ILendingPair.sol";
 import "./interfaces/IOracle.sol";
 
@@ -10,7 +8,7 @@ contract BentoHelper {
     struct PairInfo {
         ILendingPair pair;
         IOracle oracle;
-        BentoBox bentoBox;
+        IBentoBox bentoBox;
         IERC20 tokenAsset;
         IERC20 tokenCollateral;
 
@@ -25,7 +23,6 @@ contract BentoHelper {
         uint256 totalBorrowFraction;
 
         uint256 interestPerBlock;
-        uint256 lastInterestBlock;
 
         uint256 feesPendingShare;
 
@@ -59,7 +56,6 @@ contract BentoHelper {
             info[i].totalBorrowFraction = pair.totalBorrowFraction();
 
             info[i].interestPerBlock = pair.interestPerBlock();
-            info[i].lastInterestBlock = pair.lastInterestBlock();
 
             info[i].feesPendingShare = pair.feesPendingShare();
 

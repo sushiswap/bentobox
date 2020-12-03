@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // solium-disable security/no-block-members
 
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "../interfaces/IOracle.sol";
 import "../libraries/BoringMath.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
-import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
-import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
+import "../external/interfaces/IUniswapV2Factory.sol";
+import "../external/interfaces/IUniswapV2Pair.sol";
+import "../libraries/FixedPoint.sol";
 
 // adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleSlidingWindowOracle.sol
 
@@ -32,7 +32,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
-            priceCumulative += uint(FixedPoint.fraction(reserve0, reserve1)._x) * (blockTimestamp - blockTimestampLast); // overflows are desired
+            priceCumulative += uint256(FixedPoint.fraction(reserve0, reserve1)._x) * (blockTimestamp - blockTimestampLast); // overflows are desired
         }
 
         // overflow is desired, casting never truncates
@@ -77,7 +77,8 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint
+            .uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
 
         return (true, priceAverage.mul(10**18).decode144());
     }

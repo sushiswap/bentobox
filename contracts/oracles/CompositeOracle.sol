@@ -1,11 +1,11 @@
 // Using the same Copyleft License as in the original Repository
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.6.12;
+pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 contract CompositeOracle is IOracle {
-    using BoringMath for uint;
+    using BoringMath for uint256;
 
     function getDataParameter(IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) public pure returns (bytes memory) { return abi.encode(oracle1, oracle2, data1, data2); }
 

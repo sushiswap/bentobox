@@ -1,5 +1,4 @@
-const ethers = require('ethers');
-const {BigNumber, Contract, utils} = ethers;
+const {BigNumber, Contract, utils} = require('ethers');
 const {keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack} = utils;
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes('Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)')
@@ -16,19 +15,19 @@ const getDomainSeparator = (tokenAddress) => {
           )
         ),
         1,
-        tokenAddress
+        tokenAddress,
       ]
     )
   );
 }
 
 getApprovalDigest = async (
-  token_address,
+  token,
   approve,
   nonce,
   deadline
 ) => {
-  const DOMAIN_SEPARATOR = getDomainSeparator(token_address);
+  const DOMAIN_SEPARATOR = getDomainSeparator(token.address);
   const msg = defaultAbiCoder.encode(
     ['bytes32', 'address', 'address', 'uint256', 'uint256', 'uint256'],
     [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]

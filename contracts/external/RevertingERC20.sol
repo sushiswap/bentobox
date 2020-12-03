@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: MIT
-// TokenA reverts on errors
-pragma solidity ^0.6.12;
-contract TokenB {
-    string public constant symbol = "B";
-    string public constant name = "Token B";
+// RevertingERC20 reverts on errors
+pragma solidity 0.6.12;
+contract RevertingERC20 {
+    string public symbol;
+    string public name;
     uint8 public constant decimals = 18;
-    uint256 public totalSupply = 1e25;
+    uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping (address => uint256)) allowance;
 
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-    constructor() public {
-        balanceOf[msg.sender] = totalSupply;
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        uint256 supply
+    ) public {
+        name = name_;
+        symbol = symbol_;
+        totalSupply = supply;
+        balanceOf[msg.sender] = supply;
     }
 
     function transfer(address to, uint256 amount) public returns (bool success) {

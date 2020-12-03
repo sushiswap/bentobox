@@ -46,7 +46,7 @@ function createInterface(name) {
         let header = [];
         let contracts = [];
         header.push("// SPDX-License-Identifier: MIT");
-        header.push("pragma solidity ^0.6.12;");
+        header.push("pragma solidity 0.6.12;");
         lines.push("");
         lines.push("interface I" + name + " {");
         for (let i in abi) {
@@ -84,7 +84,7 @@ function createInterface(name) {
             }
         }
         console.log(header.join("\r\n") + "\r\n" + lines.join("\r\n"));
-        fs.writeFile('./contracts/interfaces/I' + name + ".sol",
+        fs.writeFile('./contracts/interfaces/genI' + name + ".sol",
             header.join("\r\n") + "\r\n" + lines.join("\r\n"),
             function (err) { });
     });
