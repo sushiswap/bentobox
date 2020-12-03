@@ -8,7 +8,7 @@ interface IAggregator {
     function latestRoundData() external view returns (uint80, int256 answer, uint256, uint256, uint80);
 }
 
-contract ChainlinkOracle is IOracle {
+contract ChainLinkOracle is IOracle {
     using BoringMath for uint256; // Keep everything in uint256
 
     // Calculates the lastest exchange rate
