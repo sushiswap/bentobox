@@ -10,6 +10,7 @@
     "build": "truffle build",
     "test": "./test.sh $TRUFFLE_TEST",
     "flatten": "node scripts/flatten.js"
+    "test:cover": "node --max-old-space-size=4096 ./node_modules/.bin/truffle run coverage"
   },
   "repository": {
     "type": "git",
@@ -21,17 +22,17 @@
     "url": "https://github.com/sushiswap-core/bentobox/issues"
   },
   "homepage": "https://github.com/sushiswap-core/bentobox#readme",
-  "dependencies": {
-    "@truffle/hdwallet-provider": "^1.2.0",
-    "child_process": "^1.0.2",
-    "fs": "^0.0.1-security",
-    "ganache-cli": "^6.12.1",
-    "global": "^4.4.0",
-    "mkdirp": "^1.0.4",
-    "path": "^0.12.7"
-  },
   "devDependencies": {
+    "@truffle/hdwallet-provider": "^1.2.0",
+    "@uniswap/lib": "^2.2.0-alpha",
+    "@uniswap/v2-core": "^1.0.1",
+    "coveralls": "^3.1.0",
     "ethereumjs-util": "^7.0.7",
-    "ethers": "^5.0.19"
+    "ethers": "^5.0.19",
+    "ganache-cli": "^6.12.1",
+    "mkdirp": "^1.0.4",
+    "solidity-coverage": "^0.7.12",
+    "truffle": "^5.1.55",
+    "truffle-plugin-verify": "^0.5.2"
   }
 }
