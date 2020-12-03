@@ -7,6 +7,17 @@ const fs = require('fs');
 const child_process = require('child_process');
 const mkdirp = require('mkdirp');
 
+(function() {
+    var oldSpawn = child_process.spawn;
+    function mySpawn() {
+        console.log('spawn called');
+        console.log(arguments);
+        var result = oldSpawn.apply(this, arguments);
+        return result;
+    }
+    child_process.spawn = mySpawn;
+})();
+
 /* flatten: flatten every .sol file in contracts/ */
 async function flatten(folder) {
   const dirPath = path.join(__dirname, `../${folder}`);
@@ -35,7 +46,7 @@ function flattenFile(filePath) {
   mkdirp.sync('flat');
   const pathOut = path.join('flat', path.basename(filePath));
   const fout = fs.createWriteStream(pathOut);
-  const p = child_process.spawn('truffle-flattener', [filePath]);
+  const p = child_process.spawn('truffle-flattener', [filePath], {shell: true});
   p.stdout.pipe(fout);
   return new Promise((resolve, reject) => {
     p.on('close', function(code) {

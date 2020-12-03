@@ -90,12 +90,16 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     event LogRemoveCollateral(address indexed user, uint256 share);
     event LogRemoveAsset(address indexed user, uint256 share, uint256 fraction);
     event LogRemoveBorrow(address indexed user, uint256 share, uint256 fraction);
+    event LogFeeTo(address indexed newFeeTo);
+    event LogDev(address indexed newFeeTo);
 
     constructor(IBentoBox bentoBox_) public {
         bentoBox = bentoBox_;
         masterContract = LendingPair(this);
         dev = msg.sender;
         feeTo = msg.sender;
+        emit LogDev(msg.sender);
+        emit LogFeeTo(msg.sender);
     }
 
     // Settings for the Medium Risk LendingPair
@@ -165,7 +169,10 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             uint256 scale = uint256(interestElasticity).add(overFactor.mul(overFactor).mul(blocks));
             newInterestPerBlock = interestPerBlock.mul(scale) / interestElasticity;
             if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
-        } else {return;}
+        } else {
+            emit LogInterestRate(interestPerBlock, utilization);
+            return;
+        }
 
         interestPerBlock = newInterestPerBlock;
         emit LogInterestRate(newInterestPerBlock, utilization);
@@ -464,10 +471,10 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             uint256 suppliedAmount = bentoBox.transferShareFrom(collateral, address(this), address(swapper), allCollateralShare);
             swapper.swap(collateral, asset, suppliedAmount, bentoBox.toAmount(asset, allBorrowShare));
             uint256 returnedAssetShare = bentoBox.skim(asset);
-            uint256 extraAsset = returnedAssetShare.sub(allBorrowShare);
+            uint256 extraAssetShare = returnedAssetShare.sub(allBorrowShare);
 
-            totalAssetShare = totalAssetShare.add(extraAsset);
-            emit LogAddAsset(address(0), extraAsset, 0);
+            totalAssetShare = totalAssetShare.add(extraAssetShare);
+            emit LogAddAsset(address(0), extraAssetShare, 0);
         }
     }
 
@@ -502,8 +509,18 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         swappers[swapper] = enable;
     }
 
-    function setFeeTo(address newFeeTo) public onlyOwner { feeTo = newFeeTo; }
-    function setDev(address newDev) public { require(msg.sender == dev, 'LendingPair: Not dev'); dev = newDev; }
+    function setFeeTo(address newFeeTo) public onlyOwner 
+    { 
+        feeTo = newFeeTo; 
+        emit LogFeeTo(newFeeTo);
+    }
+
+    function setDev(address newDev) public 
+    { 
+        require(msg.sender == dev, 'LendingPair: Not dev'); 
+        dev = newDev;
+        emit LogDev(newDev);
+    }
 
     function swipe(IERC20 token) public onlyOwner {
         if (address(token) == address(0)) {

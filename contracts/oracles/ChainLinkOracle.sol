@@ -3,7 +3,7 @@ pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
-// ChainLink Aggregator
+// Chainlink Aggregator
 interface IAggregator {
     function latestRoundData() external view returns (uint80, int256 answer, uint256, uint256, uint80);
 }
@@ -12,7 +12,7 @@ contract ChainlinkOracle is IOracle {
     using BoringMath for uint256; // Keep everything in uint256
 
     // Calculates the lastest exchange rate
-    // Uses both divide and multiply only for tokens not supported directly by ChainLink, for example MKR/USD
+    // Uses both divide and multiply only for tokens not supported directly by Chainlink, for example MKR/USD
     function _get(address multiply, address divide, uint256 decimals) public view returns (uint256) {
         uint256 price = uint256(1e18);
         if (multiply != address(0)) {
