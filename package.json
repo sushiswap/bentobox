@@ -9,7 +9,7 @@
   "scripts": {
     "build": "truffle build",
     "test": "./test.sh $TRUFFLE_TEST",
-    "flatten": "node scripts/flatten.js"
+    "flatten": "node scripts/flatten.js",
     "test:cover": "node --max-old-space-size=4096 ./node_modules/.bin/truffle run coverage"
   },
   "repository": {
