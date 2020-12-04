@@ -1,3 +1,67 @@
+pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
+// File: contracts\libraries\BoringMath.sol
+
+// License-Identifier: MIT
+// a library for performing overflow-safe math, updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math)
+library BoringMath {
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
+    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
+    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
+}
+
+// File: contracts\interfaces\IWETH.sol
+
+// License-Identifier: MIT
+
+interface IWETH {
+    function deposit() external payable;
+    function withdraw(uint256) external;
+}
+
+// File: contracts\interfaces\IMasterContract.sol
+
+// License-Identifier: MIT
+
+interface IMasterContract {
+    function init(bytes calldata data) external;
+}
+
+// File: contracts\interfaces\IERC20.sol
+
+// License-Identifier: MIT
+
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    // non-standard
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+
+    // EIP 2612
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+}
+
+// File: contracts\interfaces\IFlashLoaner.sol
+
+// License-Identifier: MIT
+
+interface IFlashLoaner {
+    function executeOperation(IERC20 token, uint256 amount, uint256 fee, bytes calldata params) external;
+    function executeOperationMultiple(
+        IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) external;
+}
+
+// File: contracts\BentoBox.sol
+
 // SPDX-License-Identifier: UNLICENSED
 
 // The BentoBox
@@ -18,12 +82,6 @@
 
 // solium-disable security/no-inline-assembly
 // solium-disable security/no-low-level-calls
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
-import "./libraries/BoringMath.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IMasterContract.sol";
-import "./interfaces/IFlashLoaner.sol";
 
 contract BentoBox {
     using BoringMath for uint256;

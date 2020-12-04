@@ -1,3 +1,264 @@
+pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
+// File: contracts\libraries\BoringMath.sol
+
+// License-Identifier: MIT
+// a library for performing overflow-safe math, updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math)
+library BoringMath {
+    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
+    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
+    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
+}
+
+// File: contracts\interfaces\IOracle.sol
+
+// License-Identifier: MIT
+
+interface IOracle {
+    // Get the latest exchange rate, if no valid (recent) rate is available, return false
+    function get(bytes calldata data) external returns (bool, uint256);
+    function peek(bytes calldata data) external view returns (bool, uint256);
+}
+
+// File: contracts\libraries\Ownable.sol
+
+// License-Identifier: MIT
+
+// Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
+// Edited by BoringCrypto
+
+contract OwnableData {
+    address public owner;
+    address public pendingOwner;
+}
+
+contract Ownable is OwnableData {
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    constructor () internal {
+        owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    function renounceOwnership() public onlyOwner {
+        emit OwnershipTransferred(owner, address(0));
+        owner = address(0);
+    }
+
+    function transferOwnership(address newOwner) public onlyOwner {
+        pendingOwner = newOwner;
+    }
+
+    function transferOwnershipDirect(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        emit OwnershipTransferred(owner, newOwner);
+        owner = newOwner;
+    }
+
+    function claimOwnership() public {
+        require(msg.sender == pendingOwner, "Ownable: caller is not the pending owner");
+        emit OwnershipTransferred(owner, pendingOwner);
+        owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Ownable: caller is not the owner");
+        _;
+    }
+}
+
+// File: contracts\ERC20.sol
+
+// License-Identifier: MIT
+// solium-disable security/no-inline-assembly
+// solium-disable security/no-block-members
+
+
+// Data part taken out for building of contracts that receive delegate calls
+contract ERC20Data {
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping (address => uint256)) allowance;
+    mapping(address => uint256) public nonces;
+}
+
+contract ERC20 is ERC20Data {
+    event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    event Approval(address indexed _owner, address indexed _spender, uint256 _value);
+
+    function transfer(address to, uint256 amount) public returns (bool success) {
+        if (balanceOf[msg.sender] >= amount && amount > 0 && balanceOf[to] + amount > balanceOf[to]) {
+            balanceOf[msg.sender] -= amount;
+            balanceOf[to] += amount;
+            emit Transfer(msg.sender, to, amount);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function transferFrom(address from, address to, uint256 amount) public returns (bool success) {
+        if (balanceOf[from] >= amount && allowance[from][msg.sender] >= amount && amount > 0 && balanceOf[to] + amount > balanceOf[to]) {
+            balanceOf[from] -= amount;
+            allowance[from][msg.sender] -= amount;
+            balanceOf[to] += amount;
+            emit Transfer(from, to, amount);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function approve(address spender, uint256 amount) public returns (bool success) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function DOMAIN_SEPARATOR() public view returns (bytes32){
+      uint256 chainId;
+      assembly {chainId := chainid()}
+      return keccak256(abi.encode(keccak256("EIP712Domain(uint256 chainId,address verifyingContract)"), chainId, address(this)));
+    }
+
+    function permit(address owner_, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(block.timestamp < deadline, 'ERC20: Expired');
+        bytes32 digest = keccak256(abi.encodePacked(
+            '\x19\x01', DOMAIN_SEPARATOR(),
+            keccak256(abi.encode(0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9, owner_, spender, value, nonces[owner_]++, deadline))
+        ));
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress == owner_, 'ERC20: Invalid Signature');
+        allowance[owner_][spender] = value;
+        emit Approval(owner_, spender, value);
+    }
+}
+
+// File: contracts\interfaces\IMasterContract.sol
+
+// License-Identifier: MIT
+
+interface IMasterContract {
+    function init(bytes calldata data) external;
+}
+
+// File: contracts\interfaces\IERC20.sol
+
+// License-Identifier: MIT
+
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
+
+    // non-standard
+    function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function decimals() external view returns (uint8);
+
+    // EIP 2612
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+}
+
+// File: contracts\interfaces\IBentoBox.sol
+
+// License-Identifier: MIT
+
+interface IBentoBox {
+    event LogDeploy(address indexed masterContract, bytes data, address indexed clone_address);
+    event LogDeposit(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    event LogFlashLoan(address indexed user, address indexed token, uint256 amount, uint256 feeAmount);
+    event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool indexed approved);
+    event LogTransfer(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    event LogWithdraw(address indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    function WETH() external view returns (IERC20);
+    function masterContractApproved(address, address) external view returns (bool);
+    function masterContractOf(address) external view returns (address);
+    function shareOf(IERC20, address) external view returns (uint256);
+    function totalAmount(IERC20) external view returns (uint256);
+    function totalShare(IERC20) external view returns (uint256);
+    function deploy(address masterContract, bytes calldata data) external;
+    function toAmount(IERC20 token, uint256 share) external view returns (uint256 amount);
+    function toShare(IERC20 token, uint256 amount) external view returns (uint256 share);
+    function setMasterContractApproval(address masterContract, bool approved) external;
+    function deposit(IERC20 token, address from, uint256 amount) external payable returns (uint256 share);
+    function depositTo(IERC20 token, address from, address to, uint256 amount) external payable returns (uint256 share);
+    function depositShare(IERC20 token, address from, uint256 share) external payable returns (uint256 amount);
+    function depositShareTo(IERC20 token, address from, address to, uint256 share) external payable returns (uint256 amount);
+    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external payable returns (uint256 share);
+    function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external payable returns (uint256 share);
+    function depositShareWithPermit(IERC20 token, address from, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external payable returns (uint256 amount);
+    function depositShareWithPermitTo(IERC20 token, address from, address to, uint256 share, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external payable returns (uint256 amount);
+    function withdraw(IERC20 token, address to, uint256 amount) external returns (uint256 share);
+    function withdrawFrom(IERC20 token, address from, address to, uint256 amount) external returns (uint256 share);
+    function withdrawShare(IERC20 token, address to, uint256 share) external returns (uint256 amount);
+    function withdrawShareFrom(IERC20 token, address from, address to, uint256 share) external returns (uint256 amount);
+    function transfer(IERC20 token, address to, uint256 amount) external returns (uint256 share);
+    function transferFrom(IERC20 token, address from, address to, uint256 amount) external returns (uint256 share);
+    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) external returns (uint256 sumShares);
+    function transferMultipleFrom(IERC20 token, address from, address[] calldata tos, uint256[] calldata amounts)
+        external returns (uint256 sumShares);
+    function transferShare(IERC20 token, address to, uint256 share) external returns (uint256 amount);
+    function transferShareFrom(IERC20 token, address from, address to, uint256 share) external returns (uint256 amount);
+    function transferMultipleShare(IERC20 token, address[] calldata tos, uint256[] calldata shares) external returns (uint256 sumAmounts);
+    function transferMultipleShareFrom(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares)
+        external returns (uint256 sumAmounts);
+    function skim(IERC20 token) external returns (uint256 share);
+    function skimTo(IERC20 token, address to) external returns (uint256 share);
+    function skimETH() external returns (uint256 share);
+    function skimETHTo(address to) external returns (uint256 share);
+    function sync(IERC20 token) external;
+    function flashLoan(IERC20 token, uint256 amount, address user, bytes calldata params) external;
+    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) external;
+    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns (bool[] memory successes, bytes[] memory results);
+}
+
+// File: contracts\interfaces\ISwapper.sol
+
+// License-Identifier: MIT
+
+interface ISwapper {
+    // Withdraws 'amountFrom' of token 'from' from the BentoBox account for this swapper
+    // Swaps it for at least 'amountToMin' of token 'to'
+    // Transfers the swapped tokens of 'to' into the BentoBox using a plain ERC20 transfer
+    // Returns the amount of tokens 'to' transferred to BentoBox
+    // (The BentoBox skim function will be used by the caller to get the swapped funds)
+    function swap(IERC20 from, IERC20 to, uint256 amountFrom, uint256 amountToMin) external returns (uint256 amountTo);
+
+    // Calculates the amount of token 'from' needed to complete the swap (amountFrom), this should be less than or equal to amountFromMax
+    // Withdraws 'amountFrom' of token 'from' from the BentoBox account for this swapper
+    // Swaps it for exactly 'exactAmountTo' of token 'to'
+    // Transfers the swapped tokens of 'to' into the BentoBox using a plain ERC20 transfer
+    // Transfers allocated, but unused 'from' tokens within the BentoBox to 'refundTo' (amountFromMax - amountFrom)
+    // Returns the amount of 'from' tokens withdrawn from BentoBox (amountFrom)
+    // (The BentoBox skim function will be used by the caller to get the swapped funds)
+    function swapExact(
+        IERC20 from, IERC20 to, uint256 amountFromMax,
+        uint256 exactAmountTo, address refundTo
+    ) external returns (uint256 amountFrom);
+}
+
+// File: contracts\interfaces\IWETH.sol
+
+// License-Identifier: MIT
+
+interface IWETH {
+    function deposit() external payable;
+    function withdraw(uint256) external;
+}
+
+// File: contracts\LendingPair.sol
+
 // SPDX-License-Identifier: UNLICENSED
 
 // Medium Risk LendingPair
@@ -19,16 +280,6 @@
 
 // solium-disable security/no-low-level-calls
 
-pragma solidity 0.6.12;
-pragma experimental ABIEncoderV2;
-
-import "./libraries/BoringMath.sol";
-import "./interfaces/IOracle.sol";
-import "./libraries/Ownable.sol";
-import "./ERC20.sol";
-import "./interfaces/IMasterContract.sol";
-import "./interfaces/ISwapper.sol";
-import "./interfaces/IWETH.sol";
 
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
