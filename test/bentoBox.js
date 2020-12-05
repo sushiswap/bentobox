@@ -47,7 +47,6 @@ contract('BentoBox', (accounts) => {
 
   it('should allow deposit with Ethereum', async () => {
     await bentoBox.deposit(weth.address, bob, e18(1), { from: bob, value: e18(1) });
-    await bentoBox.skimETH({from: bob});
     assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
     share = await bentoBox.shareOf(weth.address, bob);
     assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
@@ -147,6 +146,13 @@ contract('BentoBox', (accounts) => {
     await bentoBox.methods['withdraw(address,address,uint256)'](a.address, alice, e18(1), { from: alice });
     assert.equal((await a.balanceOf(alice)).toString(), e18(1000).toString(), "alice should have all of their tokens back");
     let share = await bentoBox.shareOf(a.address, alice);
+    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
+  });
+
+  it('should allow to withdraw ETH', async () => {
+    await bentoBox.deposit(weth.address, bob, e18(1), { from: bob, value: e18(1) });
+    await bentoBox.methods['withdraw(address,address,uint256)'](weth.address, bob, e18(1), { from: bob });
+    share = await bentoBox.shareOf(weth.address, bob);
     assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
