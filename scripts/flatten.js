@@ -10,8 +10,6 @@ const mkdirp = require('mkdirp');
 (function() {
     var oldSpawn = child_process.spawn;
     function mySpawn() {
-        console.log('spawn called');
-        console.log(arguments);
         var result = oldSpawn.apply(this, arguments);
         return result;
     }
@@ -43,6 +41,7 @@ async function flatten(folder) {
 }
 
 function flattenFile(filePath) {
+  console.log(filePath);
   mkdirp.sync('flat');
   const pathOut = path.join('flat', path.basename(filePath));
   const fout = fs.createWriteStream(pathOut);

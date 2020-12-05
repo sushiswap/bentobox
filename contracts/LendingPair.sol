@@ -92,6 +92,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     event LogRemoveBorrow(address indexed user, uint256 share, uint256 fraction);
     event LogFeeTo(address indexed newFeeTo);
     event LogDev(address indexed newFeeTo);
+    event LogWithdrawFees();
 
     constructor(IBentoBox bentoBox_) public {
         bentoBox = bentoBox_;
@@ -506,6 +507,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (devFeeShare > 0) {
             bentoBox.withdrawShare(asset, _dev, devFeeShare);
         }
+        emit LogWithdrawFees();
     }
 
     // Admin functions
