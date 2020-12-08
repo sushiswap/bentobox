@@ -18,7 +18,14 @@ contract FlashLoaner is IFlashLoaner{
         token.transfer(address(tx.origin), winnings);
     }
 
-    function executeOperationMultiple(IERC20[] calldata, uint256[] calldata, uint256[] calldata, bytes calldata) external override {
-        return;
+    function executeOperationMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata) external override {
+      address bentoBox = address(msg.sender);
+      for(uint256 i = 0; i < tokens.length; i++){
+        uint256 payback = amounts[i].add(fees[i]);
+        uint256 money = tokens[i].balanceOf(address(this));
+        tokens[i].approve(address(bentoBox), payback);
+        uint256 winnings = money.sub(payback);
+        tokens[i].transfer(address(tx.origin), winnings);
+      }
     }
 }

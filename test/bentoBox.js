@@ -4,6 +4,7 @@ const AssertionError = require('./helpers/assertion-error');
 const BentoBox = artifacts.require("BentoBox");
 const Pair = artifacts.require("LendingPair");
 const FlashLoaner = artifacts.require("FlashLoaner");
+const EvilFlashLoaner = artifacts.require("EvilFlashLoaner");
 const WETH9 = artifacts.require("WETH9");
 const {e18, bn} = require('./helpers/utils');
 const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
@@ -294,6 +295,17 @@ contract('BentoBox', (accounts) => {
     truffleAssert.underflow(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }));
   });
 
+  it('should revert on flashloan if sync is called', async () => {
+    await a.transfer(bentoBox.address, e18(2), { from: alice });
+    await a.approve(bentoBox.address, e18(2), { from: alice });
+    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
+
+    let param = web3.eth.abi.encodeParameter('bool', true);
+    let flashLoaner = await EvilFlashLoaner.new({ from: accounts[0] });
+    await a.transfer(flashLoaner.address, e18(2), { from: alice });
+    truffleAssert.reverts(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }), 'BentoBox: Cannot call sync from flashloan');
+  });
+
   it('should allow flashloan', async () => {
     await a.transfer(bentoBox.address, e18(2), { from: alice });
     await a.approve(bentoBox.address, e18(2), { from: alice });
@@ -305,6 +317,18 @@ contract('BentoBox', (accounts) => {
     await bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki });
     let amount = await bentoBox.toAmount(a.address, e18(1));
     assert.equal(amount.toString(), e18(1).mul(bn(10005)).div(bn(10000)).toString());
+  });
+
+  it('should allow multiple flashloans', async () => {
+    await a.approve(bentoBox.address, e18(2), { from: alice });
+    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
+    await b.approve(bentoBox.address, e18(2), { from: bob });
+    await bentoBox.deposit(b.address, bob, e18(1), { from: bob });
+    let param = web3.eth.abi.encodeParameter('bool', true);
+    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
+    await a.transfer(flashLoaner.address, e18(2), { from: alice });
+    await b.transfer(flashLoaner.address, e18(2), { from: bob });
+    await bentoBox.flashLoanMultiple([a.address, b.address], [e18(1), e18(1)],flashLoaner.address, param, { from: maki });
   });
 
   it('should allow successfull batch call', async () => {
@@ -372,6 +396,15 @@ contract('BentoBox', (accounts) => {
     await bentoBox.setMasterContractApproval(pairMaster.address, false, { from: alice });
     let approved = await bentoBox.masterContractApproved(pairMaster.address, alice);
     assert.equal(approved, false);
+  });
+
+  it('should revert if to is not set', async () => {
+
+    truffleAssert.reverts(bentoBox.deposit(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+    truffleAssert.reverts(bentoBox.withdraw(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+    truffleAssert.reverts(bentoBox.transfer(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+    truffleAssert.reverts(bentoBox.transferShare(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+    truffleAssert.reverts(bentoBox.skimTo(a.address, '0x0000000000000000000000000000000000000000', { from: alice }), 'BentoBox: to not set');
   });
 
 });
