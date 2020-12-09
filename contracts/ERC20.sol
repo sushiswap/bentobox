@@ -8,7 +8,7 @@ pragma solidity 0.6.12;
 contract ERC20Data {
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
-    mapping(address => mapping (address => uint256)) allowance;
+    mapping(address => mapping (address => uint256)) public allowance;
     mapping(address => uint256) public nonces;
 }
 
@@ -17,7 +17,7 @@ contract ERC20 is ERC20Data {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     function transfer(address to, uint256 amount) public returns (bool success) {
-        if (balanceOf[msg.sender] >= amount && amount > 0 && balanceOf[to] + amount > balanceOf[to]) {
+        if (balanceOf[msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
             balanceOf[msg.sender] -= amount;
             balanceOf[to] += amount;
             emit Transfer(msg.sender, to, amount);
