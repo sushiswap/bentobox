@@ -27,6 +27,7 @@ import "./interfaces/IFlashLoaner.sol";
 
 contract BentoBox {
     using BoringMath for uint256;
+    using BoringMath128 for uint128;
 
     event LogDeploy(address indexed masterContract, bytes data, address indexed clone_address);
     event LogFlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 feeAmount);
@@ -38,8 +39,12 @@ contract BentoBox {
     mapping(address => address) public masterContractOf; // Mapping from clone contracts to their masterContract
     mapping(address => mapping(address => bool)) public masterContractApproved; // Mapping from masterContract to user to approval state
     mapping(IERC20 => mapping(address => uint256)) public shareOf; // Balance per token per address/contract
-    mapping(IERC20 => uint256) public totalShare; // Total share per token
-    mapping(IERC20 => uint256) public totalAmount; // Total balance per token
+
+    struct TokenTotals {
+        uint128 share;
+        uint128 amount;
+    }
+    mapping(IERC20 => TokenTotals) public tokenTotal;
     IERC20 public immutable WETH;
 
     constructor(IERC20 WETH_) public {
@@ -67,14 +72,24 @@ contract BentoBox {
     }
 
     // *** View functions *** //
+    function totalAmount(IERC20 token) public view returns(uint256) {
+        return tokenTotal[token].amount;
+    }
+
+    function totalShare(IERC20 token) public view returns(uint256) {
+        return tokenTotal[token].share;
+    }
+
     function toAmount(IERC20 token, uint256 share) public view returns (uint256 amount) {
-        uint256 _totalShare = totalShare[token];
-        amount = _totalShare == 0 ? share : share.mul(totalAmount[token]) / _totalShare;
+        TokenTotals memory total = tokenTotal[token];
+        uint256 _totalShare = total.share;
+        amount = _totalShare == 0 ? share : share.mul(total.amount) / _totalShare;
     }
 
     function toShare(IERC20 token, uint256 amount) public view returns (uint256 share) {
-        uint256 _totalShare = totalShare[token];
-        share = _totalShare == 0 ? amount : amount.mul(_totalShare) / totalAmount[token];
+        TokenTotals memory total = tokenTotal[token];
+        uint256 _totalShare = total.share;
+        share = _totalShare == 0 ? amount : amount.mul(_totalShare) / total.amount;
     }
 
     // *** Public actions *** //
@@ -178,11 +193,13 @@ contract BentoBox {
     function skim(IERC20 token) public returns (uint256 share) { share = skimTo(token, msg.sender); }
     function skimTo(IERC20 token, address to) public returns (uint256 share) {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
-        uint256 amount = token.balanceOf(address(this)).sub(totalAmount[token]);
+        TokenTotals memory total = tokenTotal[token];
+        uint256 amount = token.balanceOf(address(this)).sub(total.amount);
         share = toShare(token, amount);
         shareOf[token][to] = shareOf[token][to].add(share);
-        totalShare[token] = totalShare[token].add(share);
-        totalAmount[token] = totalAmount[token].add(amount);
+        total.share = total.share.add(share.to128());
+        total.amount = total.amount.add(amount.to128());
+        tokenTotal[token] = total;
         emit LogDeposit(token, address(this), to, amount, share);
     }
 
@@ -192,20 +209,8 @@ contract BentoBox {
         share = skimTo(WETH, to);
     }
 
-    bool private entryAllowed = true;
-    modifier checkEntry() {
-        require(entryAllowed, 'BentoBox: Cannot call sync from flashloan');
-        entryAllowed = false;
-        _;
-        entryAllowed = true;
-    }
-
-    function sync(IERC20 token) public checkEntry {
-        totalAmount[token] = token.balanceOf(address(this));
-    }
-
     // Take out a flash loan
-    function flashLoan(IERC20 token, uint256 amount, address user, bytes calldata params) public checkEntry {
+    function flashLoan(IERC20 token, uint256 amount, address user, bytes calldata params) public {
         uint256 feeAmount = amount.mul(5) / 10000;
         uint256 returnAmount = amount.add(feeAmount);
 
@@ -214,12 +219,12 @@ contract BentoBox {
         IFlashLoaner(user).executeOperation(token, amount, feeAmount, params);
         (success, data) = address(token).call(abi.encodeWithSelector(0x23b872dd, user, address(this), returnAmount));
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
-        totalAmount[token] = totalAmount[token].add(feeAmount);
+        tokenTotal[token].amount = tokenTotal[token].amount.add(feeAmount.to128());
 
         emit LogFlashLoan(user, token, amount, feeAmount);
     }
 
-    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public checkEntry {
+    function flashLoanMultiple(IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public {
         uint256[] memory feeAmounts = new uint256[](tokens.length);
         uint256[] memory returnAmounts = new uint256[](tokens.length);
 
@@ -237,7 +242,7 @@ contract BentoBox {
         for (uint256 i = 0; i < tokens.length; i++) {
             (bool success, bytes memory data) = address(tokens[i]).call(abi.encodeWithSelector(0x23b872dd, user, address(this), returnAmounts[i]));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
-            totalAmount[tokens[i]] = totalAmount[tokens[i]].add(feeAmounts[i]);
+            tokenTotal[tokens[i]].amount = tokenTotal[tokens[i]].amount.add(feeAmounts[i].to128());
 
             emit LogFlashLoan(user, tokens[i], amounts[i], feeAmounts[i]);
         }
@@ -260,8 +265,10 @@ contract BentoBox {
     function _deposit(IERC20 token, address from, address to, uint256 amount, uint256 share) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][to] = shareOf[token][to].add(share);
-        totalShare[token] = totalShare[token].add(share);
-        totalAmount[token] = totalAmount[token].add(amount);
+        TokenTotals memory total = tokenTotal[token];
+        total.share = total.share.add(share.to128());
+        total.amount = total.amount.add(amount.to128());
+        tokenTotal[token] = total;
 
         if (address(token) == address(WETH)) {
             IWETH(address(WETH)).deposit{value: amount}();
@@ -275,8 +282,10 @@ contract BentoBox {
     function _withdraw(IERC20 token, address from, address to, uint256 amount, uint256 share) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         shareOf[token][from] = shareOf[token][from].sub(share);
-        totalShare[token] = totalShare[token].sub(share);
-        totalAmount[token] = totalAmount[token].sub(amount);
+        TokenTotals memory total = tokenTotal[token];
+        total.share = total.share.sub(share.to128());
+        total.amount = total.amount.sub(amount.to128());
+        tokenTotal[token] = total;
         if (address(token) == address(WETH)) {
             IWETH(address(WETH)).withdraw(amount);
             (bool success,) = to.call{value: amount}(new bytes(0));

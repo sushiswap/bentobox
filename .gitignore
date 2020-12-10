@@ -6,3 +6,4 @@ package-lock.json
 coverage/
 migrations/coverage/
 coverage.json
+scripts/make_abi.js
