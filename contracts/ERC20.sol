@@ -17,7 +17,7 @@ contract ERC20 is ERC20Data {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     function transfer(address to, uint256 amount) public returns (bool success) {
-        if (balanceOf[msg.sender] >= amount && balanceOf[to] + amount > balanceOf[to]) {
+        if (balanceOf[msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
             balanceOf[msg.sender] -= amount;
             balanceOf[to] += amount;
             emit Transfer(msg.sender, to, amount);

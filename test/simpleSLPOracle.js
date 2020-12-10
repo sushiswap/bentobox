@@ -55,7 +55,11 @@ contract('SimpleSLPOracle', (accounts) => {
     bentoPair = await Pair.at(tx.logs[0].args[2]);
   });
 
-  it('update', async () => {
+  it('should return false on first peek', async () => {
+    assert.equal((await oracle.peek(oracleData))[1].toString(),"0", "without initialization the oracle should have a zero price");
+  });
+
+  it('should update and get prices within period', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
 
     await oracle.get(oracleData);
@@ -64,11 +68,29 @@ contract('SimpleSLPOracle', (accounts) => {
     await timeWarp.advanceTime(31);
     //await oracle.get(oracleData);
     await oracle.get(oracleData);
+    await oracle.get(oracleData);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
     assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
     assert.equal((await oracle.peek(oracleData))[1].toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
   });
+
+  it('should get prices if Period time is over', async () => {
+    const blockTimestamp = (await pair.getReserves())[2];
+
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(30);
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(31);
+    //await oracle.get(oracleData);
+    await oracle.get(oracleData);
+    await timeWarp.advanceTime(121);
+
+    const expectedPrice = encodePrice(token0Amount, token1Amount);
+    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
+    assert.equal((await oracle.peek(oracleData))[1].toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
+  });
+
 
   it('should update prices after swap', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
