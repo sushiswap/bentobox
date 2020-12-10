@@ -60,7 +60,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     uint256 public totalCollateralShare;
 
     function totalAssetShare() public view returns(uint256) {
-        return bentoBox.shareOf(asset, address(this)).add(bentoBox.toShare(asset, totalBorrowAmount).sub(feesPendingShare));
+        return bentoBox.shareOf(asset, address(this)).add(bentoBox.toShare(asset, totalBorrowAmount)).sub(feesPendingShare);
     }
     uint256 public totalBorrowAmount; // Total units of asset borrowed
 
@@ -300,15 +300,17 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function addAssetTo(uint256 amount, address to) public payable {
         // Accrue interest before calculating pool shares in _addAssetShare
         accrue();
-        _addAssetShare(to, bentoBox.deposit{value: msg.value}(asset, msg.sender, amount), totalAssetShare());
+        uint256 _totalAssetShare = totalAssetShare();
+        _addAssetShare(to, bentoBox.deposit{value: msg.value}(asset, msg.sender, amount), _totalAssetShare);
     }
 
     function addAssetFromBento(uint256 share) public payable { addAssetFromBentoTo(share, msg.sender); }
     function addAssetFromBentoTo(uint256 share, address to) public payable {
         // Accrue interest before calculating pool shares in _addAssetShare
         accrue();
+        uint256 _totalAssetShare = totalAssetShare();
         bentoBox.transferShareFrom(asset, msg.sender, address(this), share);
-        _addAssetShare(to, share, totalAssetShare());
+        _addAssetShare(to, share, _totalAssetShare);
     }
 
     // Withdraws a share of collateral of the caller to the specified address
@@ -513,15 +515,15 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         swappers[swapper] = enable;
     }
 
-    function setFeeTo(address newFeeTo) public onlyOwner 
-    { 
-        feeTo = newFeeTo; 
+    function setFeeTo(address newFeeTo) public onlyOwner
+    {
+        feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
     }
 
-    function setDev(address newDev) public 
-    { 
-        require(msg.sender == dev, 'LendingPair: Not dev'); 
+    function setDev(address newDev) public
+    {
+        require(msg.sender == dev, 'LendingPair: Not dev');
         dev = newDev;
         emit LogDev(newDev);
     }
