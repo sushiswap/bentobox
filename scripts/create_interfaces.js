@@ -90,5 +90,5 @@ function createInterface(name) {
     });
 }
 
-createInterface("LendingPair");
+//createInterface("LendingPair");
 createInterface("BentoBox");

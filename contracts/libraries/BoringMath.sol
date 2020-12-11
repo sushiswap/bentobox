@@ -14,5 +14,4 @@ library BoringMath {
 library BoringMath128 {
     function add(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
     function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
-    function mul(uint128 a, uint128 b) internal pure returns (uint128 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
 }
