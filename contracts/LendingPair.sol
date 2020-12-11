@@ -330,16 +330,27 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function addAssetTo(uint256 amount, address to) public payable {
         // Accrue interest before calculating pool amounts in _addAssetAmount
         accrue();
+<<<<<<< HEAD
         _addAssetAmount(to, amount);
         bentoBox.deposit{value: msg.value}(asset, msg.sender, amount);
+=======
+        uint256 _totalAssetShare = totalAssetShare();
+        _addAssetShare(to, bentoBox.deposit{value: msg.value}(asset, msg.sender, amount), _totalAssetShare);
+>>>>>>> 25d4310bf29df305fcf7073f4b58451036215d6c
     }
 
     function addAssetFromBento(uint256 amount) public payable { addAssetFromBentoTo(amount, msg.sender); }
     function addAssetFromBentoTo(uint256 amount, address to) public payable {
         // Accrue interest before calculating pool amounts in _addAssetAmount
         accrue();
+<<<<<<< HEAD
         _addAssetAmount(to, amount);
         bentoBox.transferFrom(asset, msg.sender, address(this), amount);
+=======
+        uint256 _totalAssetShare = totalAssetShare();
+        bentoBox.transferShareFrom(asset, msg.sender, address(this), share);
+        _addAssetShare(to, share, _totalAssetShare);
+>>>>>>> 25d4310bf29df305fcf7073f4b58451036215d6c
     }
 
     // Withdraws a amount of collateral of the caller to the specified address
@@ -548,15 +559,15 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         swappers[swapper] = enable;
     }
 
-    function setFeeTo(address newFeeTo) public onlyOwner 
-    { 
-        feeTo = newFeeTo; 
+    function setFeeTo(address newFeeTo) public onlyOwner
+    {
+        feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
     }
 
-    function setDev(address newDev) public 
-    { 
-        require(msg.sender == dev, 'LendingPair: Not dev'); 
+    function setDev(address newDev) public
+    {
+        require(msg.sender == dev, 'LendingPair: Not dev');
         dev = newDev;
         emit LogDev(newDev);
     }

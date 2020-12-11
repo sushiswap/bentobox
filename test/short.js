@@ -82,7 +82,7 @@ contract('Pair (Shorting)', (accounts) => {
     assert.equal((await pair.balanceOf(bob)).toString(), e18(1000).toString());
     assert.equal((await pair.totalSupply()).toString(), e18(1000).toString());
     assert.equal((await pair.totalAssetShare()).toString(), e18(1000).toString());
-    assert.equal((await pair.totalBorrowShare()).toString(), "0");
+    assert.equal((await pair.totalBorrowAmount()).toString(), "0");
     assert.equal((await pair.totalBorrowFraction()).toString(), "0");
     assert.equal((await bentoBox.shareOf(a.address, pair.address)).toString(), e18(100).toString());
     assert.equal((await bentoBox.shareOf(b.address, pair.address)).toString(), e18(1000).toString());
@@ -114,7 +114,7 @@ contract('Pair (Shorting)', (accounts) => {
     assert.equal((await bentoBox.shareOf(b.address, pair.address)).toString(), e18(750).toString());
     assert.equal((await pair.totalSupply()).toString(), e18(1000).toString());  // actually only 750
     assert.equal((await pair.totalAssetShare()).toString(), e18(1000).toString()); // actually only 750
-    assert.equal((await pair.totalBorrowShare()).toString(), e18(250).toString());
+    assert.equal((await pair.totalBorrowAmount()).toString(), e18(250).toString());
     assert.equal((await pair.totalBorrowFraction()).toString(), e18(250).toString());
     assert.equal((await pair.balanceOf(alice)).toString(), "0");
     assert.equal((await pair.balanceOf(bob)).toString(), e18(1000).toString());  // actually only 500

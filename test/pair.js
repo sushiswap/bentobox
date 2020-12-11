@@ -156,7 +156,7 @@ contract('LendingPair', (accounts) => {
 
     it('should take a deposit of assets from BentoBox', async () => {
       let share = await depositToBento(b, bentoBox, e18(10), bob);
-      await pair.addAssetFromBento(share, { from: bob });
+      await pair.addAssetFromBento(e18(10), { from: bob });
       assertBN(await pair.balanceOf(bob), e18(300));
     });
 
