@@ -8,29 +8,27 @@
 //  ██▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▌.▐▌██▄▪▐█▐█▌.▐▌▪▐█·█▌
 //  ·▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀█▄▀▪·▀▀▀▀  ▀█▄▀▪•▀▀ ▀▀
 
-// This contract stores funds, handles their transfers. Also takes care of flash loans and rebasing tokens.
+// This contract stores funds, handles their transfers.
 
 // Copyright (c) 2020 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
 // WARNING!!! DO NOT USE!!! BEING AUDITED!!!
-// THERE IS A KNOWN MAJOR EXPLOIT IN THIS VERSION, LEAVING IT IN FOR THE AUDITORS TO SPOT :P
 
 // solium-disable security/no-inline-assembly
 // solium-disable security/no-low-level-calls
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "./libraries/BoringMath.sol";
+import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IMasterContract.sol";
-import "./interfaces/IFlashLoaner.sol";
 
 contract BentoBox {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
 
     event LogDeploy(address indexed masterContract, bytes data, address indexed clone_address);
-    event LogFlashLoan(address indexed user, IERC20 indexed token, uint256 amount, uint256 feeAmount);
     event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool indexed approved);
     event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);

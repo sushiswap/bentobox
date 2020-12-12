@@ -5,4 +5,6 @@ interface IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external returns (bool, uint256);
     function peek(bytes calldata data) external view returns (bool, uint256);
+    function symbol(bytes calldata data) external view returns (string memory);
+    function name(bytes calldata data) external view returns (string memory);
 }

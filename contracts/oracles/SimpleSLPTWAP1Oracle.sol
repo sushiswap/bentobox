@@ -82,4 +82,12 @@ contract SimpleSLPTWAP1Oracle is IOracle {
 
         return (true, priceAverage.mul(10**18).decode144());
     }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "SushiSwap TWAP";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "S";
+    }
 }

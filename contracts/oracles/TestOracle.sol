@@ -25,4 +25,12 @@ contract TestOracle is IOracle {
     function peek(bytes calldata) public override view returns (bool, uint256) {
         return (true, rate);
     }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "Test";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "TEST";
+    }
 }

@@ -47,4 +47,12 @@ contract ChainlinkOracle is IOracle {
         (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
         return (true, _get(multiply, divide, decimals));
     }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "Chainlink";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "LINK";
+    }
 }

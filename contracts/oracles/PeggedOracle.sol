@@ -19,4 +19,12 @@ contract PeggedOracle is IOracle {
         uint256 rate = abi.decode(data, (uint256));
         return (rate != 0, rate);
     }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "Pegged";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "PEG";
+    }
 }

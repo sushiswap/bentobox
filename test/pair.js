@@ -63,6 +63,8 @@ class BentoBoxTestEnvironment {
         tx = await bentoBox.deploy(pairMaster.address, initData);
         pair_address = tx.logs[0].args[2];
         pair = await Pair.at(pair_address);
+        console.log(await pair.symbol());
+        console.log(await pair.name());
 
         await pair.updateExchangeRate();
     }

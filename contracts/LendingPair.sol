@@ -15,7 +15,6 @@
 // @burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 
 // WARNING!!! DO NOT USE!!! BEING AUDITED!!!
-// THERE IS A KNOWN MAJOR EXPLOIT IN THIS VERSION, LEAVING IT IN FOR THE AUDITORS TO SPOT :P
 
 // solium-disable security/no-low-level-calls
 
@@ -83,12 +82,24 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     AccrueInfo public accrueInfo;
 
     // ERC20 'variables'
-    function symbol() public pure returns(string memory) {
-        return "bm";
+    function symbol() public view returns(string memory) {
+        (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x95d89b41));
+        string memory assetSymbol = success && data.length > 0 ? abi.decode(data, (string)) : "???";
+
+        (success, data) = address(collateral).staticcall(abi.encodeWithSelector(0x95d89b41));
+        string memory collateralSymbol = success && data.length > 0 ? abi.decode(data, (string)) : "???";
+
+        return string(abi.encodePacked("bm", collateralSymbol, ">", assetSymbol, "-", oracle.symbol(oracleData)));
     }
 
-    function name() public pure returns(string memory) {
-        return "Bento Medium Risk Lending Pool";
+    function name() public view returns(string memory) {
+        (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x06fdde03));
+        string memory assetName = success && data.length > 0 ? abi.decode(data, (string)) : "???";
+
+        (success, data) = address(collateral).staticcall(abi.encodeWithSelector(0x06fdde03));
+        string memory collateralName = success && data.length > 0 ? abi.decode(data, (string)) : "???";
+
+        return string(abi.encodePacked("Bento Med Risk ", collateralName, ">", assetName, "-", oracle.symbol(oracleData)));
     }
 
     function decimals() public view returns (uint8) {
@@ -105,7 +116,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     event LogRemoveAsset(address indexed user, uint256 amount, uint256 fraction);
     event LogRemoveBorrow(address indexed user, uint256 amount, uint256 fraction);
     event LogFeeTo(address indexed newFeeTo);
-    event LogDev(address indexed newFeeTo);
+    event LogDev(address indexed newDev);
     event LogWithdrawFees();
 
     constructor(IBentoBox bentoBox_) public {
