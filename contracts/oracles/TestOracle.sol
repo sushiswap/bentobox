@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.6.12;
 import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
@@ -14,7 +15,9 @@ contract TestOracle is IOracle {
         rate = rate_;
     }
 
-    function getDataParameter() public pure returns (bytes memory) { return abi.encode("0x0"); }
+    function getDataParameter() public pure returns (bytes memory) {
+        return abi.encode("0x0");
+    }
 
     // Get the latest exchange rate
     function get(bytes calldata) public override returns (bool, uint256) {
@@ -22,7 +25,15 @@ contract TestOracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata) public override view returns (bool, uint256) {
+    function peek(bytes calldata) public view override returns (bool, uint256) {
         return (true, rate);
+    }
+
+    function name(bytes calldata) public view override returns (string memory) {
+        return "Test";
+    }
+
+    function symbol(bytes calldata) public view override returns (string memory) {
+        return "TEST";
     }
 }
