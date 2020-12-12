@@ -17,11 +17,8 @@ contract BentoHelper {
         uint256 latestExchangeRate;
         uint256 lastBlockAccrued;
         uint256 interestRate;
-        uint256 totalCollateralShare;
         uint256 totalCollateralAmount;
-        uint256 totalAssetShare;
         uint256 totalAssetAmount;
-        uint256 totalBorrowShare;
         uint256 totalBorrowAmount;
 
         uint256 totalAssetFraction;
@@ -29,9 +26,8 @@ contract BentoHelper {
 
         uint256 interestPerBlock;
 
-        uint256 feesPendingShare;
+        uint256 feesPendingAmount;
 
-        uint256 userCollateralShare;
         uint256 userCollateralAmount;
         uint256 userAssetFraction;
         uint256 userAssetAmount;
@@ -60,29 +56,18 @@ contract BentoHelper {
             info[i].tokenCollateral = collateral;
 
             (, info[i].latestExchangeRate) = pair.peekExchangeRate();
-            info[i].lastBlockAccrued = pair.lastBlockAccrued();
-            info[i].totalCollateralShare = pair.totalCollateralShare();
-            info[i].totalCollateralAmount = bentoBox.toAmount(collateral, info[i].totalCollateralShare);
-            info[i].totalAssetShare = pair.totalAssetShare();
-            info[i].totalAssetAmount = bentoBox.toAmount(asset, info[i].totalAssetShare);
-            info[i].totalBorrowShare = pair.totalBorrowShare();
-            info[i].totalBorrowAmount = bentoBox.toAmount(asset, info[i].totalBorrowShare);
+            (info[i].interestPerBlock, info[i].lastBlockAccrued, info[i].feesPendingAmount) = pair.accrueInfo();
+            info[i].totalCollateralAmount = pair.totalCollateralAmount();
+            (info[i].totalAssetAmount, info[i].totalAssetFraction ) = pair.totalAsset();
+            (info[i].totalBorrowAmount, info[i].totalBorrowFraction) = pair.totalBorrow();
 
-            info[i].totalAssetFraction = pair.totalSupply();
-            info[i].totalBorrowFraction = pair.totalBorrowFraction();
-
-            info[i].interestPerBlock = pair.interestPerBlock();
-
-            info[i].feesPendingShare = pair.feesPendingShare();
-
-            info[i].userCollateralShare = pair.userCollateralShare(user);
-            info[i].userCollateralAmount = bentoBox.toAmount(collateral, info[i].userCollateralShare);
+            info[i].userCollateralAmount = pair.userCollateralAmount(user);
             info[i].userAssetFraction = pair.balanceOf(user);
             info[i].userAssetAmount = info[i].totalAssetFraction == 0 ? 0 :
-                bentoBox.toAmount(asset, info[i].userAssetFraction * info[i].totalAssetShare / info[i].totalAssetFraction);
+                 info[i].userAssetFraction * info[i].totalAssetAmount / info[i].totalAssetFraction;
             info[i].userBorrowFraction = pair.userBorrowFraction(user);
             info[i].userBorrowAmount = info[i].totalBorrowFraction == 0 ? 0 :
-                bentoBox.toAmount(asset, info[i].userBorrowFraction * info[i].totalBorrowShare / info[i].totalBorrowFraction);
+                info[i].userBorrowFraction * info[i].totalBorrowAmount / info[i].totalBorrowFraction;
 
             info[i].userAssetBalance = info[i].tokenAsset.balanceOf(user);
             info[i].userCollateralBalance = info[i].tokenCollateral.balanceOf(user);

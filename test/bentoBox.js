@@ -41,18 +41,18 @@ contract('BentoBox', (accounts) => {
   it('should allow deposit', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(1).toString());
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(1).toString());
   });
 
   it('should allow deposit with Ethereum', async () => {
     await bentoBox.deposit(weth.address, bob, e18(1), { from: bob, value: e18(1) });
     assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
-    share = await bentoBox.shareOf(weth.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
+    amount = await bentoBox.balanceOf(weth.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "bob should have weth");
   });
-
-/*  it('should allow depositWithPermit', async () => {
+/*
+ it('should allow depositWithPermit', async () => {
     await a.transfer(daveAddress, e18(1), {from: alice});
     let nonce = await a.nonces(daveAddress);
     nonce = nonce.toNumber();
@@ -69,50 +69,45 @@ contract('BentoBox', (accounts) => {
         Buffer.from(davePrivateKey.replace('0x', ''), 'hex')
     );
     await bentoBox.depositWithPermit(a.address, daveAddress, e18(1), deadline, v, r, s, { from: daveAddress });
-    let share = await bentoBox.shareOf(a.address, daveAddress);
-    assert.equal(share.toString(), e18(1).toString());
-  });*/
-
+    let amount = await bentoBox.balanceOf(a.address, daveAddress);
+    assert.equal(amount.toString(), e18(1).toString());
+  });
+  */
+  
   it('should not allow deposit without approve', async () => {
     truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "TransferFrom failed at ERC20");
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString());
-  });
-
-  it('should allow depositShare', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.depositShare(a.address, alice, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(1).toString());
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString());
   });
 
   it('should give back correct token amount', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    let amount = await bentoBox.toAmount(a.address, e18(1));
+    let amount = await bentoBox.balanceOf(a.address, alice);
     assert.equal(amount.toString(), e18(1).toString());
   });
 
-  it('should calculate correct share for second deposit', async () => {
+  it('should calculate correct amount for second deposit', async () => {
     await a.approve(bentoBox.address, e18(3), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(2), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(3).toString(), "incorrect share calculation");
-    let totalShare = await bentoBox.totalShare(a.address);
-    assert.equal(totalShare.toString(), e18(3).toString(), "incorrect total share");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(3).toString(), "incorrect amount calculation");
+    let totalSupply = await bentoBox.totalSupply(a.address);
+    assert.equal(totalSupply.toString(), e18(3).toString(), "incorrect total amount");
   });
 
   it('should allow to deposit for other user', async () => {
     await a.approve(bentoBox.address, e18(3), { from: alice });
     await bentoBox.methods['depositTo(address,address,address,uint256)'](a.address, alice, bob, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "incorrect share calculation");
-    let totalShare = await bentoBox.totalShare(a.address);
-    assert.equal(totalShare.toString(), e18(1).toString(), "incorrect total share");
+    let amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "incorrect amount calculation");
+    let totalSupply = await bentoBox.totalSupply(a.address);
+    assert.equal(totalSupply.toString(), e18(1).toString(), "incorrect total amount");
   });
+  /*
 
-/*  it('should allow to depositWithPermit for other user', async () => {
+  it('should allow to depositWithPermit for other user', async () => {
     await a.transfer(daveAddress, e18(1), {from: alice});
     let nonce = await a.nonces(daveAddress);
     nonce = nonce.toNumber();
@@ -129,46 +124,30 @@ contract('BentoBox', (accounts) => {
         Buffer.from(davePrivateKey.replace('0x', ''), 'hex')
     );
     await bentoBox.depositWithPermitTo(a.address, daveAddress, alice, e18(1), deadline, v, r, s, { from: daveAddress });
-    let amount = await bentoBox.toAmount(a.address, await bentoBox.shareOf(a.address, alice));
+    let amount = await bentoBox.balanceOf(a.address, alice);
     assert.equal(amount.toString(), e18(1).toString());
-  });*/
-
-  it('should allow depositShare to other User', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.methods['depositShareTo(address,address,address,uint256)'](a.address, alice, bob, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "incorrect share calculation");
   });
-
+  */
   it('should allow to withdraw', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     await bentoBox.methods['withdraw(address,address,uint256)'](a.address, alice, e18(1), { from: alice });
     assert.equal((await a.balanceOf(alice)).toString(), e18(1000).toString(), "alice should have all of their tokens back");
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
   it('should allow to withdraw ETH', async () => {
     await bentoBox.deposit(weth.address, bob, e18(1), { from: bob, value: e18(1) });
     await bentoBox.methods['withdraw(address,address,uint256)'](weth.address, bob, e18(1), { from: bob });
-    share = await bentoBox.shareOf(weth.address, bob);
-    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
+    amount = await bentoBox.balanceOf(weth.address, bob);
+    assert.equal(amount.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
-  it('should not allow to withdraw larger share than available', async () => {
+  it('should not allow to withdraw larger amount than available', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     truffleAssert.underflow(bentoBox.methods['withdraw(address,address,uint256)'](a.address, alice, e18(5), { from: alice }));
-  });
-
-  it('should allow to withdrawShare', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    await bentoBox.methods['withdrawShare(address,address,uint256)'](a.address, alice, e18(1), { from: alice });
-    assert.equal((await a.balanceOf(alice)).toString(), e18(1000).toString(), "alice should have all of their tokens back");
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
   it('should allow to withdraw to other user', async () => {
@@ -177,18 +156,8 @@ contract('BentoBox', (accounts) => {
     await bentoBox.methods['withdrawFrom(address,address,address,uint256)'](a.address, alice, bob, e18(1), { from: alice });
     assert.equal((await a.balanceOf(alice)).toString(), e18(999).toString(), "alice should not have received the token back");
     assert.equal((await a.balanceOf(bob)).toString(), e18(1).toString(), "bob should have received their tokens");
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
-  });
-
-  it('should allow to withdrawShare to other user', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    await bentoBox.methods['withdrawShareFrom(address,address,address,uint256)'](a.address, alice, bob, e18(1), { from: alice });
-    assert.equal((await a.balanceOf(alice)).toString(), e18(999).toString(), "alice should not have received the token back");
-    assert.equal((await a.balanceOf(bob)).toString(), e18(1).toString(), "bob should have received their tokens");
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be withdrawn");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString(), "token should be withdrawn");
   });
 
   it('should not allow transfer from bob', async () => {
@@ -196,115 +165,60 @@ contract('BentoBox', (accounts) => {
     truffleAssert.underflow(bentoBox.transfer(a.address, alice, e18(1), { from: bob }));
   });
 
-  it('should not allow transferShare from bob', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: bob });
-    truffleAssert.underflow(bentoBox.transferShare(a.address, alice, e18(1), { from: bob }));
-  });
-
   it('should allow transfer to bob by alice', async () => {
     await a.approve(bentoBox.address, e18(1), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
     await bentoBox.transferFrom(a.address, alice, bob, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
-  });
-
-  it('should allow transferShareFrom to bob by alice', async () => {
-    await a.approve(bentoBox.address, e18(1), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    await bentoBox.transferShareFrom(a.address, alice, bob, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString(), "token should be transferred");
+    amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "token should be transferred");
   });
 
   it('should allow transfer to bob and maki by alice', async () => {
     await a.approve(bentoBox.address, e18(2), { from: alice });
     await bentoBox.deposit(a.address, alice, e18(2), { from: alice });
     await bentoBox.transferMultipleFrom(a.address, alice, [bob, maki], [e18(1),e18(1)], { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, maki);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
-  });
-
-  it('should allow transferShareFrom to bob and maki by alice', async () => {
-    await a.approve(bentoBox.address, e18(2), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(2), { from: alice });
-    await bentoBox.transferMultipleShareFrom(a.address, alice, [bob, maki], [e18(1),e18(1)], { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
-    share = await bentoBox.shareOf(a.address, maki);
-    assert.equal(share.toString(), e18(1).toString(), "token should be transferred");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString(), "token should be transferred");
+    amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "token should be transferred");
+    amount = await bentoBox.balanceOf(a.address, maki);
+    assert.equal(amount.toString(), e18(1).toString(), "token should be transferred");
   });
 
   it('should allow to skim tokens', async () => {
     await a.transfer(bentoBox.address, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(0).toString(), "bob should have no tokens");
+    let amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(0).toString(), "bob should have no tokens");
     await bentoBox.methods['skim(address)'](a.address, { from: bob });
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "bob should have tokens");
+    amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "bob should have tokens");
   });
 
   it('should allow to skim tokens to other address', async () => {
     await a.transfer(bentoBox.address, e18(1), { from: alice });
-    let share = await bentoBox.shareOf(a.address, maki);
-    assert.equal(share.toString(), e18(0).toString(), "maki should have no tokens");
+    let amount = await bentoBox.balanceOf(a.address, maki);
+    assert.equal(amount.toString(), e18(0).toString(), "maki should have no tokens");
     await bentoBox.methods['skimTo(address,address)'](a.address, maki, { from: bob });
-    share = await bentoBox.shareOf(a.address, maki);
-    assert.equal(share.toString(), e18(1).toString(), "maki should have tokens");
+    amount = await bentoBox.balanceOf(a.address, maki);
+    assert.equal(amount.toString(), e18(1).toString(), "maki should have tokens");
   });
 
   it('should allow to skim ether', async () => {
     await bentoBox.batch([], true, {from: alice, value: e18(1)})
     await bentoBox.skimETH({from: alice});
     assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
-    share = await bentoBox.shareOf(weth.address, alice);
-    assert.equal(share.toString(), e18(1).toString(), "alice should have weth");
+    amount = await bentoBox.balanceOf(weth.address, alice);
+    assert.equal(amount.toString(), e18(1).toString(), "alice should have weth");
   });
 
   it('should allow to skim ether to other address', async () => {
     await bentoBox.batch([], true, {from: alice, value: e18(1)})
     await bentoBox.skimETHTo(bob, {from: alice});
     assert.equal((await weth.balanceOf(bentoBox.address)).toString(), e18(1).toString(), "BentoBox should hold WETH");
-    share = await bentoBox.shareOf(weth.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "bob should have weth");
-  });
-
-  it('should revert on flashloan if not enough funds are available', async () => {
-    let param = web3.eth.abi.encodeParameter('bool', true);
-    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
-    truffleAssert.reverts(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }), "BentoBox: Transfer failed at ERC20");
-  });
-
-  it('should revert on flashloan if fee can not be paid', async () => {
-    await a.transfer(bentoBox.address, e18(2), { from: alice });
-    await a.approve(bentoBox.address, e18(2), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-    let param = web3.eth.abi.encodeParameter('bool', true);
-    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
-    truffleAssert.underflow(bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki }));
-  });
-
-  it('should allow flashloan', async () => {
-    await a.transfer(bentoBox.address, e18(2), { from: alice });
-    await a.approve(bentoBox.address, e18(2), { from: alice });
-    await bentoBox.deposit(a.address, alice, e18(1), { from: alice });
-
-    let param = web3.eth.abi.encodeParameter('bool', true);
-    let flashLoaner = await FlashLoaner.new({ from: accounts[0] });
-    await a.transfer(flashLoaner.address, e18(2), { from: alice });
-    await bentoBox.flashLoan(a.address, e18(1),flashLoaner.address, param, { from: maki });
-    let amount = await bentoBox.toAmount(a.address, e18(1));
-    assert.equal(amount.toString(), e18(1).mul(bn(10005)).div(bn(10000)).toString());
+    amount = await bentoBox.balanceOf(weth.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "bob should have weth");
   });
 
   it('should allow successfull batch call', async () => {
@@ -314,8 +228,8 @@ contract('BentoBox', (accounts) => {
     let transferFrom = BentoBox._json.abi.find(element => element.name == "transferFrom");
     transferFrom = web3.eth.abi.encodeFunctionCall(transferFrom, [a.address, alice, bob, e18(1).toString()]);
     await bentoBox.batch([deposit, transferFrom], true, { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "bob should have tokens");
+    let amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "bob should have tokens");
   });
 
   it('should allow successfull batch call if parameter is false', async () => {
@@ -325,8 +239,8 @@ contract('BentoBox', (accounts) => {
     let transferFrom = BentoBox._json.abi.find(element => element.name == "transferFrom");
     transferFrom = web3.eth.abi.encodeFunctionCall(transferFrom, [a.address, alice, bob, e18(1).toString()]);
     await bentoBox.batch([deposit, transferFrom], false, { from: alice });
-    let share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(1).toString(), "bob should have tokens");
+    let amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(1).toString(), "bob should have tokens");
   });
 
   it('should not revert on batch if parameter is false', async () => {
@@ -336,10 +250,10 @@ contract('BentoBox', (accounts) => {
     let transferFrom = BentoBox._json.abi.find(element => element.name == "transferFrom");
     transferFrom = web3.eth.abi.encodeFunctionCall(transferFrom, [a.address, alice, bob, e18(2).toString()]);
     await bentoBox.batch([deposit, transferFrom], false, { from: alice });
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(1).toString(), "alice should have tokens");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(0).toString(), "bob should not have tokens");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(1).toString(), "alice should have tokens");
+    amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(0).toString(), "bob should not have tokens");
   });
 
   it('should revert on batch if parameter is true', async () => {
@@ -349,10 +263,10 @@ contract('BentoBox', (accounts) => {
     let transferFrom = BentoBox._json.abi.find(element => element.name == "transferFrom");
     transferFrom = web3.eth.abi.encodeFunctionCall(transferFrom, [a.address, alice, bob, e18(2).toString()]);
     truffleAssert.reverts(bentoBox.batch([deposit, transferFrom], true, { from: alice }), 'Transaction failed');
-    let share = await bentoBox.shareOf(a.address, alice);
-    assert.equal(share.toString(), e18(0).toString(), "alice should not have tokens");
-    share = await bentoBox.shareOf(a.address, bob);
-    assert.equal(share.toString(), e18(0).toString(), "bob should not have tokens");
+    let amount = await bentoBox.balanceOf(a.address, alice);
+    assert.equal(amount.toString(), e18(0).toString(), "alice should not have tokens");
+    amount = await bentoBox.balanceOf(a.address, bob);
+    assert.equal(amount.toString(), e18(0).toString(), "bob should not have tokens");
   });
 
   it("masterContract should not be approved in base case", async () => {

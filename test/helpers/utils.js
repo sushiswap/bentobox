@@ -9,7 +9,6 @@ assertBN = (a,b, errorMessage) => {
 depositToBento = async (token, bentoBox, amount, fromAddress) => {
   await token.approve(bentoBox.address, amount, { from: fromAddress });
   await bentoBox.deposit(token.address, fromAddress, amount, { from: fromAddress });
-  return (await bentoBox.toShare(token.address, amount));
 }
 
 e18 = (amount) => {
