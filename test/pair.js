@@ -63,8 +63,6 @@ class BentoBoxTestEnvironment {
         tx = await bentoBox.deploy(pairMaster.address, initData);
         pair_address = tx.logs[0].args[2];
         pair = await Pair.at(pair_address);
-        console.log(await pair.symbol());
-        console.log(await pair.name());
 
         await pair.updateExchangeRate();
     }
@@ -128,12 +126,18 @@ contract('LendingPair', (accounts) => {
 
         await pair.updateExchangeRate();
     });
+
+    it('should autogen a nice name and symbol', async () => {
+        assert.equal(await pair.symbol(), "bmA>B-TEST");
+        assert.equal(await pair.name(), "Bento Med Risk Token A>Token B-TEST");
+    });
+
     it('should not allow to init initialized pair', async () => {
-      await truffleAssert.reverts(pair.init(initData),  'LendingPair: already initialized');
+        await truffleAssert.reverts(pair.init(initData),  'LendingPair: already initialized');
     });
 
     it('should not allow nonDev to setDev', async () => {
-      await truffleAssert.reverts(pair.setDev(bob, {from: bob}), 'LendingPair: Not dev');
+        await truffleAssert.reverts(pair.setDev(bob, {from: bob}), 'LendingPair: Not dev');
     })
 
     it('should not allow any remove without assets', async () => {
@@ -146,20 +150,20 @@ contract('LendingPair', (accounts) => {
     });
 
     it('should revert if MasterContract is not approved', async () => {
-      await b.approve(bentoBox.address, e18(300), { from: charlie });
-      await truffleAssert.reverts(pair.addAsset(e18(290), { from: charlie }), 'BentoBox: Transfer not approved');
+        await b.approve(bentoBox.address, e18(300), { from: charlie });
+        await truffleAssert.reverts(pair.addAsset(e18(290), { from: charlie }), 'BentoBox: Transfer not approved');
     });
 
     it('should take a deposit of assets', async () => {
-      await b.approve(bentoBox.address, e18(300), { from: bob });
-      await pair.addAsset(e18(290), { from: bob });
-      assertBN(await pair.balanceOf(bob), e18(290));
+        await b.approve(bentoBox.address, e18(300), { from: bob });
+        await pair.addAsset(e18(290), { from: bob });
+        assertBN(await pair.balanceOf(bob), e18(290));
     });
 
     it('should take a deposit of assets from BentoBox', async () => {
-      await depositToBento(b, bentoBox, e18(10), bob);
-      await pair.addAssetFromBento(e18(10), { from: bob });
-      assertBN(await pair.balanceOf(bob), e18(300));
+        await depositToBento(b, bentoBox, e18(10), bob);
+        await pair.addAssetFromBento(e18(10), { from: bob });
+        assertBN(await pair.balanceOf(bob), e18(300));
     });
 
     it('should give back correct DOMAIN_SEPARATOR', async () => {
@@ -283,9 +287,9 @@ contract('LendingPair', (accounts) => {
     });
 
     it('should allow open liquidate from Bento', async () => {
-      await b.approve(bentoBox.address, e18(25), { from: bob });
-      await bentoBox.deposit(b.address, bob, e18(20), { from: bob });
-      await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
+        await b.approve(bentoBox.address, e18(25), { from: bob });
+        await bentoBox.deposit(b.address, bob, e18(20), { from: bob });
+        await pair.liquidate([alice], [e18(5)], bob, "0x0000000000000000000000000000000000000001", true, { from: bob });
     });
 
     it('should allow repay', async () => {
@@ -320,7 +324,6 @@ contract('LendingPair', (accounts) => {
         await pair.accrue({ from: alice });
 
         // check results
-
         let rate2 = (await pair.accrueInfo()).interestPerBlock;
         assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");
 
@@ -339,6 +342,5 @@ contract('LendingPair', (accounts) => {
         await pair.accrue({ from: alice });
         rate2 = (await pair.accrueInfo()).interestPerBlock;
         assert(rate2.gt(rate1), "rate has not adjusted up with high utilization");
-
     });
 });
