@@ -73,7 +73,7 @@ contract('BentoBox', (accounts) => {
     assert.equal(amount.toString(), e18(1).toString());
   });
   */
-  
+
   it('should not allow deposit without approve', async () => {
     truffleAssert.reverts(bentoBox.deposit(a.address, alice, e18(1), { from: alice }), "TransferFrom failed at ERC20");
     let amount = await bentoBox.balanceOf(a.address, alice);
@@ -286,6 +286,13 @@ contract('BentoBox', (accounts) => {
     await bentoBox.setMasterContractApproval(pairMaster.address, false, { from: alice });
     let approved = await bentoBox.masterContractApproved(pairMaster.address, alice);
     assert.equal(approved, false);
+  });
+
+  it('should revert if to is not set', async () => {
+   truffleAssert.reverts(bentoBox.deposit(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+   truffleAssert.reverts(bentoBox.withdraw(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+   truffleAssert.reverts(bentoBox.transfer(a.address, '0x0000000000000000000000000000000000000000', e18(1), { from: alice }), 'BentoBox: to not set');
+   truffleAssert.reverts(bentoBox.skimTo(a.address, '0x0000000000000000000000000000000000000000', { from: alice }), 'BentoBox: to not set');
   });
 
 });
