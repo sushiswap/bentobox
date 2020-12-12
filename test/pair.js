@@ -1,7 +1,7 @@
 const truffleAssert = require('./helpers/truffle-assertions');
 const timeWarp = require("./helpers/timeWarp");
 const permit = require("./helpers/permit");
-const {e18, assertBN, depositToBento, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
+const {bn, e18, assertBN, depositToBento, encodePrice, getInitData, getDataParameter, sansBorrowFee, signERC2612Permit} = require("./helpers/utils");
 const BentoBox = artifacts.require("BentoBox");
 const ReturnFalseERC20 = artifacts.require("ReturnFalseERC20");
 const RevertingERC20 = artifacts.require("RevertingERC20");
@@ -157,7 +157,7 @@ contract('LendingPair', (accounts) => {
     });
 
     it('should take a deposit of assets from BentoBox', async () => {
-      let share = await depositToBento(b, bentoBox, e18(10), bob);
+      await depositToBento(b, bentoBox, e18(10), bob);
       await pair.addAssetFromBento(e18(10), { from: bob });
       assertBN(await pair.balanceOf(bob), e18(300));
     });
@@ -235,8 +235,8 @@ contract('LendingPair', (accounts) => {
     });
 
     it('should have correct balances after supply of collateral', async () => {
-        assert.equal((await pair.totalCollateralShare()).toString(), e18(100).toString());
-        assert.equal((await pair.userCollateralShare(alice)).toString(), e18(100).toString());
+        assert.equal((await pair.totalCollateralAmount()).toString(), e18(100).toString());
+        assert.equal((await pair.userCollateralAmount(alice)).toString(), e18(100).toString());
     })
 
     it('should allow borrowing with collateral up to 75%', async () => {
@@ -307,20 +307,21 @@ contract('LendingPair', (accounts) => {
     });
 
     it('should allow full withdrawal of collateral', async () => {
-        let shareALeft = await pair.userCollateralShare(alice);
-        await pair.removeCollateral(shareALeft, alice, { from: alice });
+        let collateralLeft = await pair.userCollateralAmount(alice);
+        await pair.removeCollateral(collateralLeft, alice, { from: alice });
     });
 
     it('should update the interest rate according to utilization', async () => {
         // run for a while with 0 utilization
-        let rate1 = await pair.interestPerBlock();
+        let rate1 = (await pair.accrueInfo()).interestPerBlock;
         for (let i = 0; i < 20; i++) {
             await timeWarp.advanceBlock()
         }
         await pair.accrue({ from: alice });
 
         // check results
-        let rate2 = await pair.interestPerBlock();
+
+        let rate2 = (await pair.accrueInfo()).interestPerBlock;
         assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");
 
         // then increase utilization to 90%
@@ -329,14 +330,15 @@ contract('LendingPair', (accounts) => {
         await pair.borrow(sansBorrowFee(e18(270)), alice, { from: alice });
 
         // and run a while again
-        rate1 = await pair.interestPerBlock();
+        rate1 =(await pair.accrueInfo()).interestPerBlock;
         for (let i = 0; i < 20; i++) {
             await timeWarp.advanceBlock()
         }
 
         // check results
         await pair.accrue({ from: alice });
-        rate2 = await pair.interestPerBlock();
+        rate2 = (await pair.accrueInfo()).interestPerBlock;
         assert(rate2.gt(rate1), "rate has not adjusted up with high utilization");
+
     });
 });
