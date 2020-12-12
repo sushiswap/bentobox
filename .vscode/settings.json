@@ -1,5 +1,4 @@
 {
     "solidity.compileUsingRemoteVersion": "v0.6.12+commit.27d51765",
-    "printcode.fontSize": 8,
-    "printcode.tabSize": 4
+    "mochaExplorer.files": "test/**/*.{j,t}s",
 }

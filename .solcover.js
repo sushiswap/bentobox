@@ -2,7 +2,7 @@ module.exports = {
   norpc: true,
   testCommand: "npm test",
   compileCommand: "npm run compile",
-  skipFiles: ["mocks"],
+  skipFiles: ["external/", "libraries/"],
   providerOptions: {
     default_balance_ether: "10000000000000000000000000",
   },
@@ -10,4 +10,4 @@ module.exports = {
     fgrep: "[skip-on-coverage]",
     invert: true,
   },
-};
+}

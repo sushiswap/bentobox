@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.6.12;
 
 // Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
@@ -12,7 +13,7 @@ contract OwnableData {
 contract Ownable is OwnableData {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    constructor () internal {
+    constructor() internal {
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);
     }

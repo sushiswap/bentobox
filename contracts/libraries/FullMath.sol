@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: CC-BY-4.0
+// SPDX-License-Identifier: UNLICENSED
+
 // solium-disable security/no-assign-params
 pragma solidity 0.6.12;
 
@@ -42,7 +43,7 @@ library FullMath {
         uint256 mm = mulmod(x, y, d);
         if (mm > l) h -= 1;
         l -= mm;
-        require(h < d, 'FullMath::mulDiv: overflow');
+        require(h < d, "FullMath::mulDiv: overflow");
         return fullDiv(l, h, d);
     }
 }
