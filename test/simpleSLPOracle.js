@@ -65,7 +65,7 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
     await timeWarp.advanceTime(30);
     await oracle.get(oracleData);
-    await timeWarp.advanceTime(31);
+    await timeWarp.advanceTime(271);
     //await oracle.get(oracleData);
     await oracle.get(oracleData);
     await oracle.get(oracleData);
@@ -81,10 +81,10 @@ contract('SimpleSLPOracle', (accounts) => {
     await oracle.get(oracleData);
     await timeWarp.advanceTime(30);
     await oracle.get(oracleData);
-    await timeWarp.advanceTime(31);
+    await timeWarp.advanceTime(271);
     //await oracle.get(oracleData);
     await oracle.get(oracleData);
-    await timeWarp.advanceTime(121);
+    await timeWarp.advanceTime(421);
 
     const expectedPrice = encodePrice(token0Amount, token1Amount);
     assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
@@ -95,13 +95,13 @@ contract('SimpleSLPOracle', (accounts) => {
   it('should update prices after swap', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
     await oracle.get(oracleData);
-    await timeWarp.advanceTime(61);
+    await timeWarp.advanceTime(301);
     await oracle.get(oracleData);
     let price0 = (await oracle.peek(oracleData))[1];
     await collateral.transfer(pair.address, e18(5));
-    await timeWarp.advanceTime(30);
+    await timeWarp.advanceTime(150);
     await pair.sync();
-    await timeWarp.advanceTime(30);
+    await timeWarp.advanceTime(150);
     await oracle.get(oracleData);
     let price1 = (await oracle.peek(oracleData))[1];
 

@@ -8,6 +8,15 @@ library BoringMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
     function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
     function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
+    function to128(uint256 a) internal pure returns (uint128 c) {
+        require(a <= uint128(-1), "BoringMath: uint128 Overflow");
+        c = uint128(a);
+    }
+}
+
+library BoringMath128 {
+    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
+    function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
 }
 
 // File: contracts\interfaces\IOracle.sol
@@ -18,6 +27,8 @@ interface IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external returns (bool, uint256);
     function peek(bytes calldata data) external view returns (bool, uint256);
+    function symbol(bytes calldata data) external view returns (string memory);
+    function name(bytes calldata data) external view returns (string memory);
 }
 
 // File: contracts\oracles\CompoundOracle.sol
@@ -60,7 +71,9 @@ contract CompoundOracle is IOracle {
         return info.price;
     }
 
-    function getDataParameter(string memory collateralSymbol, string memory assetSymbol, uint256 division) public pure returns (bytes memory) { return abi.encode(collateralSymbol, assetSymbol, division); }
+    function getDataParameter(string memory collateralSymbol, string memory assetSymbol, uint256 division) public pure returns (bytes memory) {
+        return abi.encode(collateralSymbol, assetSymbol, division);
+    }
 
     // Get the latest exchange rate
     function get(bytes calldata data) public override returns (bool, uint256) {
@@ -72,5 +85,13 @@ contract CompoundOracle is IOracle {
     function peek(bytes calldata data) public override view returns(bool, uint256) {
         (string memory collateralSymbol, string memory assetSymbol, uint256 division) = abi.decode(data, (string, string, uint256));
         return (true, uint256(1e36).mul(_peekPrice(assetSymbol)) / _peekPrice(collateralSymbol) / division);
+    }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "Compound";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "COMP";
     }
 }

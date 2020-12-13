@@ -79,7 +79,7 @@ contract('CompositeOracle', (accounts) => {
   it('update', async () => {
     // update both pairs
     await compositeOracle.get(compositeOracleData);
-    await timeWarp.advanceTime(61);
+    await timeWarp.advanceTime(301);
     await compositeOracle.get(compositeOracleData);
 
     // check the composite oracle
@@ -93,7 +93,7 @@ contract('CompositeOracle', (accounts) => {
   it('should update prices after swap', async () => {
     // update exchange rate
     await compositeOracle.get(compositeOracleData);
-    await timeWarp.advanceTime(61);
+    await timeWarp.advanceTime(301);
     await compositeOracle.get(compositeOracleData);
 
     // check the composite oracle
@@ -104,10 +104,10 @@ contract('CompositeOracle', (accounts) => {
     assert.equal(price0.divRound(rounding).toString(), oldPrice.toString());
 
     // half the sushi price
-    await timeWarp.advanceTime(30);
+    await timeWarp.advanceTime(150);
     await sushiToken.transfer(pairSushiEth.address, e18(400));
     await pairSushiEth.sync();
-    await timeWarp.advanceTime(30);
+    await timeWarp.advanceTime(150);
     // read exchange rate again half way
     await compositeOracle.get(compositeOracleData);
     let price1 = (await compositeOracle.peek(compositeOracleData))[1];
@@ -118,7 +118,7 @@ contract('CompositeOracle', (accounts) => {
     assert.equal(price1.divRound(e9(100000000)).toString(), '12', "prices should be exactly half way between price points");
 
     // read exchange rate with final exchange rate
-    await timeWarp.advanceTime(61);
+    await timeWarp.advanceTime(301);
     await compositeOracle.get(compositeOracleData);
     let price2 = (await compositeOracle.peek(compositeOracleData))[1];
     // oracle returns "the amount of callateral unit to buy 10^18 of asset units"

@@ -15,7 +15,7 @@ import "../libraries/FixedPoint.sol";
 contract SimpleSLPTWAP1Oracle is IOracle {
     using FixedPoint for *;
     using BoringMath for uint256;
-    uint256 public constant PERIOD = 1 minutes;
+    uint256 public constant PERIOD = 5 minutes;
 
     struct PairInfo {
         uint256 priceCumulativeLast;

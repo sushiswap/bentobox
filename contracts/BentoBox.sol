@@ -148,11 +148,15 @@ contract BentoBox {
     function _deposit(IERC20 token, address from, address to, uint256 amount) private {
         require(to != address(0), 'BentoBox: to not set'); // To avoid a bad UI from burning funds
         balanceOf[token][to] = balanceOf[token][to].add(amount);
-        totalSupply[token] = totalSupply[token].add(amount);
+        uint256 supply = totalSupply[token];
+        totalSupply[token] = supply.add(amount);
 
         if (address(token) == address(WETH)) {
             IWETH(address(WETH)).deposit{value: amount}();
         } else {
+            if (supply == 0) { // During the first deposit, we check that this token is 'real'
+                require(token.totalSupply() > 0, 'BentoBox: No tokens');
+            }
             (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
             require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed at ERC20");
         }

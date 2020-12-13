@@ -8,6 +8,15 @@ library BoringMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
     function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
     function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
+    function to128(uint256 a) internal pure returns (uint128 c) {
+        require(a <= uint128(-1), "BoringMath: uint128 Overflow");
+        c = uint128(a);
+    }
+}
+
+library BoringMath128 {
+    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
+    function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
 }
 
 // File: contracts\interfaces\IOracle.sol
@@ -18,6 +27,8 @@ interface IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external returns (bool, uint256);
     function peek(bytes calldata data) external view returns (bool, uint256);
+    function symbol(bytes calldata data) external view returns (string memory);
+    function name(bytes calldata data) external view returns (string memory);
 }
 
 // File: contracts\oracles\ChainlinkOracle.sol
@@ -67,5 +78,13 @@ contract ChainlinkOracle is IOracle {
     function peek(bytes calldata data) public override view returns (bool, uint256) {
         (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
         return (true, _get(multiply, divide, decimals));
+    }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "Chainlink";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "LINK";
     }
 }

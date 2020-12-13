@@ -8,6 +8,8 @@ interface IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external returns (bool, uint256);
     function peek(bytes calldata data) external view returns (bool, uint256);
+    function symbol(bytes calldata data) external view returns (string memory);
+    function name(bytes calldata data) external view returns (string memory);
 }
 
 // File: contracts\libraries\BoringMath.sol
@@ -18,6 +20,15 @@ library BoringMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
     function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
     function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, "BoringMath: Mul Overflow");}
+    function to128(uint256 a) internal pure returns (uint128 c) {
+        require(a <= uint128(-1), "BoringMath: uint128 Overflow");
+        c = uint128(a);
+    }
+}
+
+library BoringMath128 {
+    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a + b) >= b, "BoringMath: Add Overflow");}
+    function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a - b) <= a, "BoringMath: Underflow");}
 }
 
 // File: contracts\external\interfaces\IUniswapV2Factory.sol
@@ -212,7 +223,7 @@ library FixedPoint {
 contract SimpleSLPTWAP1Oracle is IOracle {
     using FixedPoint for *;
     using BoringMath for uint256;
-    uint256 public constant PERIOD = 1 minutes;
+    uint256 public constant PERIOD = 5 minutes;
 
     struct PairInfo {
         uint256 priceCumulativeLast;
@@ -278,5 +289,13 @@ contract SimpleSLPTWAP1Oracle is IOracle {
             .uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
 
         return (true, priceAverage.mul(10**18).decode144());
+    }
+
+    function name(bytes calldata) public override view returns (string memory) {
+        return "SushiSwap TWAP";
+    }
+
+    function symbol(bytes calldata) public override view returns (string memory) {
+        return "S";
     }
 }
