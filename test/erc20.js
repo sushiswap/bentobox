@@ -44,7 +44,13 @@ contract('ERC20', (accounts) => {
   });
 
   it('transfers: should fail when trying to transfer 10001 to accounts[1] with accounts[0] having 10000', async () => {
-    let tx = await token.transfer(accounts[1], 10001, { from: accounts[0] })
+    let threw = false;
+    try {
+      await token.transfer(accounts[1], 10001, { from: accounts[0] })
+    } catch (e) {
+     threw = true;
+    }
+    assert.equal(threw, true)
     assert.strictEqual((await token.balanceOf(accounts[1])).toNumber(), 0);
   });
 
@@ -123,15 +129,25 @@ contract('ERC20', (accounts) => {
     let balance0 = await token.balanceOf(accounts[0]);
     assert.strictEqual(balance0.toNumber(), 9950);
 
-    await token.transferFrom(accounts[0], accounts[2], 60, { from: accounts[1] });
-
+    let threw = false;
+    try {
+      await token.transferFrom(accounts[0], accounts[2], 60, { from: accounts[1] });
+    } catch (e) {
+      threw = true;
+    }
+    assert.equal(threw, true);
     balance0 = await token.balanceOf(accounts[0]);
     assert.strictEqual(balance0.toNumber(), 9950);
   });
 
   it('approvals: attempt withdrawal from account with no allowance (should fail)', async () => {
-
-    await token.transferFrom(accounts[0], accounts[2], 60, { from: accounts[1] });
+    let threw = false;
+    try {
+      await token.transferFrom(accounts[0], accounts[2], 60, { from: accounts[1] });
+    } catch (e) {
+      threw = true;
+    }
+    assert.equal(threw, true);
 
     const balance0 = await token.balanceOf(accounts[0]);
     assert.strictEqual(balance0.toNumber(), 10000);
@@ -143,7 +159,13 @@ contract('ERC20', (accounts) => {
     await token.transferFrom(accounts[0], accounts[2], 60, { from: accounts[1] });
     await token.approve(accounts[1], 0, { from: accounts[0] });
 
-    await token.transferFrom(accounts[0], accounts[2], 10, { from: accounts[1] });
+    let threw = false;
+    try {
+      await token.transferFrom(accounts[0], accounts[2], 10, { from: accounts[1] });
+    } catch (e) {
+      threw = true;
+    }
+    assert.equal(threw, true);
 
     const balance0 = await token.balanceOf(accounts[0]);
     assert.strictEqual(balance0.toNumber(), 9940);
