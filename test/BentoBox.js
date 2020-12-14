@@ -499,16 +499,26 @@ describe("BentoBox", function () {
   })
 
   describe("Transfer Multiple", function () {
+    it("should revert if tos are not set", async function (){
+      expect(
+        this.bentoBox.transferMultiple(
+          this.a.address,
+          this.alice.address,
+          ["0x0000000000000000000000000000000000000000"],
+          [1]
+        )
+      ).to.be.revertedWith("BentoBox: to[0] not set")
+    })
     it("should allow transfer multiple from alice to bob and carol", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 2)
 
-      await this.bentoBox.transferMultipleFrom(
+      await this.bentoBox.transferMultiple(
         this.a.address,
-        this.alice.address,
         [this.bob.address, this.carol.address],
-        [1, 1]
+        [1, 1],
+        { from: this.alice.address }
       )
 
       assert.equal(
