@@ -2,6 +2,7 @@ const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
 const { getApprovalDigest } = require("./permit")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
+const {ecsign} = require('ethereumjs-util')
 
 describe("BentoBox", function () {
   before(async function () {
@@ -24,6 +25,8 @@ describe("BentoBox", function () {
     this.bob = this.signers[1]
 
     this.carol = this.signers[2]
+
+    this.carolPrivateKey = "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
   })
 
   beforeEach(async function () {
@@ -69,7 +72,7 @@ describe("BentoBox", function () {
         .withArgs(
           this.lendingPair.address,
           data,
-          "0xCafac3dD18aC6c6e92c921884f9E4176737C052c"
+          "0xa936eEBB5A8F82a38dF9fC58E736b9eeF16A6A44"
         )
     })
   })
@@ -277,17 +280,10 @@ describe("BentoBox", function () {
         nonce,
         deadline
       )
-
-      // Arrayify
-      const messageHashBytes = ethers.utils.arrayify(digest)
-
-      // Sign the binary data
-      const signiture = await this.carol.signMessage(messageHashBytes)
-
-      // For Solidity, we need the expanded-format of a signature
-      const { v, r, s } = ethers.utils.splitSignature(signiture)
-
-      console.log(this.a.address, this.carol.address, 1, deadline, v, r, s)
+      const {v, r, s} = ecsign(
+        Buffer.from(digest.slice(2), 'hex'),
+        Buffer.from(this.carolPrivateKey.replace('0x', ''), 'hex')
+      );
 
       await this.bentoBox
         .connect(this.carol)
