@@ -499,7 +499,7 @@ describe("BentoBox", function () {
   })
 
   describe("Transfer Multiple", function () {
-    it("should revert if tos are not set", async function (){
+    it("should revert if tos are not set", async function () {
       expect(
         this.bentoBox.transferMultiple(
           this.a.address,
