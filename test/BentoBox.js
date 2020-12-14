@@ -164,12 +164,11 @@ describe("BentoBox", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      const share = await this.bentoBox.balanceOf(
+      const amount = await this.bentoBox.balanceOf(
         this.a.address,
         this.alice.address
       )
-
-      assert.equal(share, 1)
+      assert.equal(amount, 1)
     })
 
     it("Mutates balanceOf for BentoBox and WETH correctly", async function () {
