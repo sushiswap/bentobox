@@ -63,7 +63,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     // Total amounts
     uint256 public totalCollateralAmount;
-    TokenTotals public totalAsset; // Includes totalBorrowAmount (actual Amount in BentoBox = totalAssetAmount - totalBorrowAmount)
+    TokenTotals public totalAsset; // The total assets belonging to the suppliers (including any borrowed amounts).
     TokenTotals public totalBorrow; // Total units of asset borrowed
 
     // totalSupply for ERC20 compatibility
@@ -222,11 +222,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (totalCollateralAmount == 0) return false;
 
         TokenTotals memory _totalBorrow = totalBorrow;
-        uint256 borrow = userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction;
 
-        return userCollateralAmount[user]
-            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate) /
-            exchangeRate / 1e5 >= borrow;
+        return userCollateralAmount[user].mul(1e13).mul(open ? openCollaterizationRate : closedCollaterizationRate)
+            >= (userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction).mul(exchangeRate);
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -512,7 +510,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             bentoBox.withdraw(collateral, to, allCollateralAmount);
         } else if (address(swapper) == address(1)) {
             // Open liquidation directly using the caller's funds, without swapping using funds in BentoBox
-            bentoBox.transferFrom(asset, msg.sender, to, allBorrowAmount);
+            bentoBox.transferFrom(asset, msg.sender, address(this), allBorrowAmount);
             bentoBox.transfer(collateral, to, allCollateralAmount);
         } else {
             // Swap using a swapper freely chosen by the caller
@@ -572,11 +570,12 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         emit LogDev(newDev);
     }
 
-    function swipe(IERC20 token) public onlyOwner {
+    function swipe(IERC20 token) public {
+        require(msg.sender == masterContract.owner(), "LendingPair: caller is not the owner");
+
         if (address(token) == address(0)) {
             uint256 balanceETH = address(this).balance;
             if (balanceETH > 0) {
-                IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(balanceETH);
                 (bool success,) = owner.call{value: balanceETH}(new bytes(0));
                 require(success, "LendingPair: ETH transfer failed");
             }

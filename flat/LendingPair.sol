@@ -98,26 +98,25 @@ contract ERC20 is ERC20Data {
     event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
     function transfer(address to, uint256 amount) public returns (bool success) {
-        if (balanceOf[msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
-            balanceOf[msg.sender] -= amount;
-            balanceOf[to] += amount;
-            emit Transfer(msg.sender, to, amount);
-            return true;
-        } else {
-            return false;
-        }
+        require(balanceOf[msg.sender] >= amount, 'LendingPair: balance too low');
+        require(amount > 0, 'LendingPair: amount should be > 0');
+        require(balanceOf[to] + amount > balanceOf[to], 'LendingPair: overflow detected');
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+        emit Transfer(msg.sender, to, amount);
+        return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) public returns (bool success) {
-        if (balanceOf[from] >= amount && allowance[from][msg.sender] >= amount && balanceOf[to] + amount > balanceOf[to]) {
-            balanceOf[from] -= amount;
-            allowance[from][msg.sender] -= amount;
-            balanceOf[to] += amount;
-            emit Transfer(from, to, amount);
-            return true;
-        } else {
-            return false;
-        }
+        require(balanceOf[from] >= amount, 'LendingPair: balance too low');
+        require(allowance[from][msg.sender] >= amount, 'LendingPair: allowance too low');
+        require(amount > 0, 'LendingPair: amount should be > 0');
+        require(balanceOf[to] + amount > balanceOf[to], 'LendingPair: overflow detected');
+        balanceOf[from] -= amount;
+        allowance[from][msg.sender] -= amount;
+        balanceOf[to] += amount;
+        emit Transfer(from, to, amount);
+        return true;
     }
 
     function approve(address spender, uint256 amount) public returns (bool success) {
@@ -133,6 +132,7 @@ contract ERC20 is ERC20Data {
     }
 
     function permit(address owner_, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        require(owner_ != address(0), 'ERC20: Owner cannot be 0');
         require(block.timestamp < deadline, 'ERC20: Expired');
         bytes32 digest = keccak256(abi.encodePacked(
             '\x19\x01', DOMAIN_SEPARATOR(),
@@ -303,7 +303,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     // Total amounts
     uint256 public totalCollateralAmount;
-    TokenTotals public totalAsset; // Includes totalBorrowAmount (actual Amount in BentoBox = totalAssetAmount - totalBorrowAmount)
+    TokenTotals public totalAsset; // The total assets belonging to the suppliers (including any borrowed amounts).
     TokenTotals public totalBorrow; // Total units of asset borrowed
 
     // totalSupply for ERC20 compatibility
@@ -462,11 +462,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (totalCollateralAmount == 0) return false;
 
         TokenTotals memory _totalBorrow = totalBorrow;
-        uint256 borrow = userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction;
 
-        return userCollateralAmount[user]
-            .mul(1e18).mul(open ? openCollaterizationRate : closedCollaterizationRate) /
-            exchangeRate / 1e5 >= borrow;
+        return userCollateralAmount[user].mul(1e13).mul(open ? openCollaterizationRate : closedCollaterizationRate)
+            >= (userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction).mul(exchangeRate);
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -752,7 +750,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             bentoBox.withdraw(collateral, to, allCollateralAmount);
         } else if (address(swapper) == address(1)) {
             // Open liquidation directly using the caller's funds, without swapping using funds in BentoBox
-            bentoBox.transferFrom(asset, msg.sender, to, allBorrowAmount);
+            bentoBox.transferFrom(asset, msg.sender, address(this), allBorrowAmount);
             bentoBox.transfer(collateral, to, allCollateralAmount);
         } else {
             // Swap using a swapper freely chosen by the caller
@@ -812,11 +810,12 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         emit LogDev(newDev);
     }
 
-    function swipe(IERC20 token) public onlyOwner {
+    function swipe(IERC20 token) public {
+        require(msg.sender == masterContract.owner(), "LendingPair: caller is not the owner");
+
         if (address(token) == address(0)) {
             uint256 balanceETH = address(this).balance;
             if (balanceETH > 0) {
-                IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2).withdraw(balanceETH);
                 (bool success,) = owner.call{value: balanceETH}(new bytes(0));
                 require(success, "LendingPair: ETH transfer failed");
             }
