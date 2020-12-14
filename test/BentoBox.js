@@ -2,7 +2,7 @@ const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
 const { getApprovalDigest } = require("./permit")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
-const {ecsign} = require('ethereumjs-util')
+const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
@@ -26,7 +26,8 @@ describe("BentoBox", function () {
 
     this.carol = this.signers[2]
 
-    this.carolPrivateKey = "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
+    this.carolPrivateKey =
+      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
   })
 
   beforeEach(async function () {
@@ -280,10 +281,10 @@ describe("BentoBox", function () {
         nonce,
         deadline
       )
-      const {v, r, s} = ecsign(
-        Buffer.from(digest.slice(2), 'hex'),
-        Buffer.from(this.carolPrivateKey.replace('0x', ''), 'hex')
-      );
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(this.carolPrivateKey.replace("0x", ""), "hex")
+      )
 
       await this.bentoBox
         .connect(this.carol)
