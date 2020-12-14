@@ -15,19 +15,19 @@ import "../libraries/FixedPoint.sol";
 contract SimpleSLPTWAP0Oracle is IOracle {
     using FixedPoint for *;
     using BoringMath for uint256;
-    uint256 public constant PERIOD = 5 minutes;
+    uint256 public constant PERIOD = 20; // min blocks between updates
 
     struct PairInfo {
         uint256 priceCumulativeLast;
+        uint32 blockHeightLast;
         uint32 blockTimestampLast;
-        FixedPoint.uq112x112 priceAverage;
     }
 
     mapping(IUniswapV2Pair => PairInfo) public pairs; // Map of pairs and their info
     mapping(address => IUniswapV2Pair) public callerInfo; // Map of callers to pairs
 
     function _get(IUniswapV2Pair pair, uint32 blockTimestamp) public view returns (uint256) {
-        uint256 priceCumulative = pair.price0CumulativeLast();
+        uint256 priceCumulative = pair.price1CumulativeLast();
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
@@ -42,46 +42,50 @@ contract SimpleSLPTWAP0Oracle is IOracle {
 
     function getDataParameter(IUniswapV2Pair pair) public pure returns (bytes memory) { return abi.encode(pair); }
 
+    event Data(uint256 a, uint256 b, uint256 c);
+
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
+        PairInfo memory pairInfo = pairs[pair];
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        if (pairs[pair].blockTimestampLast == 0) {
-            pairs[pair].blockTimestampLast = blockTimestamp;
-            pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
-
+        if (pairInfo.blockTimestampLast == 0) {
+            pairs[pair] = PairInfo(_get(pair, blockTimestamp), uint32(block.number), blockTimestamp);
             return (false, 0);
         }
-        uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
-        if (timeElapsed < PERIOD) {
-            return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+        
+        if (block.number.sub(pairInfo.blockHeightLast) < PERIOD) {
+            return (false, 0);
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        pairs[pair].priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
-        pairs[pair].blockTimestampLast = blockTimestamp;
-        pairs[pair].priceCumulativeLast = priceCumulative;
+        uint32 timeElapsed = blockTimestamp - pairInfo.blockTimestampLast; // substraction overflow is desired
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairInfo.priceCumulativeLast) / timeElapsed));
+        pairs[pair] = PairInfo(priceCumulative, uint32(block.number), blockTimestamp);
 
-        return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+        emit Data(priceCumulative, pairInfo.priceCumulativeLast, priceAverage.mul(10**18).decode144());
+        return (true, priceAverage.mul(10**18).decode144());
     }
 
     // Check the last exchange rate without any state changes
     function peek(bytes calldata data) public override view returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
+        PairInfo memory pairInfo = pairs[pair];
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        if (pairs[pair].blockTimestampLast == 0) {
+        if (pairInfo.blockTimestampLast == 0 || blockTimestamp == pairInfo.blockTimestampLast) {
             return (false, 0);
         }
-        uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
-        if (timeElapsed < PERIOD) {
-            return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+    
+        bool available = true;
+        if (block.number.sub(pairInfo.blockHeightLast) < PERIOD) {
+            available = false;
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
+        uint32 timeElapsed = blockTimestamp - pairInfo.blockTimestampLast; // overflow is desired
         FixedPoint.uq112x112 memory priceAverage = FixedPoint
-            .uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
-
-        return (true, priceAverage.mul(10**18).decode144());
+            .uq112x112(uint224((priceCumulative - pairInfo.priceCumulativeLast) / timeElapsed));
+        return (available, priceAverage.mul(10**18).decode144());
     }
 
     function name(bytes calldata) public override view returns (string memory) {

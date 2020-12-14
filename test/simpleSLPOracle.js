@@ -56,23 +56,25 @@ contract('SimpleSLPOracle', (accounts) => {
   });
 
   it('should return false on first peek', async () => {
-    assert.equal((await oracle.peek(oracleData))[1].toString(),"0", "without initialization the oracle should have a zero price");
+    const result = await oracle.peek(oracleData);
+    assert.equal((result)[1].toString(),"0", "without initialization the oracle should have a zero price");
   });
 
   it('should update and get prices within period', async () => {
     const blockTimestamp = (await pair.getReserves())[2];
 
     await oracle.get(oracleData);
+    await timeWarp.advanceBlocks(5);
     await timeWarp.advanceTime(30);
     await oracle.get(oracleData);
+    await timeWarp.advanceBlocks(16);
     await timeWarp.advanceTime(271);
-    //await oracle.get(oracleData);
     await oracle.get(oracleData);
+    // for coverage
     await oracle.get(oracleData);
 
-    const expectedPrice = encodePrice(token0Amount, token1Amount);
-    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
-    assert.equal((await oracle.peek(oracleData))[1].toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
+    const expectedPrice = e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10));
+    assert.equal((await oracle.peek(oracleData))[1].toString(), expectedPrice.toString(), "amount of collateral to buy 1e18 of assets");
   });
 
   it('should get prices if Period time is over', async () => {
@@ -80,15 +82,16 @@ contract('SimpleSLPOracle', (accounts) => {
 
     await oracle.get(oracleData);
     await timeWarp.advanceTime(30);
+    await timeWarp.advanceBlocks(5);
     await oracle.get(oracleData);
     await timeWarp.advanceTime(271);
-    //await oracle.get(oracleData);
+    await timeWarp.advanceBlocks(15);
     await oracle.get(oracleData);
+    await timeWarp.advanceBlocks(25);
     await timeWarp.advanceTime(421);
 
-    const expectedPrice = encodePrice(token0Amount, token1Amount);
-    assert.equal((await oracle.pairs(pair.address)).priceAverage.toString(), expectedPrice[1].toString());
-    assert.equal((await oracle.peek(oracleData))[1].toString(), e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10)).toString(), "amount of collateral to buy 1e18 of assets");
+    const expectedPrice = e18(1).mul(new web3.utils.BN(5)).div(new web3.utils.BN(10));
+    assert.equal((await oracle.peek(oracleData))[1].toString(), expectedPrice.toString(), "amount of collateral to buy 1e18 of assets");
   });
 
 
@@ -96,12 +99,15 @@ contract('SimpleSLPOracle', (accounts) => {
     const blockTimestamp = (await pair.getReserves())[2];
     await oracle.get(oracleData);
     await timeWarp.advanceTime(301);
+    await timeWarp.advanceBlocks(20);
     await oracle.get(oracleData);
     let price0 = (await oracle.peek(oracleData))[1];
     await collateral.transfer(pair.address, e18(5));
     await timeWarp.advanceTime(150);
+    await timeWarp.advanceBlocks(10);
     await pair.sync();
     await timeWarp.advanceTime(150);
+    await timeWarp.advanceBlocks(10);
     await oracle.get(oracleData);
     let price1 = (await oracle.peek(oracleData))[1];
 

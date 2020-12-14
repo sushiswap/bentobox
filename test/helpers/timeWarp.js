@@ -34,8 +34,17 @@ advanceBlock = () => {
     });
 }
 
+advanceBlocks = async (number) => {
+    while (number > 1) {
+        await advanceBlock();
+        number--;
+    }
+    return advanceBlock();
+}
+
 module.exports = {
     advanceTime,
     advanceBlock,
+    advanceBlocks,
     advanceTimeAndBlock
 }
