@@ -1,8 +1,7 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, getDomainSeparator } = require("./utilities")
+const { e18, sansBorrowFee } = require("./utilities")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
-const { ecsign } = require("ethereumjs-util")
 
 describe("Lending Pair", function () {
   before(async function () {
@@ -48,22 +47,22 @@ describe("Lending Pair", function () {
     this.a = await this.ReturnFalseERC20.deploy(
       "Token A",
       "A",
-      parseUnits("10000000", 18)
+      e18("10000000")
     )
     await this.a.deployed()
 
     this.b = await this.RevertingERC20.deploy(
       "Token B",
       "B",
-      parseUnits("10000000", 18)
+      e18("10000000")
     )
     await this.b.deployed()
 
     // Alice has all tokens for a and b since creator
 
     // Bob has 1000 b tokens
-    await this.b.transfer(this.bob.address, parseUnits("1000", 18))
-    await this.b.transfer(this.charlie.address, parseUnits("1000", 18))
+    await this.b.transfer(this.bob.address, e18(1000))
+    await this.b.transfer(this.charlie.address, e18(1000))
 
     this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
     await this.lendingPair.deployed()
@@ -80,8 +79,8 @@ describe("Lending Pair", function () {
 
     this.sushiswappair = await this.UniswapV2Pair.attach(pair)
 
-    await this.a.transfer(this.sushiswappair.address, parseUnits("5000", 18))
-    await this.b.transfer(this.sushiswappair.address, parseUnits("5000", 18))
+    await this.a.transfer(this.sushiswappair.address, e18(5000))
+    await this.b.transfer(this.sushiswappair.address, e18(5000))
 
     await this.sushiswappair.mint(this.alice.address)
 
@@ -96,7 +95,7 @@ describe("Lending Pair", function () {
     this.oracle = await this.Oracle.deploy()
     await this.oracle.deployed()
 
-    await this.oracle.set(parseUnits("1", 18), this.alice.address)
+    await this.oracle.set(e18(1), this.alice.address)
 
     await this.bentoBox.setMasterContractApproval(
       this.lendingPair.address,
@@ -125,6 +124,9 @@ describe("Lending Pair", function () {
     this.pair = await this.LendingPair.attach(cloneAddress)
     await this.pair.updateExchangeRate()
   })
+  const borrowUpUntilMax = async () => {
+
+  }
 
   describe("name, symbol and decimals", function () {
     it("should autogen a nice name and symbol", async function () {
@@ -154,113 +156,6 @@ describe("Lending Pair", function () {
   })
 
   describe("updateExchangeRate", function () {})
-
-  describe("permits", function () {
-    it("should give a correct DOMAIN_SEPARATOR", async function () {
-      expect(await this.pair.DOMAIN_SEPARATOR()).to.be.equal(
-        getDomainSeparator(
-          this.pair.address,
-          this.alice.provider._network.chainId
-        )
-      )
-    })
-    it('should execute a permit', async function() {
-        let nonce = await this.pair.nonces(this.charlie.address)
-        
-        const deadline = (await this.charlie.provider._internalBlockNumber).respTime + 10000
-    const digest = await getApprovalDigest(
-      this.pair,
-      {
-        owner: this.charlie.address,
-        spender: this.alice.address,
-        value: 1,
-      },
-      nonce,
-      deadline
-    )
-    const { v, r, s } = ecsign(
-      Buffer.from(digest.slice(2), "hex"),
-      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
-    )
-    await this.pair
-      .connect(this.charlie)
-      .permit(
-        this.charlie.address,
-        this.alice.address,
-        1,
-        deadline,
-        v,
-        r,
-        s
-      , {from: this.charlie.address})
-      })
-
-      it('permit should revert on old deadline', async function() {
-        let nonce = await this.pair.nonces(this.charlie.address)
-        
-        const deadline = 0
-
-    const digest = await getApprovalDigest(
-      this.pair,
-      {
-        owner: this.charlie.address,
-        spender: this.alice.address,
-        value: 1,
-      },
-      nonce,
-      deadline
-    )
-    const { v, r, s } = ecsign(
-      Buffer.from(digest.slice(2), "hex"),
-      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
-    )
-
-    expect(this.pair
-      .connect(this.charlie)
-      .permit(
-        this.charlie.address,
-        this.alice.address,
-        1,
-        deadline,
-        v,
-        r,
-        s
-      , {from: this.charlie.address})).to.be.revertedWith("Expired")
-      })
-
-      it('permit should revert on incorrect signer', async function() {
-        let nonce = await this.pair.nonces(this.charlie.address)
-        
-        const deadline = (await this.charlie.provider._internalBlockNumber).respTime + 10000
-
-    const digest = await getApprovalDigest(
-      this.pair,
-      {
-        owner: this.charlie.address,
-        spender: this.alice.address,
-        value: 1,
-      },
-      nonce,
-      deadline
-    )
-    const { v, r, s } = ecsign(
-      Buffer.from(digest.slice(2), "hex"),
-      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
-    )
-
-    expect(this.pair
-      .connect(this.charlie)
-      .permit(
-        this.bob.address,
-        this.alice.address,
-        1,
-        deadline,
-        v,
-        r,
-        s
-      , {from: this.charlie.address})).to.be.revertedWith("Invalid Signature")
-      })
-  })
 
   describe("assets", function () {
     describe("addAsset", function () {
@@ -332,9 +227,136 @@ describe("Lending Pair", function () {
         "user insolvent"
       )
     })
+
+    it('should allow borrowing with collateral up to 75%', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      expect(this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)).to.emit(
+        this.pair, "LogAddBorrow"
+      ).withArgs(this.alice.address,"74999999999999999999", "74999999999999999999")
+    })
+
+    it('should not allow any more borrowing', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      expect(this.pair.borrow(100, this.alice.address)).to.be.revertedWith("user insolvent")
+    })
+
+    it('should report insolvency due to interest', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      expect(await this.pair.isSolvent(this.alice.address, false)).to.be.false
+    })
+
+    it('should not report open insolvency due to interest', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      expect(await this.pair.isSolvent(this.alice.address, true)).to.be.true
+    })
+
+    it('should not allow open liquidate yet', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.b.connect(this.bob).approve(this.bentoBox.address, e18(25))
+      expect(this.pair.connect(this.bob).liquidate([this.alice.address], [e18(20)], this.bob.address, "0x0000000000000000000000000000000000000000", true))
+      .to.be.revertedWith('all users are solvent')
+    })
+
+    it('should allow closed liquidate', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.b.connect(this.bob).approve(this.bentoBox.address, e18(25))
+      await this.pair.connect(this.bob).liquidate([this.alice.address], [e18(20)], this.bob.address, this.swapper.address, false)
+    })
+
+    it('should report open insolvency after oracle rate is updated', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.oracle.set("1100000000000000000", this.pair.address)
+      await this.pair.updateExchangeRate()
+      expect(await this.pair.isSolvent(this.alice.address, true)).to.be.false
+    })
+
+    it('should allow open liquidate', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.oracle.set("1100000000000000000", this.pair.address)
+      await this.pair.updateExchangeRate()
+      await this.b.connect(this.bob).approve(this.bentoBox.address, e18(25))
+      this.pair.connect(this.bob).liquidate([this.alice.address], [e18(20)], this.bob.address, "0x0000000000000000000000000000000000000000", true)
+    })
+
+    it('should allow open liquidate from Bento', async function () {
+      await this.b.approve(this.bentoBox.address, e18(300))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.oracle.set("1100000000000000000", this.pair.address)
+      await this.pair.updateExchangeRate()
+      await this.b.connect(this.bob).approve(this.bentoBox.address, e18(25))
+      await this.bentoBox.connect(this.bob).deposit(this.b.address, this.bob.address, e18(20))
+      this.pair.connect(this.bob).liquidate([this.alice.address], [e18(20)], this.bob.address, "0x0000000000000000000000000000000000000001", true)
+    })
+    
   })
 
-  describe("repay", function () {})
+  describe("repay", function () {
+    it('should allow to repay', async function () {
+      await this.b.approve(this.bentoBox.address, e18(700))
+      await this.pair.addAsset(e18(290))
+      await this.a.approve(this.bentoBox.address, e18(100))
+      await this.pair.addCollateral(e18(100))
+      await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+      await this.pair.accrue()
+      await this.oracle.set("1100000000000000000", this.pair.address)
+      await this.pair.updateExchangeRate()
+      await this.pair.repay(e18(50))
+    })
+
+    it('should allow full repayment', async function() {
+        await this.b.approve(this.bentoBox.address, e18(900))
+        await this.pair.addAsset(e18(290))
+        await this.a.approve(this.bentoBox.address, e18(100))
+        await this.pair.addCollateral(e18(100))
+        await this.pair.borrow(sansBorrowFee(e18(75)), this.alice.address)
+        await this.pair.accrue()
+        await this.oracle.set("1100000000000000000", this.pair.address)
+        await this.pair.updateExchangeRate()
+        let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+        await this.pair.repay(borrowFractionLeft)
+    })
+  })
 
   describe("short", function () {})
 

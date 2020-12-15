@@ -38,7 +38,7 @@ task("pairs", "Prints the list of pairs", async () => {
 module.exports = {
   abiExporter: {
     path: "./build/abi",
-    clear: true,
+    //clear: true,
     flat: true,
     // only: ['ERC20'],
     // except: ['ERC20']
@@ -95,6 +95,7 @@ module.exports = {
         },
       ],
     },
+    /*
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts: [process.env.PRIVATE_KEY],
@@ -111,6 +112,7 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY],
       chainId: 4,
     },
+    */
   },
   preprocess: {
     eachLine: removeConsoleLog(
