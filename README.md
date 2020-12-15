@@ -2,6 +2,10 @@
 
 ...
 
+## Deployment
+
+npx hardhat run --network hardhat scripts/deploy.js
+
 ## Local environment
 
 npx hardhat node
