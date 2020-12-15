@@ -8,7 +8,7 @@ const PERMIT_TYPEHASH = keccak256(
   )
 )
 
-const getDomainSeparator = (tokenAddress) => {
+const getDomainSeparator = (tokenAddress, chainId) => {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
@@ -16,15 +16,15 @@ const getDomainSeparator = (tokenAddress) => {
         keccak256(
           toUtf8Bytes("EIP712Domain(uint256 chainId,address verifyingContract)")
         ),
-        1,
+        chainId,
         tokenAddress,
       ]
     )
   )
 }
 
-getApprovalDigest = async (token, approve, nonce, deadline) => {
-  const DOMAIN_SEPARATOR = getDomainSeparator(token.address)
+getApprovalDigest = async (token, approve, nonce, deadline, chainId = 1) => {
+  const DOMAIN_SEPARATOR = getDomainSeparator(token.address, chainId)
   const msg = defaultAbiCoder.encode(
     ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
     [

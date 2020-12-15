@@ -6,7 +6,7 @@
 // ReturnFalseERC20 does not revert on errors, it just returns false
 pragma solidity 0.6.12;
 
-contract ReturnFalseERC20 {
+contract ReturnFalseERC20Mock {
     string public symbol;
     string public name;
     uint8 public constant decimals = 18;
