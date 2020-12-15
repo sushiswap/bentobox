@@ -2,7 +2,21 @@ const {
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 
+const { BN } = require('bn.js');
+
 const { parseUnits } = require("ethers/lib/utils")
+
+const bn = (amount) => {
+  return ethers.BigNumber.from(amount)
+}
+
+const roundBN = (number) => {
+  return (new BN(number.toString())).divRound(new BN("10000000000000000")).toString()
+}
+
+const encodePrice = (reserve0, reserve1) => {
+  return [reserve1.mul(bn('2').pow(bn('112'))).div(reserve0), reserve0.mul(bn('2').pow(bn('112'))).div(reserve1)];
+}
 
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes(
@@ -70,7 +84,9 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
 }
 
 function sansBorrowFee(amount) {
-  return amount.mul(ethers.BigNumber.from(2000)).div(ethers.BigNumber.from(2001))
+  return amount
+    .mul(ethers.BigNumber.from(2000))
+    .div(ethers.BigNumber.from(2001))
 }
 
 module.exports = {
@@ -78,5 +94,8 @@ module.exports = {
   getApprovalDigest,
   getApprovalMsg,
   sansBorrowFee,
-  e18
+  e18,
+  bn,
+  encodePrice,
+  roundBN
 }

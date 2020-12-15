@@ -42,12 +42,14 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         return priceCumulative;
     }
 
-    function getDataParameter(IUniswapV2Pair pair) public pure returns (bytes memory) { return abi.encode(pair); }
+    function getDataParameter(IUniswapV2Pair pair) public pure returns (bytes memory) {
+        return abi.encode(pair);
+    }
 
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         if (pairs[pair].blockTimestampLast == 0) {
             pairs[pair].blockTimestampLast = blockTimestamp;
             pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
@@ -59,7 +61,9 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        pairs[pair].priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        pairs[pair].priceAverage = FixedPoint.uq112x112(
+            uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed)
+        );
         pairs[pair].blockTimestampLast = blockTimestamp;
         pairs[pair].priceCumulativeLast = priceCumulative;
 
@@ -67,9 +71,9 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata data) public override view returns (bool, uint256) {
+    function peek(bytes calldata data) public view override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 blockTimestamp = uint32(block.timestamp % 2**32);
         if (pairs[pair].blockTimestampLast == 0) {
             return (false, 0);
         }
@@ -79,17 +83,17 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        FixedPoint.uq112x112 memory priceAverage = FixedPoint
-            .uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        FixedPoint.uq112x112 memory priceAverage =
+            FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
 
         return (true, priceAverage.mul(10**18).decode144());
     }
 
-    function name(bytes calldata) public override view returns (string memory) {
+    function name(bytes calldata) public view override returns (string memory) {
         return "SushiSwap TWAP";
     }
 
-    function symbol(bytes calldata) public override view returns (string memory) {
+    function symbol(bytes calldata) public view override returns (string memory) {
         return "S";
     }
 }
