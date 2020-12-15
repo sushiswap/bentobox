@@ -2,7 +2,7 @@ const {
   ethers: { BigNumber },
 } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest } = require("./permit")
+const { getApprovalDigest } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
@@ -271,8 +271,6 @@ describe("BentoBox", function () {
   // TODO: Cover these
   describe("Deposit With Permit", function () {
     it("Mutates balanceOf given a valid signiture and balance of token", async function () {
-      console.log(this.carol)
-
       await this.a.transfer(this.carol.address, 1)
 
       const nonce = await this.a.nonces(this.carol.address)
@@ -513,11 +511,10 @@ describe("BentoBox", function () {
       expect(
         this.bentoBox.transferMultiple(
           this.a.address,
-          this.alice.address,
           ["0x0000000000000000000000000000000000000000"],
           [1]
         )
-      ).to.be.revertedWith("BentoBox: to[0] not set")
+      ).to.be.reverted
     })
 
     it("should allow transfer multiple from alice to bob and carol", async function () {

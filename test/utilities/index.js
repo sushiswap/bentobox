@@ -8,7 +8,7 @@ const PERMIT_TYPEHASH = keccak256(
   )
 )
 
-const getDomainSeparator = (tokenAddress, chainId) => {
+function getDomainSeparator(tokenAddress, chainId) {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "uint256", "address"],
@@ -23,7 +23,7 @@ const getDomainSeparator = (tokenAddress, chainId) => {
   )
 }
 
-getApprovalDigest = async (token, approve, nonce, deadline, chainId = 1) => {
+function getApprovalDigest(token, approve, nonce, deadline, chainId = 1) {
   const DOMAIN_SEPARATOR = getDomainSeparator(token.address, chainId)
   const msg = defaultAbiCoder.encode(
     ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
@@ -43,8 +43,8 @@ getApprovalDigest = async (token, approve, nonce, deadline, chainId = 1) => {
   return keccak256(pack)
 }
 
-getApprovalMsg = async (token_address, approve, nonce, deadline) => {
-  const DOMAIN_SEPARATOR = getDomainSeparator(token_address)
+function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
+  const DOMAIN_SEPARATOR = getDomainSeparator(tokenAddress)
   const msg = defaultAbiCoder.encode(
     ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
     [
@@ -63,8 +63,13 @@ getApprovalMsg = async (token_address, approve, nonce, deadline) => {
   return pack
 }
 
+function sansBorrowFee(amount) {
+  return amount.mul(2000).div(2001)
+}
+
 module.exports = {
+  getDomainSeparator,
   getApprovalDigest,
   getApprovalMsg,
-  getDomainSeparator,
+  sansBorrowFee,
 }

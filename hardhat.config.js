@@ -1,8 +1,8 @@
 // hardhat.config.js
-const { exec } = require("child_process")
-
+require("dotenv/config")
 require("@nomiclabs/hardhat-waffle")
 require("@nomiclabs/hardhat-solhint")
+// require("@nomiclabs/hardhat-solpp")
 require("@nomiclabs/hardhat-etherscan")
 require("@tenderly/hardhat-tenderly")
 require("hardhat-spdx-license-identifier")
@@ -11,6 +11,7 @@ require("hardhat-gas-reporter")
 require("hardhat-abi-exporter")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")
+
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async () => {
@@ -46,7 +47,11 @@ module.exports = {
     enabled: process.env.REPORT_GAS ? true : false,
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    excludeContracts: ["contracts/external/", "contracts/libraries/"],
+    excludeContracts: [
+      "contracts/mocks/",
+      "contracts/external/",
+      "contracts/libraries/",
+    ],
   },
   hardhat: {
     forking: {
@@ -87,22 +92,22 @@ module.exports = {
         },
       ],
     },
-    // mainnet: {
-    //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY],
-    //   gasPrice: 120 * 1000000000,
-    //   chainId: 1,
-    // },
-    // ropsten: {
-    //   url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY],
-    //   chainId: 3,
-    // },
-    // rinkeby: {
-    //   url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-    //   accounts: [process.env.PRIVATE_KEY],
-    //   chainId: 4,
-    // },
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+      gasPrice: 120 * 1000000000,
+      chainId: 1,
+    },
+    ropsten: {
+      url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 3,
+    },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 4,
+    },
   },
   preprocess: {
     eachLine: removeConsoleLog(

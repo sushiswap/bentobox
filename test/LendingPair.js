@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, getDomainSeparator } = require("./helpers/permit")
+const { getApprovalDigest, getDomainSeparator } = require("./utilities")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
 const { ecsign } = require("ethereumjs-util")
 
@@ -16,13 +16,15 @@ describe("Lending Pair", function () {
 
     this.SushiSwapFactory = await ethers.getContractFactory("UniswapV2Factory")
 
-    this.ReturnFalseERC20 = await ethers.getContractFactory("ReturnFalseERC20")
-
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20")
-
-    this.TestOracle = await ethers.getContractFactory("TestOracle")
-
     this.SushiSwapSwapper = await ethers.getContractFactory("SushiSwapSwapper")
+
+    this.ReturnFalseERC20 = await ethers.getContractFactory(
+      "ReturnFalseERC20Mock"
+    )
+
+    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
+
+    this.Oracle = await ethers.getContractFactory("OracleMock")
 
     this.signers = await ethers.getSigners()
 
@@ -48,7 +50,6 @@ describe("Lending Pair", function () {
       "A",
       parseUnits("10000000", 18)
     )
-
     await this.a.deployed()
 
     this.b = await this.RevertingERC20.deploy(
@@ -56,7 +57,6 @@ describe("Lending Pair", function () {
       "B",
       parseUnits("10000000", 18)
     )
-
     await this.b.deployed()
 
     // Alice has all tokens for a and b since creator
@@ -70,11 +70,19 @@ describe("Lending Pair", function () {
 
     this.factory = await this.SushiSwapFactory.deploy(this.alice.address)
     await this.factory.deployed()
-    let tx = await this.factory.createPair(this.a.address, this.b.address)
-    let pair_address = (await tx.wait()).events[0].args.pair
-    this.sushiswappair = await this.UniswapV2Pair.attach(pair_address)
+
+    const createPairTx = await this.factory.createPair(
+      this.a.address,
+      this.b.address
+    )
+
+    const pair = (await createPairTx.wait()).events[0].args.pair
+
+    this.sushiswappair = await this.UniswapV2Pair.attach(pair)
+
     await this.a.transfer(this.sushiswappair.address, parseUnits("5000", 18))
     await this.b.transfer(this.sushiswappair.address, parseUnits("5000", 18))
+
     await this.sushiswappair.mint(this.alice.address)
 
     this.swapper = await this.SushiSwapSwapper.deploy(
@@ -82,11 +90,13 @@ describe("Lending Pair", function () {
       this.factory.address
     )
     await this.swapper.deployed()
+
     await this.lendingPair.setSwapper(this.swapper.address, true)
 
-    this.testOracle = await this.TestOracle.deploy()
-    await this.testOracle.deployed()
-    await this.testOracle.set(parseUnits("1", 18), this.alice.address)
+    this.oracle = await this.Oracle.deploy()
+    await this.oracle.deployed()
+
+    await this.oracle.set(parseUnits("1", 18), this.alice.address)
 
     await this.bentoBox.setMasterContractApproval(
       this.lendingPair.address,
@@ -96,16 +106,23 @@ describe("Lending Pair", function () {
       .connect(this.bob)
       .setMasterContractApproval(this.lendingPair.address, true)
 
-    let oracleData = await this.testOracle.getDataParameter()
+    const oracleData = await this.oracle.getDataParameter()
+
     this.initData = await this.lendingPair.getInitData(
       this.a.address,
       this.b.address,
-      this.testOracle.address,
+      this.oracle.address,
       oracleData
     )
-    tx = await this.bentoBox.deploy(this.lendingPair.address, this.initData)
-    let clone_address = (await tx.wait()).events[1].args.clone_address
-    this.pair = await this.LendingPair.attach(clone_address)
+
+    const deployTx = await this.bentoBox.deploy(
+      this.lendingPair.address,
+      this.initData
+    )
+
+    const cloneAddress = (await deployTx.wait()).events[1].args.clone_address
+
+    this.pair = await this.LendingPair.attach(cloneAddress)
     await this.pair.updateExchangeRate()
   })
 
@@ -141,14 +158,16 @@ describe("Lending Pair", function () {
   describe("permits", function () {
     it("should give a correct DOMAIN_SEPARATOR", async function () {
       expect(await this.pair.DOMAIN_SEPARATOR()).to.be.equal(
-        getDomainSeparator(this.pair.address)
+        getDomainSeparator(
+          this.pair.address,
+          this.alice.provider._network.chainId
+        )
       )
     })
     /* it('should execute a permit', async function() {
         let nonce = await this.pair.nonces(this.charlie.address)
         
         const deadline = (await this.alice.provider._internalBlockNumber).respTime + 10000
-
     const digest = await getApprovalDigest(
       this.pair.address,
       {
@@ -163,7 +182,6 @@ describe("Lending Pair", function () {
       Buffer.from(digest.slice(2), "hex"),
       Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
     )
-
     await this.pair
       .connect(this.charlie)
       .permit(
