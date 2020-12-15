@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest } = require("./permit")
+const { getApprovalDigest, getDomainSeparator } = require("./helpers/permit")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
 const { ecsign } = require("ethereumjs-util")
 
@@ -81,18 +81,172 @@ describe("Lending Pair", function () {
     await this.bentoBox.connect(this.bob).setMasterContractApproval(this.lendingPair.address, true);
 
     let oracleData = await this.testOracle.getDataParameter()
-    let initData = await this.lendingPair.getInitData(this.a.address, this.b.address, this.testOracle.address, oracleData)
-    tx = await this.bentoBox.deploy(this.lendingPair.address, initData)
+    this.initData = await this.lendingPair.getInitData(this.a.address, this.b.address, this.testOracle.address, oracleData)
+    tx = await this.bentoBox.deploy(this.lendingPair.address, this.initData)
     let clone_address = (await tx.wait()).events[1].args.clone_address
     this.pair = await this.LendingPair.attach(clone_address)
     await this.pair.updateExchangeRate()
   })
 
-  describe("Symbol", function () {
+  describe("name, symbol and decimals", function () {
     it('should autogen a nice name and symbol', async function () {
-        console.log(await this.pair.name())
         //assert.equal(await this.pair.symbol(), "bmA>B-TEST");
         //assert.equal(await this.pair.name(), "Bento Med Risk Token A>Token B-TEST");
     })
+  })
+
+  describe("init", function () {
+      it("should not allow to init initialized pair", async function() {
+          expect(this.pair.init(this.initData)).to.be.revertedWith("LendingPair: already initialized")
+      })
+  })
+
+  describe("accrue", function () {
+
+  })
+
+  describe("isSolvent", function () {
+
+  })
+
+  describe("peekExchangeRate", function () {
+      it("should return correct exchange rate", async function() {
+         expect((await this.pair.peekExchangeRate())[1]).to.be.equal(parseUnits("1", 18))
+      })
+  })
+
+  describe("updateExchangeRate", function () {
+
+  })
+
+  
+  describe("permits", function () {
+      it("should give a correct DOMAIN_SEPARATOR", async function(){
+          expect(await this.pair.DOMAIN_SEPARATOR()).to.be.equal(getDomainSeparator(this.pair.address))
+      })
+     /* it('should execute a permit', async function() {
+        let nonce = await this.pair.nonces(this.charlie.address)
+        
+        const deadline = (await this.alice.provider._internalBlockNumber).respTime + 10000
+
+    const digest = await getApprovalDigest(
+      this.pair.address,
+      {
+        owner: this.charlie.address,
+        spender: this.alice.address,
+        value: 1,
+      },
+      nonce,
+      deadline
+    )
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
+    )
+
+    await this.pair
+      .connect(this.charlie)
+      .permit(
+        this.charlie.address,
+        this.alice.address,
+        1,
+        deadline,
+        v,
+        r,
+        s
+      )
+      }) */
+  })
+  
+  describe("assets", function() {
+    describe("addAsset", function(){
+        it("should revert if MasterContract is not approved", async function(){
+            await this.b.connect(this.charlie).approve(this.bentoBox.address, 300)
+            expect(this.pair.connect(this.charlie).addAsset(290)).to.be.revertedWith('BentoBox: Transfer not approved')
+        })
+
+        it("should take a deposit of assets from BentoBox", async function(){
+            await this.b.approve(this.bentoBox.address, 300)
+            await this.bentoBox.deposit(this.b.address, this.alice.address, 300)
+            await this.pair.addAssetFromBento(300)
+            expect(await this.pair.balanceOf(this.alice.address)).to.be.equal(300)
+        })
+
+        it("should emit correct event on adding asset", async function(){
+            await this.b.approve(this.bentoBox.address, 300)
+            expect(this.pair.addAsset(290))
+            .to.emit(this.pair, "LogAddAsset")
+            .withArgs(
+                this.alice.address,
+                290,
+                290
+            )
+        })
+
+        it("should have correct balance after adding asset", async function(){
+            await this.b.approve(this.bentoBox.address, 300)
+            await this.pair.addAsset(290)
+            expect(await this.pair.balanceOf(this.alice.address)).to.be.equal(290)
+        })
+    })
+
+    describe("removeAsset", function(){
+        it("should not allow a remove without assets", async function(){
+          expect(this.pair.removeAsset(1, this.alice.address)).to.be.revertedWith("BoringMath: Underflow")
+        })
+    })
+  })
+  
+  describe("collateral", function() {
+    describe("addCollateral", function() {
+
+    })
+    describe("removeCollateral", function(){
+        it("should not allow a remove without collateral", async function(){
+            expect(this.pair.removeCollateral(1, this.alice.address)).to.be.revertedWith("BoringMath: Underflow")
+        })
+      })
+  })
+  
+
+  describe("borrow", function(){
+    it("should not allow borrowing without any assets", async function(){
+        expect(this.pair.borrow(1, this.alice.address)).to.be.revertedWith("BoringMath: Underflow")
+    })
+      
+  })
+
+  describe("repay", function(){
+      
+  })
+
+  describe("short", function(){
+      
+  })
+
+  describe("unwind", function(){
+      
+  })
+
+  describe("liquidate", function(){
+      
+  })
+
+  describe("batch", function(){
+      
+  })
+
+  describe("withdrawFees", function(){
+      
+  })
+
+  describe("swipe", function(){
+      
+  })
+
+  describe("onlyOwner functions", function () {
+      it('should not allow nonDev to setDev', async function() {
+          expect(this.pair.connect(this.bob).setDev(this.bob.address)).to.be.revertedWith("LendingPair: Not dev")
+      })
   })
 })
