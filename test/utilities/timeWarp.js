@@ -7,31 +7,11 @@ advanceTimeAndBlock = async (time, ethers) => {
 }
 
 advanceTime = (time, ethers) => {
-    return new Promise((resolve, reject) => {
-        ethers.provider.send({
-            jsonrpc: "2.0",
-            method: "evm_increaseTime",
-            params: [time],
-            id: new Date().getTime()
-        }, (err, result) => {
-            if (err) { return reject(err); }
-            return resolve(result);
-        });
-    });
+    return ethers.provider.send("evm_increaseTime", [time])
 }
 
 advanceBlock = (ethers) => {
-    return new Promise((resolve, reject) => {
-        ethers.provider.send({
-            jsonrpc: "2.0",
-            method: "evm_mine",
-            id: new Date().getTime()
-        }, (err, result) => {
-            if (err) { return reject(err); }
-
-            return resolve()
-        });
-    });
+    return ethers.provider.send("evm_mine")
 }
 
 module.exports = {
