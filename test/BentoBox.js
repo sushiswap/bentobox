@@ -1,6 +1,6 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest } = require("./permit")
+const { getApprovalDigest, getDomainSeparator } = require("./helpers/permit")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
 const { ecsign } = require("ethereumjs-util")
 
