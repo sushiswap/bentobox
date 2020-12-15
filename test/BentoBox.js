@@ -292,7 +292,6 @@ describe("BentoBox", function () {
         deadline,
         this.alice.provider._network.chainId
       )
-
       const { v, r, s } = ecsign(
         Buffer.from(digest.slice(2), "hex"),
         Buffer.from(this.carolPrivateKey.replace("0x", ""), "hex")
@@ -521,7 +520,6 @@ describe("BentoBox", function () {
         )
       ).to.be.revertedWith("BentoBox: to[0] not set")
     })
-
     it("should allow transfer multiple from alice to bob and carol", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
@@ -537,7 +535,8 @@ describe("BentoBox", function () {
       await this.bentoBox.transferMultiple(
         this.a.address,
         [this.bob.address, this.carol.address],
-        [1, 1]
+        [1, 1],
+        { from: this.alice.address }
       )
 
       assert.equal(

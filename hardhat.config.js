@@ -1,5 +1,4 @@
 // hardhat.config.js
-const { exec } = require("child_process")
 
 require("@nomiclabs/hardhat-waffle")
 require("@nomiclabs/hardhat-solhint")
@@ -54,9 +53,6 @@ module.exports = {
     },
   },
   networks: {
-    // hardhat: {
-    //   chainId: 31337,
-    // },
     hardhat: {
       chainId: 31337,
       accounts: [
