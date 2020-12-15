@@ -22,6 +22,12 @@ task("accounts", "Prints the list of accounts", async () => {
   }
 })
 
+task("block", "Prints the current block", async (_, { ethers }) => {
+  const block = await ethers.provider.getBlockNumber()
+
+  console.log("Current block: " + block)
+})
+
 task("pairs", "Prints the list of pairs", async () => {
   // ...
 })
