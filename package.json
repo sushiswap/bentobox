@@ -1,6 +1,6 @@
 {
-  "name": "bentobox",
-  "version": "1.0.0",
+  "name": "@sushiswap/bentobox",
+  "version": "0.1.0",
   "description": "",
   "main": "truffle-config.js",
   "directories": {
@@ -10,7 +10,8 @@
     "build": "truffle build",
     "test": "./test.sh $TRUFFLE_TEST",
     "flatten": "node scripts/flatten.js",
-    "test:cover": "node --max-old-space-size=4096 ./node_modules/.bin/truffle run coverage"
+    "test:cover": "node --max-old-space-size=4096 ./node_modules/.bin/truffle run coverage",
+    "prepublishOnly": "truffle build && node scripts/prepublish.js"
   },
   "repository": {
     "type": "git",
