@@ -1,7 +1,8 @@
-const { ethers } = require("hardhat")
+const {
+  ethers: { BigNumber },
+} = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, getDomainSeparator } = require("./helpers/permit")
-const { parseEther, parseUnits } = require("ethers/lib/utils")
+const { getApprovalDigest } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
@@ -12,9 +13,13 @@ describe("BentoBox", function () {
 
     this.LendingPair = await ethers.getContractFactory("LendingPair")
 
-    this.ReturnFalseERC20 = await ethers.getContractFactory("ReturnFalseERC20")
+    this.ERC20 = await ethers.getContractFactory("ERC20Mock")
 
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20")
+    this.ReturnFalseERC20 = await ethers.getContractFactory(
+      "ReturnFalseERC20Mock"
+    )
+
+    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
 
     this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
 
@@ -36,6 +41,9 @@ describe("BentoBox", function () {
 
     this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
     await this.bentoBox.deployed()
+
+    this.erc20 = await this.ERC20.deploy(10000000)
+    await this.erc20.deployed()
 
     this.a = await this.ReturnFalseERC20.deploy("Token A", "A", 10000000)
 
@@ -278,7 +286,8 @@ describe("BentoBox", function () {
           value: 1,
         },
         nonce,
-        deadline
+        deadline,
+        this.alice.provider._network.chainId
       )
       const { v, r, s } = ecsign(
         Buffer.from(digest.slice(2), "hex"),
@@ -378,7 +387,7 @@ describe("BentoBox", function () {
       ).to.be.revertedWith("BoringMath: Underflow")
     })
 
-    it("Emits LogWithdraw event with correct arguments", async function () {
+    it("Emits LogWithdraw event with expected arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
@@ -486,7 +495,7 @@ describe("BentoBox", function () {
       ).to.be.equal(1)
     })
 
-    it("Emits LogTransfer event with correct arguments", async function () {
+    it("Emits LogTransfer event with expected arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
@@ -498,22 +507,27 @@ describe("BentoBox", function () {
   })
 
   describe("Transfer Multiple", function () {
-    /*
-    it("should revert if tos are not set", async function () {
+    it("Reverts if first to argument is address zero", async function () {
       expect(
         this.bentoBox.transferMultiple(
           this.a.address,
-          [this.alice.address],
           ["0x0000000000000000000000000000000000000000"],
-          ["1"]
+          [1]
         )
-      ).to.be.revertedWith("BentoBox: to[0] not set")
+      ).to.be.reverted
     })
-    */
+
     it("should allow transfer multiple from alice to bob and carol", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 2)
+
+      // await this.bentoBox.transferMultipleFrom(
+      //   this.a.address,
+      //   this.alice.address,
+      //   [this.bob.address, this.carol.address],
+      //   [1, 1]
+      // )
 
       await this.bentoBox.transferMultiple(
         this.a.address,
@@ -561,7 +575,7 @@ describe("BentoBox", function () {
       ).to.be.equal(1)
     })
 
-    it("Emits LogDeposit event with correct arguments", async function () {
+    it("Emits LogDeposit event with expected arguments", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
       expect(
