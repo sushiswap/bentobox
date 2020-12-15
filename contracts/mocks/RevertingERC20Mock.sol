@@ -3,7 +3,7 @@
 // RevertingERC20 reverts on errors
 pragma solidity 0.6.12;
 
-contract RevertingERC20 {
+contract RevertingERC20Mock {
     string public symbol;
     string public name;
     uint8 public constant decimals = 18;

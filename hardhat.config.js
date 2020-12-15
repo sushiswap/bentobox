@@ -54,8 +54,38 @@ module.exports = {
     },
   },
   networks: {
+    // hardhat: {
+    //   chainId: 31337,
+    // },
     hardhat: {
       chainId: 31337,
+      accounts: [
+        {
+          privateKey:
+            "0x278a5de700e29faae8e40e366ec5012b5ec63d36ec77e8a2417154cc1d25383f",
+          balance: "990000000000000000000",
+        },
+        {
+          privateKey:
+            "0x7bc8feb5e1ce2927480de19d8bc1dc6874678c016ae53a2eec6a6e9df717bfac",
+          balance: "990000000000000000000",
+        },
+        {
+          privateKey:
+            "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4",
+          balance: "990000000000000000000",
+        },
+        {
+          privateKey:
+            "0x12340218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4",
+          balance: "990000000000000000000",
+        },
+        {
+          privateKey:
+            "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f",
+          balance: "990000000000000000000",
+        },
+      ],
     },
     // mainnet: {
     //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,

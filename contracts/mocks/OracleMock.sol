@@ -5,7 +5,7 @@ import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 // WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle
-contract TestOracle is IOracle {
+contract OracleMock is IOracle {
     using BoringMath for uint256;
 
     uint256 rate;

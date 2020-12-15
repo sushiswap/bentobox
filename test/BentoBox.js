@@ -1,7 +1,9 @@
-const { ethers } = require("hardhat")
+const {
+  ethers: { BigNumber },
+} = require("hardhat")
 const { expect, assert } = require("chai")
 const { getApprovalDigest } = require("./permit")
-const { parseEther, parseUnits } = require("ethers/lib/utils")
+const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
@@ -11,9 +13,13 @@ describe("BentoBox", function () {
 
     this.LendingPair = await ethers.getContractFactory("LendingPair")
 
-    this.ReturnFalseERC20 = await ethers.getContractFactory("ReturnFalseERC20")
+    this.ERC20 = await ethers.getContractFactory("ERC20Mock")
 
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20")
+    this.ReturnFalseERC20 = await ethers.getContractFactory(
+      "ReturnFalseERC20Mock"
+    )
+
+    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
 
     this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
 
@@ -24,6 +30,9 @@ describe("BentoBox", function () {
     this.bob = this.signers[1]
 
     this.carol = this.signers[2]
+
+    this.carolPrivateKey =
+      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
   })
 
   beforeEach(async function () {
@@ -32,6 +41,9 @@ describe("BentoBox", function () {
 
     this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
     await this.bentoBox.deployed()
+
+    this.erc20 = await this.ERC20.deploy(10000000)
+    await this.erc20.deployed()
 
     this.a = await this.ReturnFalseERC20.deploy("Token A", "A", 10000000)
 
@@ -69,7 +81,7 @@ describe("BentoBox", function () {
         .withArgs(
           this.lendingPair.address,
           data,
-          "0xCafac3dD18aC6c6e92c921884f9E4176737C052c"
+          "0xa936eEBB5A8F82a38dF9fC58E736b9eeF16A6A44"
         )
     })
   })
@@ -260,6 +272,8 @@ describe("BentoBox", function () {
   // TODO: Cover these
   describe("Deposit With Permit", function () {
     it("Mutates balanceOf given a valid signiture and balance of token", async function () {
+      console.log(this.carol)
+
       await this.a.transfer(this.carol.address, 1)
 
       const nonce = await this.a.nonces(this.carol.address)
@@ -275,19 +289,14 @@ describe("BentoBox", function () {
           value: 1,
         },
         nonce,
-        deadline
+        deadline,
+        this.alice.provider._network.chainId
       )
 
-      // Arrayify
-      const messageHashBytes = ethers.utils.arrayify(digest)
-
-      // Sign the binary data
-      const signiture = await this.carol.signMessage(messageHashBytes)
-
-      // For Solidity, we need the expanded-format of a signature
-      const { v, r, s } = ethers.utils.splitSignature(signiture)
-
-      console.log(this.a.address, this.carol.address, 1, deadline, v, r, s)
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(this.carolPrivateKey.replace("0x", ""), "hex")
+      )
 
       await this.bentoBox
         .connect(this.carol)
@@ -382,7 +391,7 @@ describe("BentoBox", function () {
       ).to.be.revertedWith("BoringMath: Underflow")
     })
 
-    it("Emits LogWithdraw event with correct arguments", async function () {
+    it("Emits LogWithdraw event with expected arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
@@ -490,7 +499,7 @@ describe("BentoBox", function () {
       ).to.be.equal(1)
     })
 
-    it("Emits LogTransfer event with correct arguments", async function () {
+    it("Emits LogTransfer event with expected arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
@@ -502,14 +511,31 @@ describe("BentoBox", function () {
   })
 
   describe("Transfer Multiple", function () {
+    it("Reverts if first to argument is address zero", async function () {
+      expect(
+        this.bentoBox.transferMultiple(
+          this.a.address,
+          this.alice.address,
+          ["0x0000000000000000000000000000000000000000"],
+          [1]
+        )
+      ).to.be.revertedWith("BentoBox: to[0] not set")
+    })
+
     it("should allow transfer multiple from alice to bob and carol", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 2)
 
-      await this.bentoBox.transferMultipleFrom(
+      // await this.bentoBox.transferMultipleFrom(
+      //   this.a.address,
+      //   this.alice.address,
+      //   [this.bob.address, this.carol.address],
+      //   [1, 1]
+      // )
+
+      await this.bentoBox.transferMultiple(
         this.a.address,
-        this.alice.address,
         [this.bob.address, this.carol.address],
         [1, 1]
       )
@@ -553,7 +579,7 @@ describe("BentoBox", function () {
       ).to.be.equal(1)
     })
 
-    it("Emits LogDeposit event with correct arguments", async function () {
+    it("Emits LogDeposit event with expected arguments", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
       expect(

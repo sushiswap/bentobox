@@ -1,9 +1,4 @@
 module.exports = {
-  // NOTE: This is actually the default value but it is being overwritten by
-  // the solidity plugin somehow.
-  bracketSpacing: true,
-  trailingComma: "all",
-
   overrides: [
     {
       files: "*.sol",

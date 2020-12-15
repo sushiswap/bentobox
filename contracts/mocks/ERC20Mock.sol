@@ -1,9 +1,10 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.6.12;
 
 import "../ERC20.sol";
 
-contract TestERC20 is ERC20 {
+contract ERC20Mock is ERC20 {
     uint256 public totalSupply;
 
     constructor(uint256 _initialAmount) public {
