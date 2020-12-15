@@ -1,5 +1,7 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
+const { getApprovalDigest, getDomainSeparator } = require("./utilities")
+const { ecsign } = require("ethereumjs-util")
 
 describe("ERC20", function () {
   before(async function () {
@@ -16,6 +18,9 @@ describe("ERC20", function () {
     this.bob = this.signers[2]
 
     this.carol = this.signers[3]
+
+    this.bobPrivateKey =
+      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
   })
 
   beforeEach(async function () {
@@ -64,15 +69,8 @@ describe("ERC20", function () {
         .be.true
     })
 
-    it("Returns false on failure", async function () {
-      expect(await this.token.callStatic.transfer(this.alice.address, 10001)).to
-        .be.false
-    })
-
     it("Fails transfering 10001 tokens from owner to alice", async function () {
-      expect(() =>
-        this.token.transfer(this.alice.address, 10001)
-      ).to.changeTokenBalances(this.token, [this.owner, this.alice], [-0, 0])
+      expect(this.token.transfer(this.alice.address, 10001)).to.be.revertedWith("LendingPair: balance too low")
     })
 
     it("Succeeds for zero value transfer", async function () {
@@ -218,25 +216,20 @@ describe("ERC20", function () {
       let balance0 = await this.token.balanceOf(this.owner.address)
       assert.strictEqual(balance0, 9950)
 
-      await this.token
+      expect(this.token
         .connect(this.alice)
         .transferFrom(this.owner.address, this.bob.address, 60, {
           from: this.alice.address,
-        })
+        })).to.be.revertedWith("LendingPair: allowance too low")
 
-      balance0 = await this.token.balanceOf(this.owner.address)
-      assert.strictEqual(balance0, 9950)
     })
 
     it("approvals: attempt withdrawal from account with no allowance (should fail)", async function () {
-      await this.token
+      expect(this.token
         .connect(this.alice)
         .transferFrom(this.owner.address, this.bob.address, 60, {
           from: this.alice.address,
-        })
-
-      const balance0 = await this.token.balanceOf(this.owner.address)
-      assert.strictEqual(balance0, 10000)
+        })).to.be.revertedWith("LendingPair: allowance too low")
     })
 
     it("approvals: allow this.alice.address 100 to withdraw from this.owner.address. Withdraw 60 and then approve 0 & attempt transfer.", async function () {
@@ -248,14 +241,11 @@ describe("ERC20", function () {
         })
       await this.token.approve(this.alice.address, 0)
 
-      await this.token
+      expect(this.token
         .connect(this.alice)
         .transferFrom(this.owner.address, this.bob.address, 10, {
           from: this.alice.address,
-        })
-
-      const balance0 = await this.token.balanceOf(this.owner.address)
-      assert.strictEqual(balance0, 9940)
+        })).to.be.revertedWith("LendingPair: allowance too low")
     })
 
     it("approvals: approve max (2^256 - 1)", async function () {
@@ -312,5 +302,120 @@ describe("ERC20", function () {
         .to.emit(this.token, "Approval")
         .withArgs(this.owner.address, this.alice.address, 2666)
     })
+  })
+
+  describe("permits", function () {
+    it("should give a correct DOMAIN_SEPARATOR", async function () {
+      expect(await this.token.DOMAIN_SEPARATOR()).to.be.equal(
+        getDomainSeparator(
+          this.token.address,
+          this.alice.provider._network.chainId
+        )
+      )
+    })
+    it("should execute a permit", async function () {
+
+      const nonce = await this.token.nonces(this.bob.address)
+
+      const deadline =
+        (await this.alice.provider._internalBlockNumber).respTime + 10000
+
+      const digest = await getApprovalDigest(
+        this.token,
+        {
+          owner: this.bob.address,
+          spender: this.alice.address,
+          value: 1,
+        },
+        nonce,
+        deadline,
+        this.alice.provider._network.chainId
+      )
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
+      )
+
+      await this.token
+        .connect(this.bob)
+        .permit(
+          this.bob.address,
+          this.alice.address,
+          1,
+          deadline,
+          v,
+          r,
+          s,
+          { from: this.bob.address }
+        )
+    })
+
+      it('permit should revert on old deadline', async function() {
+        let nonce = await this.token.nonces(this.bob.address)
+        
+        const deadline = 0
+
+    const digest = await getApprovalDigest(
+      this.token,
+      {
+        owner: this.bob.address,
+        spender: this.alice.address,
+        value: 1,
+      },
+      nonce,
+      deadline,
+      this.alice.provider._network.chainId
+    )
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
+    )
+
+    expect(this.token
+      .connect(this.bob)
+      .permit(
+        this.bob.address,
+        this.alice.address,
+        1,
+        deadline,
+        v,
+        r,
+        s
+      , {from: this.bob.address})).to.be.revertedWith("Expired")
+      })
+
+      it('permit should revert on incorrect signer', async function() {
+        let nonce = await this.token.nonces(this.bob.address)
+        
+        const deadline = (await this.bob.provider._internalBlockNumber).respTime + 10000
+
+    const digest = await getApprovalDigest(
+      this.token,
+      {
+        owner: this.bob.address,
+        spender: this.alice.address,
+        value: 1,
+      },
+      nonce,
+      deadline,
+      this.alice.provider._network.chainId
+    )
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
+    )
+
+    expect(this.token
+      .connect(this.bob)
+      .permit(
+        this.bob.address,
+        this.alice.address,
+        1,
+        deadline,
+        v,
+        r,
+        s
+      , {from: this.bob.address})).to.be.revertedWith("Invalid Signature")
+      })
   })
 })

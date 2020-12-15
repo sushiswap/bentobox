@@ -2,11 +2,17 @@ const {
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 
+const { parseUnits } = require("ethers/lib/utils")
+
 const PERMIT_TYPEHASH = keccak256(
   toUtf8Bytes(
     "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
   )
 )
+
+const e18 = (amount) => {
+  return parseUnits(String(amount), 18)
+}
 
 function getDomainSeparator(tokenAddress, chainId) {
   return keccak256(
@@ -64,7 +70,7 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
 }
 
 function sansBorrowFee(amount) {
-  return amount.mul(2000).div(2001)
+  return amount.mul(ethers.BigNumber.from(2000)).div(ethers.BigNumber.from(2001))
 }
 
 module.exports = {
@@ -72,4 +78,5 @@ module.exports = {
   getApprovalDigest,
   getApprovalMsg,
   sansBorrowFee,
+  e18
 }
