@@ -164,12 +164,12 @@ describe("Lending Pair", function () {
         )
       )
     })
-    /* it('should execute a permit', async function() {
+    it('should execute a permit', async function() {
         let nonce = await this.pair.nonces(this.charlie.address)
         
-        const deadline = (await this.alice.provider._internalBlockNumber).respTime + 10000
+        const deadline = (await this.charlie.provider._internalBlockNumber).respTime + 10000
     const digest = await getApprovalDigest(
-      this.pair.address,
+      this.pair,
       {
         owner: this.charlie.address,
         spender: this.alice.address,
@@ -192,8 +192,74 @@ describe("Lending Pair", function () {
         v,
         r,
         s
-      )
-      }) */
+      , {from: this.charlie.address})
+      })
+
+      it('permit should revert on old deadline', async function() {
+        let nonce = await this.pair.nonces(this.charlie.address)
+        
+        const deadline = 0
+
+    const digest = await getApprovalDigest(
+      this.pair,
+      {
+        owner: this.charlie.address,
+        spender: this.alice.address,
+        value: 1,
+      },
+      nonce,
+      deadline
+    )
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
+    )
+
+    expect(this.pair
+      .connect(this.charlie)
+      .permit(
+        this.charlie.address,
+        this.alice.address,
+        1,
+        deadline,
+        v,
+        r,
+        s
+      , {from: this.charlie.address})).to.be.revertedWith("Expired")
+      })
+
+      it('permit should revert on incorrect signer', async function() {
+        let nonce = await this.pair.nonces(this.charlie.address)
+        
+        const deadline = (await this.charlie.provider._internalBlockNumber).respTime + 10000
+
+    const digest = await getApprovalDigest(
+      this.pair,
+      {
+        owner: this.charlie.address,
+        spender: this.alice.address,
+        value: 1,
+      },
+      nonce,
+      deadline
+    )
+    const { v, r, s } = ecsign(
+      Buffer.from(digest.slice(2), "hex"),
+      Buffer.from(this.charliePrivateKey.replace("0x", ""), "hex")
+    )
+
+    expect(this.pair
+      .connect(this.charlie)
+      .permit(
+        this.bob.address,
+        this.alice.address,
+        1,
+        deadline,
+        v,
+        r,
+        s
+      , {from: this.charlie.address})).to.be.revertedWith("Invalid Signature")
+      })
   })
 
   describe("assets", function () {
@@ -236,7 +302,13 @@ describe("Lending Pair", function () {
   })
 
   describe("collateral", function () {
-    describe("addCollateral", function () {})
+    describe("addCollateral", function () {
+      it('should take a deposit of collateral', async function() {
+        await this.a.approve(this.bentoBox.address, 300)
+        expect(this.pair.addCollateral(290)).to.emit(this.pair, "LogAddCollateral")
+        .withArgs(this.alice.address, 290)
+      })
+    })
     describe("removeCollateral", function () {
       it("should not allow a remove without collateral", async function () {
         expect(
@@ -250,6 +322,14 @@ describe("Lending Pair", function () {
     it("should not allow borrowing without any assets", async function () {
       expect(this.pair.borrow(1, this.alice.address)).to.be.revertedWith(
         "BoringMath: Underflow"
+      )
+    })
+
+    it("should not allow borrowing without any collateral", async function () {
+      await this.b.approve(this.bentoBox.address, 300)
+      await this.pair.addAsset(290)
+      expect(this.pair.borrow(1, this.alice.address)).to.be.revertedWith(
+        "user insolvent"
       )
     })
   })
