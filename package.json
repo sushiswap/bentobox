@@ -1,8 +1,12 @@
 {
   "name": "@sushiswap/bentobox",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "",
   "main": "truffle-config.js",
+  "files": [
+    "contracts",
+    "build"
+  ],
   "directories": {
     "test": "test"
   },
