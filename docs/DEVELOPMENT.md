@@ -1,4 +1,4 @@
-# BentoBox Development Docs
+# Development Docs
 
 ...
 
