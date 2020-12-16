@@ -20,6 +20,10 @@ https://hardhat.org/guides/mainnet-forking.html#mainnet-forking
 
 yarn test
 
+### Single files
+
+yarn test test/LendingPair.js
+
 Mocha & Chai with Waffle matchers (these are really useful).
 
 https://ethereum-waffle.readthedocs.io/en/latest/matchers.html
@@ -49,3 +53,5 @@ yarn lint
 > run the verify task, passing the address of the contract, the network where it's deployed, and the constructor arguments that were used to deploy it (if any)
 
 npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
+
+https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#hardhat-etherscan

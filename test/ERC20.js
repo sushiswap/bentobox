@@ -1,6 +1,10 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, getDomainSeparator } = require("./utilities")
+const {
+  ADDRESS_ZERO,
+  getApprovalDigest,
+  getDomainSeparator,
+} = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("ERC20", function () {
@@ -311,8 +315,9 @@ describe("ERC20", function () {
     })
   })
 
-  describe("permits", function () {
-    it("should give a correct DOMAIN_SEPARATOR", async function () {
+  describe("Permit", function () {
+    // This is a test of our utility function.
+    it("Returns correct DOMAIN_SEPARATOR for token and chainId", async function () {
       expect(await this.token.DOMAIN_SEPARATOR()).to.be.equal(
         getDomainSeparator(
           this.token.address,
@@ -320,7 +325,40 @@ describe("ERC20", function () {
         )
       )
     })
-    it("should execute a permit", async function () {
+
+    it("Reverts when address zero is passed as owner argument", async function () {
+      const nonce = await this.token.nonces(this.bob.address)
+
+      const deadline =
+        (await this.alice.provider._internalBlockNumber).respTime + 10000
+
+      const digest = await getApprovalDigest(
+        this.token,
+        {
+          owner: this.bob.address,
+          spender: this.alice.address,
+          value: 1,
+        },
+        nonce,
+        deadline,
+        this.alice.provider._network.chainId
+      )
+
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
+      )
+
+      expect(
+        this.token
+          .connect(this.bob)
+          .permit(ADDRESS_ZERO, this.alice.address, 1, deadline, v, r, s, {
+            from: this.bob.address,
+          })
+      ).to.be.revertedWith("Owner cannot be 0")
+    })
+
+    it("Succeessfully executes a permit", async function () {
       const nonce = await this.token.nonces(this.bob.address)
 
       const deadline =
@@ -349,7 +387,41 @@ describe("ERC20", function () {
         })
     })
 
-    it("permit should revert on old deadline", async function () {
+    it("Emits Approval event with expected arguments on successful execution of permit", async function () {
+      const nonce = await this.token.nonces(this.bob.address)
+
+      const deadline =
+        (await this.alice.provider._internalBlockNumber).respTime + 10000
+
+      const digest = await getApprovalDigest(
+        this.token,
+        {
+          owner: this.bob.address,
+          spender: this.alice.address,
+          value: 1,
+        },
+        nonce,
+        deadline,
+        this.alice.provider._network.chainId
+      )
+
+      const { v, r, s } = ecsign(
+        Buffer.from(digest.slice(2), "hex"),
+        Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
+      )
+
+      expect(
+        this.token
+          .connect(this.bob)
+          .permit(this.bob.address, this.alice.address, 1, deadline, v, r, s, {
+            from: this.bob.address,
+          })
+      )
+        .to.emit(this.token, "Approval")
+        .withArgs(this.bob.address, this.alice.address, 1)
+    })
+
+    it("Reverts on expired deadline", async function () {
       let nonce = await this.token.nonces(this.bob.address)
 
       const deadline = 0
@@ -379,7 +451,7 @@ describe("ERC20", function () {
       ).to.be.revertedWith("Expired")
     })
 
-    it("permit should revert on incorrect signer", async function () {
+    it("Reverts on invalid signiture", async function () {
       let nonce = await this.token.nonces(this.bob.address)
 
       const deadline =
