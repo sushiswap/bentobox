@@ -3,12 +3,12 @@ module.exports = {
   testCommand: "npm test",
   compileCommand: "npm run compile",
   skipFiles: [
-    "external/",
     "libraries/",
     "mocks/",
-    "ChainlinkOracle.sol",
-    "CompoundOracle.sol",
-    "BentoHelper.sol"
+    "interfaces/",
+    "./oracles/ChainlinkOracle.sol",
+    "./oracles/CompoundOracle.sol",
+    "BentoHelper.sol",
   ],
   providerOptions: {
     default_balance_ether: "10000000000000000000000000",

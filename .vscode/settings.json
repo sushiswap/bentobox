@@ -4,12 +4,14 @@
   "editor.codeActionsOnSave": {
     "source.fixAll": true
   },
+  "mochaExplorer.files": "test/**/*.{j,t}s",
+  "mochaExplorer.fullTrace": true,
+  "mochaExplorer.exit": true,
   "solidity.linter": "solhint",
   "solidity.enableLocalNodeCompiler": false,
   "solidity.compileUsingRemoteVersion": "v0.6.12+commit.27d51765",
   "solidity.packageDefaultDependenciesContractsDirectory": "",
   "solidity.enabledAsYouTypeCompilationErrorCheck": true,
   "solidity.validationDelay": 1500,
-  "solidity.packageDefaultDependenciesDirectory": "node_modules",
-  "mochaExplorer.files": "test/**/*.{j,t}s"
+  "solidity.packageDefaultDependenciesDirectory": "node_modules"
 }

@@ -18,8 +18,6 @@ We solve these issues by having a platform with:
 
 [Deployment](docs/DEPLOYMENT.md)
 
-[Tenderly](docs/TENDERLY.md)
-
 ## Licence
 
 UNLICENCED
