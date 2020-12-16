@@ -2,7 +2,7 @@ const {
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 
-const { BN } = require('bn.js');
+const { BN } = require("bn.js")
 
 const { parseUnits } = require("ethers/lib/utils")
 
@@ -11,11 +11,16 @@ const bn = (amount) => {
 }
 
 const roundBN = (number) => {
-  return (new BN(number.toString())).divRound(new BN("10000000000000000")).toString()
+  return new BN(number.toString())
+    .divRound(new BN("10000000000000000"))
+    .toString()
 }
 
 const encodePrice = (reserve0, reserve1) => {
-  return [reserve1.mul(bn('2').pow(bn('112'))).div(reserve0), reserve0.mul(bn('2').pow(bn('112'))).div(reserve1)];
+  return [
+    reserve1.mul(bn("2").pow(bn("112"))).div(reserve0),
+    reserve0.mul(bn("2").pow(bn("112"))).div(reserve1),
+  ]
 }
 
 const PERMIT_TYPEHASH = keccak256(
@@ -97,5 +102,5 @@ module.exports = {
   e18,
   bn,
   encodePrice,
-  roundBN
+  roundBN,
 }
