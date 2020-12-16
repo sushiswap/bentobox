@@ -196,7 +196,6 @@ describe("CompositeOracle", function () {
   })
 
   it("Assigns name SushiSwap TWAP+SushiSwap TWAP to Composite Oracle", async function () {
-    console.log(await this.compositeOracle.name(this.compositeOracleData))
     expect(await this.compositeOracle.name(this.compositeOracleData)).to.equal(
       "SushiSwap TWAP+SushiSwap TWAP"
     )
