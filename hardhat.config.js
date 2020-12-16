@@ -1,16 +1,31 @@
 // hardhat.config.js
 require("dotenv/config")
-require("@nomiclabs/hardhat-waffle")
+require("@nomiclabs/hardhat-etherscan")
 require("@nomiclabs/hardhat-solhint")
 // require("@nomiclabs/hardhat-solpp")
-require("@nomiclabs/hardhat-etherscan")
 require("@tenderly/hardhat-tenderly")
-require("hardhat-spdx-license-identifier")
-require("hardhat-gas-reporter")
+require("@nomiclabs/hardhat-waffle")
 require("hardhat-abi-exporter")
+// require("hardhat-dependency-compiler")
+require("hardhat-deploy")
+require("hardhat-deploy-ethers")
+require("hardhat-gas-reporter")
+require("hardhat-spdx-license-identifier")
 require("hardhat-watcher")
-require("hardhat-dependency-compiler")
 require("solidity-coverage")
+
+const {
+  normalizeHardhatNetworkAccountsConfig,
+} = require("hardhat/internal/core/providers/util")
+
+const {
+  BN,
+  bufferToHex,
+  privateToAddress,
+  toBuffer,
+} = require("ethereumjs-util")
+
+const { removeConsoleLog } = require("hardhat-preprocessor")
 
 const accounts = {
   mnemonic:
@@ -19,16 +34,30 @@ const accounts = {
   accountsBalance: "990000000000000000000",
 }
 
-const { removeConsoleLog } = require("hardhat-preprocessor")
-
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
-task("accounts", "Prints the list of accounts", async () => {
-  const accounts = await ethers.getSigners()
+task("accounts", "Prints the list of accounts", async (_, { config }) => {
+  const networkConfig = config.networks["hardhat"]
 
-  for (const account of accounts) {
-    console.log(account.address)
+  const accounts = normalizeHardhatNetworkAccountsConfig(networkConfig.accounts)
+
+  console.log("Accounts")
+  console.log("========")
+
+  for (const [index, account] of accounts.entries()) {
+    const address = bufferToHex(privateToAddress(toBuffer(account.privateKey)))
+    const privateKey = bufferToHex(toBuffer(account.privateKey))
+    const balance = new BN(account.balance)
+      .div(new BN(10).pow(new BN(18)))
+      .toString(10)
+    console.log(`Account #${index}: ${address} (${balance} ETH)
+Private Key: ${privateKey}
+`)
   }
+})
+
+task("named-accounts", "Prints the list of named account", async () => {
+  console.log({ namedAccounts: await getNamedAccounts() })
 })
 
 task("block", "Prints the current block", async (_, { ethers }) => {
@@ -52,15 +81,32 @@ module.exports = {
     // only: ['ERC20'],
     // except: ['ERC20']
   },
-  dependencyCompiler: {
-    paths: [],
-  },
-  // defaultNetwork: "rinkeby",
+  // dependencyCompiler: {
+  //   paths: [
+  //     "@sushiswap/core/uniswapv2/UniswapV2Factory.sol",
+  //     "@sushiswap/core/uniswapv2/UniswapV2Pair.sol",
+  //   ],
+  // },
+  defaultNetwork: "hardhat",
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
+  // external: {
+  //   contracts: [
+  //     {
+  //       artifacts: "node_modules/@cartesi/arbitration/export/artifacts",
+  //       deploy: "node_modules/@cartesi/arbitration/export/deploy",
+  //     },
+  //     {
+  //       artifacts: "node_modules/someotherpackage/artifacts",
+  //     },
+  //   ],
+  //   deployments: {
+  //     ropsten: ["node_modules/@sushiswap/core"],
+  //   },
+  // },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
     currency: "USD",
@@ -76,56 +122,70 @@ module.exports = {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
     },
   },
+  // mocha: {
+  //   timeout: 0,
+  // },
+  namedAccounts: {
+    deployer: {
+      default: 0, // here this will by default take the first account as deployer
+      1: 0, // similarly on mainnet it will take the first account as deployer. Note though that depending on how hardhat network are configured, the account 0 on one network can be different than on another
+    },
+    alice: {
+      default: 1,
+      // hardhat: 0,
+    },
+    bob: {
+      default: 2,
+      // hardhat: 0,
+    },
+    carol: {
+      default: 3,
+      // hardhat: 0,
+    },
+    fee: {
+      // Default to 1
+      default: 1,
+      // Multi sig feeTo address
+      // 1: "",
+    },
+    dev: {
+      // Default to 1
+      default: 1,
+      // Borings devTo address
+      // 1: "",
+    },
+  },
+
   networks: {
     hardhat: {
       chainId: 31337,
       accounts,
-      // accounts: [
-      //   {
-      //     privateKey:
-      //       "0x278a5de700e29faae8e40e366ec5012b5ec63d36ec77e8a2417154cc1d25383f",
-      //     balance: "990000000000000000000",
-      //   },
-      //   {
-      //     privateKey:
-      //       "0x7bc8feb5e1ce2927480de19d8bc1dc6874678c016ae53a2eec6a6e9df717bfac",
-      //     balance: "990000000000000000000",
-      //   },
-      //   {
-      //     privateKey:
-      //       "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4",
-      //     balance: "990000000000000000000",
-      //   },
-      //   {
-      //     privateKey:
-      //       "0x12340218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4",
-      //     balance: "990000000000000000000",
-      //   },
-      //   {
-      //     privateKey:
-      //       "0x043a569345b08ead19d1d4ba3462b30632feba623a2a85a3b000eb97f709f09f",
-      //     balance: "990000000000000000000",
-      //   },
-      // ],
     },
-    /*
-    mainnet: {
-      url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY],
-      gasPrice: 120 * 1000000000,
-      chainId: 1,
-    },
+    // mainnet: {
+    //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    //   accounts: [process.env.PRIVATE_KEY],
+    //   gasPrice: 120 * 1000000000,
+    //   chainId: 1,
+    // },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY],
+      accounts,
       chainId: 3,
+      live: true,
+      saveDeployments: true,
     },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.PRIVATE_KEY],
-      chainId: 4,
+    kovan: {
+      url: `https://kovan.infura.io/v3/${process.env.INFURA_API_KEY}`,
+      accounts,
+      chainId: 42,
+      live: true,
+      saveDeployments: true,
     },
-    */
+    // rinkeby: {
+    //   url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    //   accounts: [process.env.PRIVATE_KEY],
+    //   chainId: 4,
+    // },
   },
   preprocess: {
     eachLine: removeConsoleLog(

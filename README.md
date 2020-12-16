@@ -1,6 +1,7 @@
 # BentoBox
 
 Platforms like Compound and Aave allow users to deposit assets as collateral and borrow other assets against this. These protocols have attracted billions of dollars, but they suffer from some major limitations. Taking away these limitations could see much larger adoption. BentoBox aims to do just that.
+
 We solve these issues by having a platform with:
 
 - Isolated lending pairs. Anyone can create a pair, it’s up to users which pairs they find safe enough. Risk is isolated to just that pair.
@@ -12,6 +13,8 @@ We solve these issues by having a platform with:
 ## Docs
 
 [Development](docs/DEVELOPMENT.md)
+[Deployment](docs/DEPLOYMENT.md)
+[Tenderly](docs/TENDERLY.md)
 
 ## Licence
 

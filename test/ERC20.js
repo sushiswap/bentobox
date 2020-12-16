@@ -24,7 +24,7 @@ describe("ERC20", function () {
     this.carol = this.signers[3]
 
     this.bobPrivateKey =
-      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
+      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
   })
 
   beforeEach(async function () {

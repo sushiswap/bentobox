@@ -1,6 +1,4 @@
-const {
-  ethers: { utils },
-} = require("hardhat")
+const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
 const {
   getBigNumber,
@@ -11,15 +9,15 @@ const {
 
 describe("Lending Pair", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
+    // this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
-    this.BentoBox = await ethers.getContractFactory("BentoBox")
+    // this.BentoBox = await ethers.getContractFactory("BentoBox")
 
     this.LendingPair = await ethers.getContractFactory("LendingPair")
 
     this.UniswapV2Pair = await ethers.getContractFactory("UniswapV2Pair")
 
-    this.SushiSwapFactory = await ethers.getContractFactory("UniswapV2Factory")
+    // this.SushiSwapFactory = await ethers.getContractFactory("UniswapV2Factory")
 
     this.SushiSwapSwapper = await ethers.getContractFactory("SushiSwapSwapper")
 
@@ -40,15 +38,15 @@ describe("Lending Pair", function () {
     this.carol = carol
 
     this.carolPrivateKey =
-      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+      "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
   })
 
   beforeEach(async function () {
-    this.weth9 = await this.WETH9.deploy()
-    await this.weth9.deployed()
+    await deployments.fixture()
 
-    this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
-    await this.bentoBox.deployed()
+    this.weth9 = await ethers.getContract("WETH9Mock")
+
+    this.bentoBox = await ethers.getContract("BentoBox")
 
     this.a = await this.ReturnFalseERC20.deploy(
       "Token A",
@@ -70,11 +68,15 @@ describe("Lending Pair", function () {
     await this.b.transfer(this.bob.address, getBigNumber(1000))
     await this.b.transfer(this.carol.address, getBigNumber(1000))
 
-    this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
-    await this.lendingPair.deployed()
+    this.lendingPair = await ethers.getContract("LendingPair")
 
-    this.factory = await this.SushiSwapFactory.deploy(this.alice.address)
-    await this.factory.deployed()
+    // this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
+    // await this.lendingPair.deployed()
+
+    // this.factory = await this.SushiSwapFactory.deploy(this.alice.address)
+    // await this.factory.deployed()
+
+    this.factory = await ethers.getContract("SushiSwapFactoryMock")
 
     const createPairTx = await this.factory.createPair(
       this.a.address,
@@ -83,23 +85,16 @@ describe("Lending Pair", function () {
 
     const pair = (await createPairTx.wait()).events[0].args.pair
 
-    this.sushiswappair = await this.UniswapV2Pair.attach(pair)
+    this.sushiSwapPair = await this.UniswapV2Pair.attach(pair)
 
-    await this.a.transfer(this.sushiswappair.address, getBigNumber(5000))
-    await this.b.transfer(this.sushiswappair.address, getBigNumber(5000))
+    await this.a.transfer(this.sushiSwapPair.address, getBigNumber(5000))
+    await this.b.transfer(this.sushiSwapPair.address, getBigNumber(5000))
 
-    await this.sushiswappair.mint(this.alice.address)
+    await this.sushiSwapPair.mint(this.alice.address)
 
-    this.swapper = await this.SushiSwapSwapper.deploy(
-      this.bentoBox.address,
-      this.factory.address
-    )
-    await this.swapper.deployed()
+    this.swapper = await ethers.getContract("SushiSwapSwapper")
 
-    await this.lendingPair.setSwapper(this.swapper.address, true)
-
-    this.oracle = await this.Oracle.deploy()
-    await this.oracle.deployed()
+    this.oracle = await ethers.getContract("OracleMock")
 
     await this.oracle.set(getBigNumber(1), this.alice.address)
 
@@ -107,6 +102,7 @@ describe("Lending Pair", function () {
       this.lendingPair.address,
       true
     )
+
     await this.bentoBox
       .connect(this.bob)
       .setMasterContractApproval(this.lendingPair.address, true)

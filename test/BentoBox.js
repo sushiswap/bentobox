@@ -1,15 +1,15 @@
-const { ethers } = require("hardhat")
+const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
 const { getApprovalDigest } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
+    // this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
-    this.BentoBox = await ethers.getContractFactory("BentoBox")
+    // this.BentoBox = await ethers.getContractFactory("BentoBox")
 
-    this.LendingPair = await ethers.getContractFactory("LendingPair")
+    // this.LendingPair = await ethers.getContractFactory("LendingPair")
 
     this.ERC20 = await ethers.getContractFactory("ERC20Mock")
 
@@ -19,7 +19,7 @@ describe("BentoBox", function () {
 
     this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
 
-    this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
+    // this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
 
     this.signers = await ethers.getSigners()
 
@@ -34,11 +34,11 @@ describe("BentoBox", function () {
   })
 
   beforeEach(async function () {
-    this.weth9 = await this.WETH9.deploy()
-    await this.weth9.deployed()
+    await deployments.fixture()
 
-    this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
-    await this.bentoBox.deployed()
+    this.weth9 = await ethers.getContract("WETH9Mock")
+
+    this.bentoBox = await ethers.getContract("BentoBox")
 
     this.erc20 = await this.ERC20.deploy(10000000)
     await this.erc20.deployed()
@@ -58,11 +58,15 @@ describe("BentoBox", function () {
     // Bob has 1000 b tokens
     await this.b.transfer(this.bob.address, 1000)
 
-    this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
-    await this.lendingPair.deployed()
+    // this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
+    // await this.lendingPair.deployed()
 
-    this.peggedOracle = await this.PeggedOracle.deploy()
-    await this.peggedOracle.deployed()
+    // this.peggedOracle = await this.PeggedOracle.deploy()
+    // await this.peggedOracle.deployed()
+
+    this.lendingPair = await ethers.getContract("LendingPair")
+
+    this.peggedOracle = await ethers.getContract("PeggedOracle")
   })
 
   describe("Deploy", function () {
