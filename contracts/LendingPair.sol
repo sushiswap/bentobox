@@ -637,7 +637,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         } else {
             uint256 excessAmount =
                 bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.amount : totalCollateralAmount);
-            bentoBox.transfer(token, owner, excessAmount);
+            bentoBox.transfer(token, masterContract.owner(), excessAmount);
         }
     }
 }

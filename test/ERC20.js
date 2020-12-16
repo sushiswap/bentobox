@@ -100,7 +100,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Transfer event with expected arguments", async function () {
-      expect(
+      await expect(
         this.token.connect(this.owner).transfer(this.alice.address, 2666, {
           from: this.owner.address,
         })
@@ -113,6 +113,14 @@ describe("ERC20", function () {
       expect(this.token.transfer(this.alice.address, 0))
         .to.emit(this.token, "Transfer")
         .withArgs(this.owner.address, this.alice.address, 0)
+    })
+  })
+
+  describe("TransferFrom", function () {
+    it("transferFrom should fail if balance is too low", async function(){
+      await expect(
+        this.token.transferFrom(this.owner.address, this.alice.address, 10001)
+      ).to.be.revertedWith("LendingPair: balance too low")
     })
   })
 
@@ -305,7 +313,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Approval event with expected arguments", async function () {
-      expect(
+      await expect(
         this.token.connect(this.owner).approve(this.alice.address, "2666", {
           from: this.owner.address,
         })
@@ -410,7 +418,7 @@ describe("ERC20", function () {
         Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
       )
 
-      expect(
+      await expect(
         this.token
           .connect(this.bob)
           .permit(this.bob.address, this.alice.address, 1, deadline, v, r, s, {
