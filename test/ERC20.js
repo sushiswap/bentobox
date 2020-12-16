@@ -74,9 +74,9 @@ describe("ERC20", function () {
     })
 
     it("Fails transfering 10001 tokens from owner to alice", async function () {
-      await expect(this.token.transfer(this.alice.address, 10001)).to.be.revertedWith(
-        "LendingPair: balance too low"
-      )
+      await expect(
+        this.token.transfer(this.alice.address, 10001)
+      ).to.be.revertedWith("LendingPair: balance too low")
     })
 
     it("Succeeds for zero value transfer", async function () {
