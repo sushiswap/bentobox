@@ -1,16 +1,6 @@
 const { ethers } = require("hardhat")
-<<<<<<< HEAD
-const { expect, assert } = require("chai")
-const { e18, roundBN } = require("../utilities")
-const { advanceBlock } = require("../utilities/timeWarp")
-=======
 const { expect } = require("chai")
-<<<<<<< HEAD
-const { e18, roundBN, advanceTime } = require("../utilities")
->>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
-=======
 const { getBigNumber, roundBN, advanceTime } = require("../utilities")
->>>>>>> a5cef6ed07d5e532492cb87efb08837609f1a214
 
 describe("CompositeOracle", function () {
   before(async function () {

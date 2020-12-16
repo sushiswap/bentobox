@@ -106,7 +106,7 @@ describe("SimpleSLPOracle", function () {
 
       expect(info).to.be.equal(this.expectedPrice[1].toString())
       expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(
-        e18(1).mul(5).div(10)
+        getBigNumber(1).mul(5).div(10)
       )
     })
 
