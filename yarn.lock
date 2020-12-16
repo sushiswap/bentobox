@@ -2208,7 +2208,7 @@ chokidar@3.3.0:
   optionalDependencies:
     fsevents "~2.1.1"
 
-chokidar@3.4.3, chokidar@^3.4.0:
+chokidar@3.4.3, chokidar@^3.4.0, chokidar@^3.4.3:
   version "3.4.3"
   resolved "https://registry.yarnpkg.com/chokidar/-/chokidar-3.4.3.tgz#c1df38231448e45ca4ac588e6c79573ba6a57d5b"
   integrity sha512-DtM3g7juCXQxFVSNPNByEC2+NImtBuxQQvWlHunpJIS5Ocr0lG306cC7FCi7cEA0fzmybPUIl4txBIobk1gGOQ==
@@ -4482,6 +4482,13 @@ hardhat-spdx-license-identifier@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/hardhat-spdx-license-identifier/-/hardhat-spdx-license-identifier-2.0.2.tgz#7e73e7aa4f4f2791a7f8bd734772e385e26e679a"
   integrity sha512-HE+NiPaV3se/2ceFGTXKyVedUVjKX9skTF6SWY9Xw50U+xejNRTYGlHmqjFn6MSw6UeP6QKmS0MOfZAvZHEtZA==
+
+hardhat-watcher@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/hardhat-watcher/-/hardhat-watcher-2.0.0.tgz#f9aa89565ced5f5c95919ee830e8c62b0de875e7"
+  integrity sha512-fdblFuPl0IctABaCTxrGnExdEfmLrt4Im1jCrYPTOgdKfTWcFC3n0+c0Q6vWDy+1rqyjMx6Fg4oXOvsDZfYvPQ==
+  dependencies:
+    chokidar "^3.4.3"
 
 hardhat@^2.0.5:
   version "2.0.5"

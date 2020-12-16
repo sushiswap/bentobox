@@ -55,3 +55,9 @@ yarn lint
 npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
 
 https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#hardhat-etherscan
+
+## Watch
+
+npx hardhat watch compilation
+
+npx hardhat watch ci
