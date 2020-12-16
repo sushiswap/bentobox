@@ -15,7 +15,9 @@ We solve these issues by having a platform with:
 ## Docs
 
 [Development](docs/DEVELOPMENT.md)
+
 [Deployment](docs/DEPLOYMENT.md)
+
 [Tenderly](docs/TENDERLY.md)
 
 ## Licence
