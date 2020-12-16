@@ -11,7 +11,7 @@ const { e18, roundBN, encodePrice, advanceTime } = require("../utilities")
 
 describe("SimpleSLPOracle", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9")
+    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
     this.BentoBox = await ethers.getContractFactory("BentoBox")
 

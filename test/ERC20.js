@@ -9,7 +9,7 @@ const { ecsign } = require("ethereumjs-util")
 
 describe("ERC20", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9")
+    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
     this.ERC20 = await ethers.getContractFactory("ERC20Mock")
 
