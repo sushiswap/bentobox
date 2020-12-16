@@ -74,7 +74,7 @@ describe("BentoBox", function () {
         await this.peggedOracle.getDataParameter("0")
       )
 
-      expect(this.bentoBox.deploy(this.lendingPair.address, data))
+      await expect(this.bentoBox.deploy(this.lendingPair.address, data))
         .to.emit(this.bentoBox, "LogDeploy")
         .withArgs(
           this.lendingPair.address,
@@ -117,7 +117,7 @@ describe("BentoBox", function () {
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
-      expect(
+      await expect(
         this.bentoBox.setMasterContractApproval(this.lendingPair.address, true)
       )
         .to.emit(this.bentoBox, "LogSetMasterContractApproval")
@@ -219,7 +219,7 @@ describe("BentoBox", function () {
     it("Emits LogDeposit event with correct arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
-      expect(this.bentoBox.deposit(this.a.address, this.alice.address, 1))
+      await expect(this.bentoBox.deposit(this.a.address, this.alice.address, 1))
         .to.emit(this.bentoBox, "LogDeposit")
         .withArgs(this.a.address, this.alice.address, this.alice.address, 1)
     })
@@ -390,7 +390,7 @@ describe("BentoBox", function () {
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(this.bentoBox.withdraw(this.a.address, this.alice.address, 1))
+      await expect(this.bentoBox.withdraw(this.a.address, this.alice.address, 1))
         .to.emit(this.bentoBox, "LogWithdraw")
         .withArgs(this.a.address, this.alice.address, this.alice.address, 1)
     })
@@ -498,7 +498,7 @@ describe("BentoBox", function () {
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(this.bentoBox.transfer(this.a.address, this.bob.address, 1))
+      await expect(this.bentoBox.transfer(this.a.address, this.bob.address, 1))
         .to.emit(this.bentoBox, "LogTransfer")
         .withArgs(this.a.address, this.alice.address, this.bob.address, 1)
     })
@@ -576,7 +576,7 @@ describe("BentoBox", function () {
     it("Emits LogDeposit event with expected arguments", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox
           .connect(this.bob)
           .skim(this.a.address, { from: this.bob.address })

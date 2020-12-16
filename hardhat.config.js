@@ -9,7 +9,7 @@ require("hardhat-spdx-license-identifier")
 require("hardhat-gas-reporter")
 require("hardhat-abi-exporter")
 require("hardhat-watcher")
-require("hardhat-dependency-compiler")
+//require("hardhat-dependency-compiler")
 require("solidity-coverage")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")

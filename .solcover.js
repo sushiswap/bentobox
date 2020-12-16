@@ -8,6 +8,7 @@ module.exports = {
     "mocks/",
     "ChainlinkOracle.sol",
     "CompoundOracle.sol",
+    "BentoHelper.sol"
   ],
   providerOptions: {
     default_balance_ether: "10000000000000000000000000",

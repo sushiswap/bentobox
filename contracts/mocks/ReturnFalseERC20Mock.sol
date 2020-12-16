@@ -30,7 +30,7 @@ contract ReturnFalseERC20Mock {
     }
 
     function transfer(address to, uint256 amount) public returns (bool success) {
-        if (balanceOf[msg.sender] >= amount && amount > 0 && balanceOf[to] + amount > balanceOf[to]) {
+        if (balanceOf[msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
             balanceOf[msg.sender] -= amount;
             balanceOf[to] += amount;
             emit Transfer(msg.sender, to, amount);
@@ -48,8 +48,7 @@ contract ReturnFalseERC20Mock {
         if (
             balanceOf[from] >= amount &&
             allowance[from][msg.sender] >= amount &&
-            amount > 0 &&
-            balanceOf[to] + amount > balanceOf[to]
+            balanceOf[to] + amount >= balanceOf[to]
         ) {
             balanceOf[from] -= amount;
             allowance[from][msg.sender] -= amount;
