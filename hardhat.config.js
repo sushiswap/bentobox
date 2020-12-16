@@ -9,6 +9,7 @@ require("hardhat-spdx-license-identifier")
 require("solidity-coverage")
 require("hardhat-gas-reporter")
 require("hardhat-abi-exporter")
+require("hardhat-watcher")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")
 
@@ -139,5 +140,12 @@ module.exports = {
   tenderly: {
     project: process.env.TENDERLY_PROJECT,
     username: process.env.TENDERLY_USERNAME,
+  },
+  watcher: {
+    compile: {
+      tasks: ["compile"],
+      files: ["./contracts"],
+      verbose: true,
+    },
   },
 }
