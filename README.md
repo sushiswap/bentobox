@@ -58,6 +58,4 @@ https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#hardhat-etherscan
 
 ## Watch
 
-npx hardhat watch compilation
-
-npx hardhat watch ci
+npx hardhat watch compile
