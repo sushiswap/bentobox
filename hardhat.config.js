@@ -73,9 +73,6 @@ module.exports = {
     },
   },
   networks: {
-    // hardhat: {
-    //   chainId: 31337,
-    // },
     hardhat: {
       chainId: 31337,
       accounts: [
