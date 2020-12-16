@@ -40,13 +40,16 @@ task("pairs", "Prints the list of pairs", async () => {
 module.exports = {
   abiExporter: {
     path: "./build/abi",
-    clear: true,
+    //clear: true,
     flat: true,
     // only: ['ERC20'],
     // except: ['ERC20']
   },
   dependencyCompiler: {
-    paths: [],
+    paths: [
+      "@sushiswap/core/contracts/uniswapv2/UniswapV2Factory.sol",
+      "@sushiswap/core/contracts/uniswapv2/UniswapV2Pair.sol"
+    ],
   },
   // defaultNetwork: "rinkeby",
   etherscan: {
