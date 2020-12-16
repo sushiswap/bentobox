@@ -31,16 +31,16 @@ describe("Lending Pair", function () {
 
     this.Oracle = await ethers.getContractFactory("OracleMock")
 
-    const [alice, bob, charlie] = await ethers.getSigners()
+    const [alice, bob, carol] = await ethers.getSigners()
 
     this.alice = alice
 
     this.bob = bob
 
-    this.charlie = charlie
+    this.carol = carol
 
-    this.charliePrivateKey =
-      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
+    this.carolPrivateKey =
+      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
   })
 
   beforeEach(async function () {
@@ -68,7 +68,7 @@ describe("Lending Pair", function () {
 
     // Bob has 1000 b tokens
     await this.b.transfer(this.bob.address, getBigNumber(1000))
-    await this.b.transfer(this.charlie.address, getBigNumber(1000))
+    await this.b.transfer(this.carol.address, getBigNumber(1000))
 
     this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
     await this.lendingPair.deployed()
@@ -229,8 +229,8 @@ describe("Lending Pair", function () {
 
   describe("Add Asset", function () {
     it("should revert if MasterContract is not approved", async function () {
-      await this.b.connect(this.charlie).approve(this.bentoBox.address, 300)
-      expect(this.pair.connect(this.charlie).addAsset(290)).to.be.revertedWith(
+      await this.b.connect(this.carol).approve(this.bentoBox.address, 300)
+      expect(this.pair.connect(this.carol).addAsset(290)).to.be.revertedWith(
         "BentoBox: Transfer not approved"
       )
     })

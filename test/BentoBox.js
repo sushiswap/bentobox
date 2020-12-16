@@ -30,7 +30,7 @@ describe("BentoBox", function () {
     this.carol = this.signers[2]
 
     this.carolPrivateKey =
-      "0x94890218f2b0d04296f30aeafd13655eba4c5bbf1770273276fee52cbe3f2cb4"
+      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
   })
 
   beforeEach(async function () {
@@ -79,7 +79,7 @@ describe("BentoBox", function () {
         .withArgs(
           this.lendingPair.address,
           data,
-          "0xa936eEBB5A8F82a38dF9fC58E736b9eeF16A6A44"
+          "0xCafac3dD18aC6c6e92c921884f9E4176737C052c"
         )
     })
   })
