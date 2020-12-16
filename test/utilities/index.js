@@ -100,15 +100,14 @@ function sansBorrowFee(amount) {
 async function advanceTimeAndBlock(time, ethers) {
   await advanceTime(time, ethers)
   await advanceBlock(ethers)
-  return await ethers.provider.getBlockNumber()
 }
 
 async function advanceTime(time, ethers) {
-  return await ethers.provider.send("evm_increaseTime", [time])
+  await ethers.provider.send("evm_increaseTime", [time])
 }
 
 async function advanceBlock(ethers) {
-  return await ethers.provider.send("evm_mine")
+  await ethers.provider.send("evm_mine")
 }
 
 // function (amount, decimals) {
