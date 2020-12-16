@@ -29,6 +29,8 @@ import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/IWETH.sol";
 
+import "hardhat/console.sol";
+
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
@@ -122,6 +124,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     constructor(IBentoBox bentoBox_) public {
         bentoBox = bentoBox_;
         masterContract = LendingPair(this);
+
         dev = msg.sender;
         feeTo = msg.sender;
         emit LogDev(msg.sender);

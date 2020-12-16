@@ -162,13 +162,13 @@ describe("SimpleSLPOracle", function () {
       await advanceTime(301, ethers)
       await this.oracle.get(this.oracleData)
 
-      let price0 = (await this.oracle.peek(this.oracleData))[1]
+      const price0 = (await this.oracle.peek(this.oracleData))[1]
       await this.collateral.transfer(this.pair.address, e18(5))
       await advanceTime(150, ethers)
       await this.pair.sync()
       await advanceTime(150, ethers)
       await this.oracle.get(this.oracleData)
-      let price1 = (await this.oracle.peek(this.oracleData))[1]
+      const price1 = (await this.oracle.peek(this.oracleData))[1]
 
       expect(price0).to.be.equal(e18(1).mul(5).div(10))
       expect(roundBN(price1)).to.be.equal(roundBN(e18(1).mul(75).div(100)))
