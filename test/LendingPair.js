@@ -582,7 +582,13 @@ describe("Lending Pair", function () {
 
   describe("Withdraw Fees", function () {})
 
-  describe("Swipe", function () {})
+  describe("Swipe", function () {
+    it("Reverts if msg.sender is not master contract owner", async function () {
+      expect(
+        this.lendingPair.connect(this.bob).swipe(this.token)
+      ).to.be.revertedWith("LendingPair: caller is not the owner")
+    })
+  })
 
   describe("Set Dev", function () {
     it("Mutates dev", async function () {
@@ -591,7 +597,7 @@ describe("Lending Pair", function () {
       expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
     })
 
-    it("Emit LogDev event if dev attempts to set new dev", async function () {
+    it("Emit LogDev event if dev attempts to set dev", async function () {
       expect(this.lendingPair.setDev(this.bob.address))
         .to.emit(this.lendingPair, "LogDev")
         .withArgs(this.bob.address)
@@ -603,6 +609,29 @@ describe("Lending Pair", function () {
       expect(
         this.pair.connect(this.bob).setDev(this.bob.address)
       ).to.be.revertedWith("LendingPair: Not dev")
+    })
+  })
+
+  describe("Set Fee To", function () {
+    it("Mutates fee to", async function () {
+      await this.lendingPair.setFeeTo(this.bob.address)
+      expect(await this.lendingPair.feeTo()).to.be.equal(this.bob.address)
+      expect(await this.pair.feeTo()).to.be.equal(ADDRESS_ZERO)
+    })
+
+    it("Emit LogFeeTo event if dev attempts to set fee to", async function () {
+      expect(this.lendingPair.setFeeTo(this.bob.address))
+        .to.emit(this.lendingPair, "LogDev")
+        .withArgs(this.bob.address)
+    })
+
+    it("Reverts if non-owner attempts to set fee to", async function () {
+      expect(
+        this.lendingPair.connect(this.bob).setFeeTo(this.bob.address)
+      ).to.be.revertedWith("caller is not the owner")
+      expect(
+        this.pair.connect(this.bob).setFeeTo(this.bob.address)
+      ).to.be.revertedWith("caller is not the owner")
     })
   })
 })
