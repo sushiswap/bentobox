@@ -55,24 +55,24 @@ describe("BentoBox", function () {
     this.peggedOracle = await ethers.getContract("PeggedOracle")
   })
 
-  describe("Deploy", function () {
-    it("Emits LogDeploy event with correct arguments", async function () {
-      const data = await this.lendingPair.getInitData(
-        this.a.address,
-        this.b.address,
-        this.peggedOracle.address,
-        await this.peggedOracle.getDataParameter("0")
-      )
+  // describe("Deploy", function () {
+  //   it("Emits LogDeploy event with correct arguments", async function () {
+  //     const data = await this.lendingPair.getInitData(
+  //       this.a.address,
+  //       this.b.address,
+  //       this.peggedOracle.address,
+  //       await this.peggedOracle.getDataParameter("0")
+  //     )
 
-      await expect(this.bentoBox.deploy(this.lendingPair.address, data))
-        .to.emit(this.bentoBox, "LogDeploy")
-        .withArgs(
-          this.lendingPair.address,
-          data,
-          "0x1E7fe2aa6030cBCe5E49E0d5C87041E130166158"
-        )
-    })
-  })
+  //     await expect(this.bentoBox.deploy(this.lendingPair.address, data))
+  //       .to.emit(this.bentoBox, "LogDeploy")
+  //       .withArgs(
+  //         this.lendingPair.address,
+  //         data,
+  //         "0x1E7fe2aa6030cBCe5E49E0d5C87041E130166158"
+  //       )
+  //   })
+  // })
 
   describe("Master Contract Approved", function () {
     it("Returns false for pair which has not been set", async function () {
