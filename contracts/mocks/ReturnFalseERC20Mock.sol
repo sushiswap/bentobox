@@ -45,11 +45,7 @@ contract ReturnFalseERC20Mock {
         address to,
         uint256 amount
     ) public returns (bool success) {
-        if (
-            balanceOf[from] >= amount &&
-            allowance[from][msg.sender] >= amount &&
-            balanceOf[to] + amount >= balanceOf[to]
-        ) {
+        if (balanceOf[from] >= amount && allowance[from][msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
             balanceOf[from] -= amount;
             allowance[from][msg.sender] -= amount;
             balanceOf[to] += amount;

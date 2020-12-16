@@ -390,7 +390,9 @@ describe("BentoBox", function () {
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      await expect(this.bentoBox.withdraw(this.a.address, this.alice.address, 1))
+      await expect(
+        this.bentoBox.withdraw(this.a.address, this.alice.address, 1)
+      )
         .to.emit(this.bentoBox, "LogWithdraw")
         .withArgs(this.a.address, this.alice.address, this.alice.address, 1)
     })
