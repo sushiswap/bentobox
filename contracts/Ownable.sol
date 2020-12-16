@@ -24,6 +24,7 @@ contract Ownable is OwnableData {
     }
 
     function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
         pendingOwner = newOwner;
     }
 
