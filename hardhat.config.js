@@ -46,9 +46,7 @@ module.exports = {
     // except: ['ERC20']
   },
   dependencyCompiler: {
-    paths: [
-      // Silence
-    ],
+    paths: [],
   },
   // defaultNetwork: "rinkeby",
   etherscan: {

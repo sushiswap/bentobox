@@ -1,5 +1,5 @@
 const { expect } = require("chai")
-const { e18 } = require("../utilities")
+const { getBigNumber } = require("../utilities")
 
 describe("PeggedOracle", function () {
   before(async function () {
@@ -9,7 +9,7 @@ describe("PeggedOracle", function () {
   beforeEach(async function () {
     this.oracle = await this.PeggedOracle.deploy()
     await this.oracle.deployed()
-    this.oracleData = await this.oracle.getDataParameter(e18(1))
+    this.oracleData = await this.oracle.getDataParameter(getBigNumber(1))
   })
 
   it("Assigns name to Pegged", async function () {
@@ -23,6 +23,6 @@ describe("PeggedOracle", function () {
   it("should return 1e18 on rate request", async function () {
     const [success, rate] = await this.oracle.peek(this.oracleData)
     expect(success).to.be.true
-    expect(rate).to.be.equal(e18(1))
+    expect(rate).to.be.equal(getBigNumber(1))
   })
 })
