@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
 const { e18, sansBorrowFee } = require("./utilities")
-const {advanceBlock} = require("./utilities/timeWarp")
+const { advanceBlock } = require("./utilities/timeWarp")
 const { parseEther, parseUnits } = require("ethers/lib/utils")
 
 describe("Lending Pair", function () {
@@ -134,7 +134,7 @@ describe("Lending Pair", function () {
   })
 
   describe("accrue", function () {
-    it('should update the interest rate according to utilization', async function() {
+    it("should update the interest rate according to utilization", async function () {
       await this.b.approve(this.bentoBox.address, e18(700))
       await this.pair.addAsset(e18(290))
       await this.a.approve(this.bentoBox.address, e18(800))
@@ -144,37 +144,39 @@ describe("Lending Pair", function () {
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
       let borrowFractionLeft = await this.pair.userBorrowFraction(
-          this.alice.address
-        )
+        this.alice.address
+      )
       await this.pair.repay(borrowFractionLeft)
-      let collateralLeft = await this.pair.userCollateralAmount(this.alice.address);
+      let collateralLeft = await this.pair.userCollateralAmount(
+        this.alice.address
+      )
       await this.pair.removeCollateral(collateralLeft, this.alice.address)
       // run for a while with 0 utilization
-      let rate1 = (await this.pair.accrueInfo()).interestPerBlock;
+      let rate1 = (await this.pair.accrueInfo()).interestPerBlock
       for (let i = 0; i < 20; i++) {
-          await advanceBlock(ethers)
+        await advanceBlock(ethers)
       }
-      await this.pair.accrue();
+      await this.pair.accrue()
 
       // check results
-      let rate2 = (await this.pair.accrueInfo()).interestPerBlock;
-      assert(rate2.lt(rate1), "rate has not adjusted down with low utilization");
+      let rate2 = (await this.pair.accrueInfo()).interestPerBlock
+      assert(rate2.lt(rate1), "rate has not adjusted down with low utilization")
 
       // then increase utilization to 90%
-      await this.pair.addCollateral(e18(400));
+      await this.pair.addCollateral(e18(400))
       // 300 * 0.9 = 270
-      await this.pair.borrow(sansBorrowFee(e18(270)), this.alice.address);
+      await this.pair.borrow(sansBorrowFee(e18(270)), this.alice.address)
 
       // and run a while again
-      rate1 =(await this.pair.accrueInfo()).interestPerBlock;
+      rate1 = (await this.pair.accrueInfo()).interestPerBlock
       for (let i = 0; i < 20; i++) {
-          await advanceBlock(ethers)
+        await advanceBlock(ethers)
       }
 
       // check results
-      await this.pair.accrue();
-      rate2 = (await this.pair.accrueInfo()).interestPerBlock;
-      assert(rate2.gt(rate1), "rate has not adjusted up with high utilization");
+      await this.pair.accrue()
+      rate2 = (await this.pair.accrueInfo()).interestPerBlock
+      assert(rate2.gt(rate1), "rate has not adjusted up with high utilization")
     })
   })
 
@@ -274,10 +276,11 @@ describe("Lending Pair", function () {
           this.alice.address
         )
         await this.pair.repay(borrowFractionLeft)
-        let collateralLeft = await this.pair.userCollateralAmount(this.alice.address);
+        let collateralLeft = await this.pair.userCollateralAmount(
+          this.alice.address
+        )
         await this.pair.removeCollateral(collateralLeft, this.alice.address)
       })
-      
     })
   })
 
@@ -352,7 +355,6 @@ describe("Lending Pair", function () {
       await this.pair.updateExchangeRate()
       expect(await this.pair.isSolvent(this.alice.address, true)).to.be.false
     })
-
   })
 
   describe("repay", function () {
@@ -385,23 +387,27 @@ describe("Lending Pair", function () {
   })
 
   describe("short", function () {
-    it("should not allow shorting if it does not return enough", async function() {
+    it("should not allow shorting if it does not return enough", async function () {
       await this.a.approve(this.bentoBox.address, e18(100))
       await this.pair.addCollateral(e18(100))
       await this.b.connect(this.bob).approve(this.bentoBox.address, e18(1000))
       await this.pair.connect(this.bob).addAsset(e18(1000))
-      expect(this.pair.short(this.swapper.address, e18(200), e18(200))).to.be.revertedWith("SushiSwapSwapper: return not enough")
+      expect(
+        this.pair.short(this.swapper.address, e18(200), e18(200))
+      ).to.be.revertedWith("SushiSwapSwapper: return not enough")
     })
 
-    it("should not allow shorting into insolvency", async function(){
+    it("should not allow shorting into insolvency", async function () {
       await this.a.approve(this.bentoBox.address, e18(100))
       await this.pair.addCollateral(e18(100))
       await this.b.connect(this.bob).approve(this.bentoBox.address, e18(1000))
       await this.pair.connect(this.bob).addAsset(e18(1000))
-      expect(this.pair.short(this.swapper.address, e18(300), e18(200))).to.be.revertedWith("user insolvent")
+      expect(
+        this.pair.short(this.swapper.address, e18(300), e18(200))
+      ).to.be.revertedWith("user insolvent")
     })
 
-    it("should allow shorting", async function() {
+    it("should allow shorting", async function () {
       await this.a.approve(this.bentoBox.address, e18(100))
       await this.pair.addCollateral(e18(100))
       await this.b.connect(this.bob).approve(this.bentoBox.address, e18(1000))
@@ -409,7 +415,7 @@ describe("Lending Pair", function () {
       await this.pair.short(this.swapper.address, e18(250), e18(230))
     })
 
-    it("should limit asset availability after shorting", async function() {
+    it("should limit asset availability after shorting", async function () {
       await this.a.approve(this.bentoBox.address, e18(100))
       await this.pair.addCollateral(e18(100))
       await this.b.connect(this.bob).approve(this.bentoBox.address, e18(1000))
@@ -418,9 +424,13 @@ describe("Lending Pair", function () {
       const bobBal = await this.pair.balanceOf(this.bob.address)
       expect(bobBal).to.be.equal(e18(1000))
       // virtual balance of 1000 is higher than the contract has
-      expect(this.pair.connect(this.bob).removeAsset(bobBal, this.bob.address)).to.be.revertedWith("BoringMath: Underflow")
+      expect(
+        this.pair.connect(this.bob).removeAsset(bobBal, this.bob.address)
+      ).to.be.revertedWith("BoringMath: Underflow")
       // 750 still too much, as 250 should be kept to rewind all shorts
-      expect(this.pair.connect(this.bob).removeAsset(e18(750), this.bob.address)).to.be.revertedWith("BoringMath: Underflow")
+      expect(
+        this.pair.connect(this.bob).removeAsset(e18(750), this.bob.address)
+      ).to.be.revertedWith("BoringMath: Underflow")
       await this.pair.connect(this.bob).removeAsset(e18(499), this.bob.address)
     })
   })
@@ -535,17 +545,18 @@ describe("Lending Pair", function () {
         this.factory.address
       )
       await invalidSwapper.deployed()
-      expect(this.pair
-        .connect(this.bob)
-        .liquidate(
-          [this.alice.address],
-          [e18(20)],
-          this.bob.address,
-          invalidSwapper.address,
-          false
-        )).to.be.revertedWith("LendingPair: Invalid swapper")
+      expect(
+        this.pair
+          .connect(this.bob)
+          .liquidate(
+            [this.alice.address],
+            [e18(20)],
+            this.bob.address,
+            invalidSwapper.address,
+            false
+          )
+      ).to.be.revertedWith("LendingPair: Invalid swapper")
     })
-
   })
 
   describe("batch", function () {})
