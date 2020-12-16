@@ -4,11 +4,10 @@ module.exports = {
   compileCommand: "npm run compile",
   skipFiles: [
     "external/",
-    "libraries/",
+    // "libraries/",
     "mocks/",
-    // Ignore these for now
-    "ChainlinkOracle.sol",
-    "CompoundOracle.sol",
+    "oracles/ChainlinkOracle.sol",
+    "oracles/CompoundOracle.sol",
   ],
   providerOptions: {
     default_balance_ether: "10000000000000000000000000",
