@@ -2,7 +2,12 @@ const {
   ethers: { utils },
 } = require("hardhat")
 const { expect, assert } = require("chai")
-const { e18, sansBorrowFee, advanceBlock } = require("./utilities")
+const {
+  e18,
+  sansBorrowFee,
+  advanceBlock,
+  ADDRESS_ZERO,
+} = require("./utilities")
 
 const { parseEther, parseUnits } = utils
 
@@ -129,11 +134,13 @@ describe("Lending Pair", function () {
     })
 
     it("Assigns dev", async function () {
-      expect(await this.pair.dev()).to.be.equal(this.alice.address)
+      expect(await this.lendingPair.dev()).to.be.equal(this.alice.address)
+      expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
     })
 
     it("Assigns feeTo", async function () {
-      expect(await this.pair.feeTo()).to.be.equal(this.alice.address)
+      expect(await this.lendingPair.feeTo()).to.be.equal(this.alice.address)
+      expect(await this.pair.feeTo()).to.be.equal(ADDRESS_ZERO)
     })
   })
 
@@ -579,17 +586,20 @@ describe("Lending Pair", function () {
 
   describe("Set Dev", function () {
     it("Mutates dev", async function () {
-      await this.pair.setDev(this.bob.address)
-
-      expect(await this.pair.dev()).to.be.equal(this.bob.address)
+      await this.lendingPair.setDev(this.bob.address)
+      expect(await this.lendingPair.dev()).to.be.equal(this.bob.address)
+      expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
     })
 
     it("Emit LogDev event if dev attempts to set new dev", async function () {
-      expect(this.pair.setDev(this.bob.address))
-        .to.emit(this.bentoBox, "LogDev")
+      expect(this.lendingPair.setDev(this.bob.address))
+        .to.emit(this.lendingPair, "LogDev")
         .withArgs(this.bob.address)
     })
     it("Reverts if non-dev attempts to set dev", async function () {
+      expect(
+        this.lendingPair.connect(this.bob).setDev(this.bob.address)
+      ).to.be.revertedWith("LendingPair: Not dev")
       expect(
         this.pair.connect(this.bob).setDev(this.bob.address)
       ).to.be.revertedWith("LendingPair: Not dev")
