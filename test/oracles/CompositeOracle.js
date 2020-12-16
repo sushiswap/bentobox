@@ -5,8 +5,12 @@ const { e18, roundBN } = require("../utilities")
 const { advanceBlock } = require("../utilities/timeWarp")
 =======
 const { expect } = require("chai")
+<<<<<<< HEAD
 const { e18, roundBN, advanceTime } = require("../utilities")
 >>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
+=======
+const { getBigNumber, roundBN, advanceTime } = require("../utilities")
+>>>>>>> a5cef6ed07d5e532492cb87efb08837609f1a214
 
 describe("CompositeOracle", function () {
   before(async function () {
@@ -36,11 +40,11 @@ describe("CompositeOracle", function () {
 
     this.alice = this.signers[0]
 
-    this.sushiAmount = e18(400)
+    this.sushiAmount = getBigNumber(400)
 
-    this.ethAmount = e18(1)
+    this.ethAmount = getBigNumber(1)
 
-    this.daiAmount = e18(500)
+    this.daiAmount = getBigNumber(500)
   })
 
   beforeEach(async function () {
@@ -53,21 +57,21 @@ describe("CompositeOracle", function () {
     this.sushiToken = await this.ReturnFalseERC20.deploy(
       "SUSHI",
       "SUSHI",
-      e18("10000000")
+      getBigNumber("10000000")
     )
     await this.sushiToken.deployed()
 
     this.ethToken = await this.ReturnFalseERC20.deploy(
       "WETH",
       "ETH",
-      e18("10000000")
+      getBigNumber("10000000")
     )
     await this.ethToken.deployed()
 
     this.daiToken = await this.ReturnFalseERC20.deploy(
       "DAI",
       "DAI",
-      e18("10000000")
+      getBigNumber("10000000")
     )
     await this.daiToken.deployed()
 
@@ -168,7 +172,10 @@ describe("CompositeOracle", function () {
 
       //half the sushi price
       await advanceTime(150, ethers)
-      await this.sushiToken.transfer(this.pairSushiEth.address, e18(400))
+      await this.sushiToken.transfer(
+        this.pairSushiEth.address,
+        getBigNumber(400)
+      )
       await this.pairSushiEth.sync()
       await advanceTime(150, ethers)
 

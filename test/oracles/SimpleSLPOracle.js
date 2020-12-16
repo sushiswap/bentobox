@@ -1,13 +1,11 @@
 const { ethers } = require("hardhat")
-<<<<<<< HEAD
-const { expect, assert } = require("chai")
-const { e18, roundBN } = require("../utilities")
-const { advanceBlock } = require("../utilities/timeWarp")
-const { encodePrice } = require("../utilities")
-=======
 const { expect } = require("chai")
-const { e18, roundBN, encodePrice, advanceTime } = require("../utilities")
->>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
+const {
+  getBigNumber,
+  roundBN,
+  encodePrice,
+  advanceTime,
+} = require("../utilities")
 
 describe("SimpleSLPOracle", function () {
   before(async function () {
@@ -48,14 +46,14 @@ describe("SimpleSLPOracle", function () {
     this.collateral = await this.ReturnFalseERC20.deploy(
       "Token A",
       "A",
-      e18("10000000")
+      getBigNumber(10000000)
     )
     await this.collateral.deployed()
 
     this.asset = await this.RevertingERC20.deploy(
       "Token B",
       "B",
-      e18("10000000")
+      getBigNumber(10000000)
     )
     await this.asset.deployed()
 
@@ -71,9 +69,9 @@ describe("SimpleSLPOracle", function () {
 
     this.pair = await this.UniswapV2Pair.attach(sushipair)
 
-    await this.collateral.transfer(this.pair.address, e18(5))
-    await this.asset.transfer(this.pair.address, e18(10))
-    this.expectedPrice = encodePrice(e18(5), e18(10))
+    await this.collateral.transfer(this.pair.address, getBigNumber(5))
+    await this.asset.transfer(this.pair.address, getBigNumber(10))
+    this.expectedPrice = encodePrice(getBigNumber(5), getBigNumber(10))
 
     await this.pair.mint(this.alice.address)
 
@@ -88,53 +86,9 @@ describe("SimpleSLPOracle", function () {
   describe("peek", function () {
     it("should return false on first peek", async function () {
       expect((await this.oracle.peek(this.oracleData))[1]).to.equal("0")
-<<<<<<< HEAD
     })
   })
 
-  describe("get", function () {
-    it("should update and get prices within period", async function () {
-      const blockTimestamp = (await this.pair.getReserves())[2]
-
-      await this.oracle.get(this.oracleData)
-      await advanceTime(30, ethers)
-      await this.oracle.get(this.oracleData)
-      await advanceTime(271, ethers)
-      await this.oracle.get(this.oracleData)
-      await this.oracle.get(this.oracleData)
-
-      let info = (
-        await this.oracle.pairs(this.pair.address)
-      ).priceAverage.toString()
-
-      expect(info).to.be.equal(this.expectedPrice[1].toString())
-      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(
-        e18(1).mul(5).div(10)
-      )
-=======
->>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
-    })
-  })
-
-<<<<<<< HEAD
-    it("should update prices after swap", async function () {
-      const blockTimestamp = (await this.pair.getReserves())[2]
-      await this.oracle.get(this.oracleData)
-      await advanceTime(301, ethers)
-      await this.oracle.get(this.oracleData)
-
-      let price0 = (await this.oracle.peek(this.oracleData))[1]
-      await this.collateral.transfer(this.pair.address, e18(5))
-      await advanceTime(150, ethers)
-      await this.pair.sync()
-      await advanceTime(150, ethers)
-      await this.oracle.get(this.oracleData)
-      let price1 = (await this.oracle.peek(this.oracleData))[1]
-
-      expect(price0).to.be.equal(e18(1).mul(5).div(10))
-      expect(roundBN(price1)).to.be.equal(roundBN(e18(1).mul(75).div(100)))
-    })
-=======
   describe("get", function () {
     it("should update and get prices within period", async function () {
       const blockTimestamp = (await this.pair.getReserves())[2]
@@ -163,15 +117,17 @@ describe("SimpleSLPOracle", function () {
       await this.oracle.get(this.oracleData)
 
       const price0 = (await this.oracle.peek(this.oracleData))[1]
-      await this.collateral.transfer(this.pair.address, e18(5))
+      await this.collateral.transfer(this.pair.address, getBigNumber(5))
       await advanceTime(150, ethers)
       await this.pair.sync()
       await advanceTime(150, ethers)
       await this.oracle.get(this.oracleData)
       const price1 = (await this.oracle.peek(this.oracleData))[1]
 
-      expect(price0).to.be.equal(e18(1).mul(5).div(10))
-      expect(roundBN(price1)).to.be.equal(roundBN(e18(1).mul(75).div(100)))
+      expect(price0).to.be.equal(getBigNumber(1).mul(5).div(10))
+      expect(roundBN(price1)).to.be.equal(
+        roundBN(getBigNumber(1).mul(75).div(100))
+      )
     })
   })
 
@@ -181,6 +137,5 @@ describe("SimpleSLPOracle", function () {
 
   it("Assigns symbol to S", async function () {
     expect(await this.oracle.symbol(this.oracleData)).to.equal("S")
->>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
   })
 })
