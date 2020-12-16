@@ -117,7 +117,7 @@ describe("ERC20", function () {
   })
 
   describe("TransferFrom", function () {
-    it("transferFrom should fail if balance is too low", async function(){
+    it("transferFrom should fail if balance is too low", async function () {
       await expect(
         this.token.transferFrom(this.owner.address, this.alice.address, 10001)
       ).to.be.revertedWith("LendingPair: balance too low")
