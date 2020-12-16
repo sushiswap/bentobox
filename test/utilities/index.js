@@ -9,6 +9,8 @@ const { parseUnits } = require("ethers/lib/utils")
 
 const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
+const BASE_TEN = 10
+
 function bn(amount) {
   return BigNumber.from(amount)
 }
@@ -92,25 +94,26 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
 }
 
 function sansBorrowFee(amount) {
-  return amount
-    .mul(ethers.BigNumber.from(2000))
-    .div(ethers.BigNumber.from(2001))
+  return amount.mul(BigNumber.from(2000)).div(BigNumber.from(2001))
 }
 
 async function advanceTimeAndBlock(time, ethers) {
   await advanceTime(time, ethers)
   await advanceBlock(ethers)
-  const blockNumber = await ethers.provider.getBlockNumber()
-  return Promise.resolve(blockNumber)
+  return await ethers.provider.getBlockNumber()
 }
 
-function advanceTime(time, ethers) {
-  return ethers.provider.send("evm_increaseTime", [time])
+async function advanceTime(time, ethers) {
+  return await ethers.provider.send("evm_increaseTime", [time])
 }
 
-function advanceBlock(ethers) {
-  return ethers.provider.send("evm_mine")
+async function advanceBlock(ethers) {
+  return await ethers.provider.send("evm_mine")
 }
+
+// function (amount, decimals) {
+//   return amount.times(new BigNumber(BASE_TEN).pow(decimals))
+// }
 
 module.exports = {
   ADDRESS_ZERO,
