@@ -100,6 +100,7 @@ async function advanceBlock(ethers) {
   await ethers.provider.send("evm_mine")
 }
 
+// Defaults to e18 using amount * 10^18
 function getBigNumber(amount, decimals = 18) {
   return BigNumber.from(amount).mul(BigNumber.from(BASE_TEN).pow(decimals))
 }
