@@ -13,7 +13,7 @@ async function main() {
     console.log("Using WETH from WETH_MAP")
     wethAddress = WETH_MAP.get(ethers.provider._network.chainId)
   } else {
-    const WETH9 = await ethers.getContractFactory("WETH9")
+    const WETH9 = await ethers.getContractFactory("WETH9Mock")
     console.log("Deploying WETH9...")
     const weth9 = await WETH9.deploy()
     await weth9.deployed()

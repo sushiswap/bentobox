@@ -4,7 +4,7 @@ const { e18, roundBN, advanceTime } = require("../utilities")
 
 describe("CompositeOracle", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9")
+    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
     this.BentoBox = await ethers.getContractFactory("BentoBox")
 

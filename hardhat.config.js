@@ -6,10 +6,11 @@ require("@nomiclabs/hardhat-solhint")
 require("@nomiclabs/hardhat-etherscan")
 require("@tenderly/hardhat-tenderly")
 require("hardhat-spdx-license-identifier")
-require("solidity-coverage")
 require("hardhat-gas-reporter")
 require("hardhat-abi-exporter")
 require("hardhat-watcher")
+require("hardhat-dependency-compiler")
+require("solidity-coverage")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")
 
@@ -43,6 +44,11 @@ module.exports = {
     flat: true,
     // only: ['ERC20'],
     // except: ['ERC20']
+  },
+  dependencyCompiler: {
+    paths: [
+      // Silence
+    ],
   },
   // defaultNetwork: "rinkeby",
   etherscan: {

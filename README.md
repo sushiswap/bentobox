@@ -32,6 +32,12 @@ https://ethereum-waffle.readthedocs.io/en/latest/matchers.html
 
 https://hardhat.org/guides/vscode-tests.html#running-tests-on-visual-studio-code
 
+## Console
+
+yarn console
+
+https://hardhat.org/guides/hardhat-console.html
+
 ## Coverage
 
 yarn test:coverage
