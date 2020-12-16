@@ -74,9 +74,9 @@ describe("ERC20", function () {
     })
 
     it("Fails transfering 10001 tokens from owner to alice", async function () {
-      expect(this.token.transfer(this.alice.address, 10001)).to.be.revertedWith(
-        "LendingPair: balance too low"
-      )
+      await expect(
+        this.token.transfer(this.alice.address, 10001)
+      ).to.be.revertedWith("LendingPair: balance too low")
     })
 
     it("Succeeds for zero value transfer", async function () {
@@ -90,7 +90,7 @@ describe("ERC20", function () {
 
       // TODO: This isn't right...
       // Need to loopback on original version of this test and see what's up
-      expect(this.weth9.transfer(this.token.address, 10)).to.revertedWith(
+      await expect(this.weth9.transfer(this.token.address, 10)).to.revertedWith(
         "WETH9: Error"
       )
 
@@ -100,7 +100,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Transfer event with expected arguments", async function () {
-      expect(
+      await expect(
         this.token.connect(this.owner).transfer(this.alice.address, 2666, {
           from: this.owner.address,
         })
@@ -113,6 +113,14 @@ describe("ERC20", function () {
       expect(this.token.transfer(this.alice.address, 0))
         .to.emit(this.token, "Transfer")
         .withArgs(this.owner.address, this.alice.address, 0)
+    })
+  })
+
+  describe("TransferFrom", function () {
+    it("transferFrom should fail if balance is too low", async function () {
+      await expect(
+        this.token.transferFrom(this.owner.address, this.alice.address, 10001)
+      ).to.be.revertedWith("LendingPair: balance too low")
     })
   })
 
@@ -222,7 +230,7 @@ describe("ERC20", function () {
       let balance0 = await this.token.balanceOf(this.owner.address)
       assert.strictEqual(balance0, 9950)
 
-      expect(
+      await expect(
         this.token
           .connect(this.alice)
           .transferFrom(this.owner.address, this.bob.address, 60, {
@@ -232,7 +240,7 @@ describe("ERC20", function () {
     })
 
     it("approvals: attempt withdrawal from account with no allowance (should fail)", async function () {
-      expect(
+      await expect(
         this.token
           .connect(this.alice)
           .transferFrom(this.owner.address, this.bob.address, 60, {
@@ -250,7 +258,7 @@ describe("ERC20", function () {
         })
       await this.token.approve(this.alice.address, 0)
 
-      expect(
+      await expect(
         this.token
           .connect(this.alice)
           .transferFrom(this.owner.address, this.bob.address, 10, {
@@ -305,7 +313,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Approval event with expected arguments", async function () {
-      expect(
+      await expect(
         this.token.connect(this.owner).approve(this.alice.address, "2666", {
           from: this.owner.address,
         })
@@ -349,7 +357,7 @@ describe("ERC20", function () {
         Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
       )
 
-      expect(
+      await expect(
         this.token
           .connect(this.bob)
           .permit(ADDRESS_ZERO, this.alice.address, 1, deadline, v, r, s, {
@@ -410,7 +418,7 @@ describe("ERC20", function () {
         Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
       )
 
-      expect(
+      await expect(
         this.token
           .connect(this.bob)
           .permit(this.bob.address, this.alice.address, 1, deadline, v, r, s, {
@@ -442,7 +450,7 @@ describe("ERC20", function () {
         Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
       )
 
-      expect(
+      await expect(
         this.token
           .connect(this.bob)
           .permit(this.bob.address, this.alice.address, 1, deadline, v, r, s, {
@@ -473,10 +481,10 @@ describe("ERC20", function () {
         Buffer.from(this.bobPrivateKey.replace("0x", ""), "hex")
       )
 
-      expect(
+      await expect(
         this.token
           .connect(this.bob)
-          .permit(this.bob.address, this.alice.address, 1, deadline, v, r, s, {
+          .permit(this.bob.address, this.alice.address, 10, deadline, v, r, s, {
             from: this.bob.address,
           })
       ).to.be.revertedWith("Invalid Signature")

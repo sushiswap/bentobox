@@ -144,7 +144,6 @@ describe("CompositeOracle", function () {
       )[1]
       expect(roundBN(price)).to.be.equal("80")
     })
-
     it("should update prices after swap", async function () {
       //update exchange rate
       await this.compositeOracle.get(this.compositeOracleData)

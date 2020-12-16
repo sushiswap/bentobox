@@ -78,7 +78,7 @@ describe("BentoBox", function () {
         await this.peggedOracle.getDataParameter("0")
       )
 
-      expect(this.bentoBox.deploy(this.lendingPair.address, data))
+      await expect(this.bentoBox.deploy(this.lendingPair.address, data))
         .to.emit(this.bentoBox, "LogDeploy")
         .withArgs(
           this.lendingPair.address,
@@ -112,7 +112,7 @@ describe("BentoBox", function () {
 
   describe("Set Master Contract Approval", function () {
     it("Reverts with address zero", async function () {
-      expect(
+      await expect(
         this.bentoBox.setMasterContractApproval(
           "0x0000000000000000000000000000000000000000",
           true
@@ -121,7 +121,7 @@ describe("BentoBox", function () {
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
-      expect(
+      await expect(
         this.bentoBox.setMasterContractApproval(this.lendingPair.address, true)
       )
         .to.emit(this.bentoBox, "LogSetMasterContractApproval")
@@ -150,7 +150,7 @@ describe("BentoBox", function () {
 
   describe("Deposit", function () {
     it("Reverts with to address zero", async function () {
-      expect(
+      await expect(
         this.bentoBox.deposit(
           this.a.address,
           "0x0000000000000000000000000000000000000000",
@@ -160,7 +160,7 @@ describe("BentoBox", function () {
     })
 
     it("Reverts without approval", async function () {
-      expect(
+      await expect(
         this.bentoBox.deposit(this.a.address, this.alice.address, 1)
       ).to.be.revertedWith("BentoBox: TransferFrom failed at ERC20")
 
@@ -223,7 +223,7 @@ describe("BentoBox", function () {
     it("Emits LogDeposit event with correct arguments", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
-      expect(this.bentoBox.deposit(this.a.address, this.alice.address, 1))
+      await expect(this.bentoBox.deposit(this.a.address, this.alice.address, 1))
         .to.emit(this.bentoBox, "LogDeposit")
         .withArgs(this.a.address, this.alice.address, this.alice.address, 1)
     })
@@ -233,7 +233,7 @@ describe("BentoBox", function () {
     it("Reverts with address zero", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox.depositTo(
           this.a.address,
           this.alice.address,
@@ -325,7 +325,7 @@ describe("BentoBox", function () {
 
   describe("Withdraw", function () {
     it("Reverts when address zero is passed as to argument", async function () {
-      expect(
+      await expect(
         this.bentoBox.withdraw(
           this.a.address,
           "0x0000000000000000000000000000000000000000",
@@ -339,7 +339,7 @@ describe("BentoBox", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox.withdraw(this.a.address, this.alice.address, 2)
       ).to.be.revertedWith("BoringMath: Underflow")
     })
@@ -384,7 +384,7 @@ describe("BentoBox", function () {
 
     // "BentoBox: ETH transfer failed"
     it("Reverts when attempting to withdraw eth without any", async function () {
-      expect(
+      await expect(
         this.bentoBox.withdraw(this.weth9.address, this.alice.address, 1)
       ).to.be.revertedWith("BoringMath: Underflow")
     })
@@ -394,7 +394,9 @@ describe("BentoBox", function () {
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(this.bentoBox.withdraw(this.a.address, this.alice.address, 1))
+      await expect(
+        this.bentoBox.withdraw(this.a.address, this.alice.address, 1)
+      )
         .to.emit(this.bentoBox, "LogWithdraw")
         .withArgs(this.a.address, this.alice.address, this.alice.address, 1)
     })
@@ -406,7 +408,7 @@ describe("BentoBox", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox.withdrawFrom(
           this.a.address,
           this.alice.address,
@@ -451,7 +453,7 @@ describe("BentoBox", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox.transfer(
           this.alice.address,
           "0x0000000000000000000000000000000000000000",
@@ -465,7 +467,7 @@ describe("BentoBox", function () {
         from: this.bob.address,
       })
 
-      expect(
+      await expect(
         this.bentoBox
           .connect(this.bob)
           .transfer(this.a.address, this.alice.address, 1, {
@@ -502,7 +504,7 @@ describe("BentoBox", function () {
 
       this.bentoBox.deposit(this.a.address, this.alice.address, 1)
 
-      expect(this.bentoBox.transfer(this.a.address, this.bob.address, 1))
+      await expect(this.bentoBox.transfer(this.a.address, this.bob.address, 1))
         .to.emit(this.bentoBox, "LogTransfer")
         .withArgs(this.a.address, this.alice.address, this.bob.address, 1)
     })
@@ -510,7 +512,7 @@ describe("BentoBox", function () {
 
   describe("Transfer Multiple", function () {
     it("Reverts if first to argument is address zero", async function () {
-      expect(
+      await expect(
         this.bentoBox.transferMultiple(
           this.a.address,
           ["0x0000000000000000000000000000000000000000"],
@@ -580,7 +582,7 @@ describe("BentoBox", function () {
     it("Emits LogDeposit event with expected arguments", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
-      expect(
+      await expect(
         this.bentoBox
           .connect(this.bob)
           .skim(this.a.address, { from: this.bob.address })
@@ -592,7 +594,7 @@ describe("BentoBox", function () {
 
   describe("Skim To", function () {
     it("Reverts when address zero is passed as to argument", async function () {
-      expect(
+      await expect(
         this.bentoBox.skimTo(
           this.a.address,
           "0x0000000000000000000000000000000000000000"
@@ -643,7 +645,7 @@ describe("BentoBox", function () {
 
   describe("Skim ETH To", function () {
     it("Reverts given address zero as to agrument", async function () {
-      expect(
+      await expect(
         this.bentoBox.skimETHTo("0x0000000000000000000000000000000000000000")
       ).to.be.revertedWith("BentoBox: to not set")
     })
@@ -755,7 +757,7 @@ describe("BentoBox", function () {
         [this.a.address, this.alice.address, this.bob.address, 2]
       )
 
-      expect(
+      await expect(
         this.bentoBox.connect(this.alice).batch([deposit, transferFrom], true, {
           from: this.alice.address,
         })
