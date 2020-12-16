@@ -697,7 +697,7 @@ describe("Lending Pair", function () {
     it("Mutates dev", async function () {
       await this.lendingPair.setDev(this.bob.address)
       expect(await this.lendingPair.dev()).to.be.equal(this.bob.address)
-      // expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
+      expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
     })
 
     it("Emit LogDev event if dev attempts to set dev", async function () {
