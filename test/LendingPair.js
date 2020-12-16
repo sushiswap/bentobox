@@ -13,7 +13,11 @@ describe("Lending Pair", function () {
 
     this.SushiSwapSwapper = await ethers.getContractFactory("SushiSwapSwapper")
 
-    this.SushiSwapPair = await ethers.getContractFactory("SushiSwapPair")
+    this.SushiSwapFactory = await ethers.getContractFactory(
+      "SushiSwapFactoryMock"
+    )
+
+    this.SushiSwapPair = await ethers.getContractFactory("SushiSwapPairMock")
 
     this.ReturnFalseERC20 = await ethers.getContractFactory(
       "ReturnFalseERC20Mock"
@@ -755,8 +759,8 @@ describe("Lending Pair", function () {
       )
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
-      await this.a.transfer(this.sushiswappair.address, getBigNumber(500))
-      await this.sushiswappair.sync()
+      await this.a.transfer(this.sushiSwapPair.address, getBigNumber(500))
+      await this.sushiSwapPair.sync()
       await this.pair.updateExchangeRate()
       await expect(
         this.pair

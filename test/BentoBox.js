@@ -5,12 +5,6 @@ const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
-    // this.WETH9 = await ethers.getContractFactory("WETH9Mock")
-
-    // this.BentoBox = await ethers.getContractFactory("BentoBox")
-
-    // this.LendingPair = await ethers.getContractFactory("LendingPair")
-
     this.ERC20 = await ethers.getContractFactory("ERC20Mock")
 
     this.ReturnFalseERC20 = await ethers.getContractFactory(
@@ -18,8 +12,6 @@ describe("BentoBox", function () {
     )
 
     this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
-
-    // this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
 
     this.signers = await ethers.getSigners()
 
@@ -58,12 +50,6 @@ describe("BentoBox", function () {
     // Bob has 1000 b tokens
     await this.b.transfer(this.bob.address, 1000)
 
-    // this.lendingPair = await this.LendingPair.deploy(this.bentoBox.address)
-    // await this.lendingPair.deployed()
-
-    // this.peggedOracle = await this.PeggedOracle.deploy()
-    // await this.peggedOracle.deployed()
-
     this.lendingPair = await ethers.getContract("LendingPair")
 
     this.peggedOracle = await ethers.getContract("PeggedOracle")
@@ -83,7 +69,7 @@ describe("BentoBox", function () {
         .withArgs(
           this.lendingPair.address,
           data,
-          "0xCafac3dD18aC6c6e92c921884f9E4176737C052c"
+          "0x1E7fe2aa6030cBCe5E49E0d5C87041E130166158"
         )
     })
   })
