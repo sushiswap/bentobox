@@ -1,11 +1,16 @@
 const { ethers } = require("hardhat")
+<<<<<<< HEAD
 const { expect, assert } = require("chai")
 const { e18, roundBN } = require("../utilities")
 const { advanceBlock } = require("../utilities/timeWarp")
+=======
+const { expect } = require("chai")
+const { e18, roundBN, advanceTime } = require("../utilities")
+>>>>>>> 7c914e831bc36643185f55c407a31278d63bab26
 
 describe("CompositeOracle", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9")
+    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
     this.BentoBox = await ethers.getContractFactory("BentoBox")
 
@@ -189,5 +194,17 @@ describe("CompositeOracle", function () {
 
       expect(roundBN(price2)).to.be.equal("160")
     })
+  })
+
+  it("Assigns name SushiSwap TWAP+SushiSwap TWAP to Composite Oracle", async function () {
+    expect(await this.compositeOracle.name(this.compositeOracleData)).to.equal(
+      "SushiSwap TWAP+SushiSwap TWAP"
+    )
+  })
+
+  it("Assigns symbol S+S to Composite Oracle", async function () {
+    expect(
+      await this.compositeOracle.symbol(this.compositeOracleData)
+    ).to.equal("S+S")
   })
 })

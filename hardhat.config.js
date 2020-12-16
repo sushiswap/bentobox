@@ -6,9 +6,11 @@ require("@nomiclabs/hardhat-solhint")
 require("@nomiclabs/hardhat-etherscan")
 require("@tenderly/hardhat-tenderly")
 require("hardhat-spdx-license-identifier")
-require("solidity-coverage")
 require("hardhat-gas-reporter")
 require("hardhat-abi-exporter")
+require("hardhat-watcher")
+require("hardhat-dependency-compiler")
+require("solidity-coverage")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")
 
@@ -38,10 +40,15 @@ task("pairs", "Prints the list of pairs", async () => {
 module.exports = {
   abiExporter: {
     path: "./build/abi",
-    //clear: true,
+    clear: true,
     flat: true,
     // only: ['ERC20'],
     // except: ['ERC20']
+  },
+  dependencyCompiler: {
+    paths: [
+      // Silence
+    ],
   },
   // defaultNetwork: "rinkeby",
   etherscan: {
@@ -136,5 +143,12 @@ module.exports = {
   tenderly: {
     project: process.env.TENDERLY_PROJECT,
     username: process.env.TENDERLY_USERNAME,
+  },
+  watcher: {
+    compile: {
+      tasks: ["compile"],
+      files: ["./contracts"],
+      verbose: true,
+    },
   },
 }

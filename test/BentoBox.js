@@ -1,13 +1,11 @@
-const {
-  ethers: { BigNumber },
-} = require("hardhat")
+const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
 const { getApprovalDigest } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9")
+    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
 
     this.BentoBox = await ethers.getContractFactory("BentoBox")
 
@@ -557,7 +555,7 @@ describe("BentoBox", function () {
   })
 
   describe("Skim", function () {
-    it("should allow to skim tokens", async function () {
+    it("Skims tokens to from address", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
       expect(
@@ -598,7 +596,7 @@ describe("BentoBox", function () {
       ).to.be.revertedWith("BentoBox: to not set")
     })
 
-    it("should allow to skim tokens to other address", async function () {
+    it("Skims tokens to address", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 
       expect(
@@ -618,7 +616,7 @@ describe("BentoBox", function () {
   })
 
   describe("Skim ETH", function () {
-    it("should allow to skim ether", async function () {
+    it("Skims ether to from address", async function () {
       await this.bentoBox.batch([], true, {
         value: 1,
       })
@@ -666,7 +664,7 @@ describe("BentoBox", function () {
   })
 
   describe("Batch", function () {
-    it("should allow successfull batch call", async function () {
+    it("Batches calls with revertOnFail true", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
       const deposit = this.bentoBox.interface.encodeFunctionData("deposit", [
@@ -689,7 +687,7 @@ describe("BentoBox", function () {
       )
     })
 
-    it("should allow successfull batch call if parameter is false", async function () {
+    it("Batches calls with revertOnFail false", async function () {
       await this.a.approve(this.bentoBox.address, 2)
 
       const deposit = this.bentoBox.interface.encodeFunctionData("deposit", [
@@ -705,7 +703,7 @@ describe("BentoBox", function () {
 
       await this.bentoBox.batch([deposit, transferFrom], false)
 
-      let amount = await this.bentoBox.balanceOf(
+      const amount = await this.bentoBox.balanceOf(
         this.a.address,
         this.bob.address
       )

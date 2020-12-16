@@ -23,11 +23,13 @@ pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
-import "./libraries/Ownable.sol";
+import "./Ownable.sol";
 import "./ERC20.sol";
 import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/IWETH.sol";
+
+import "hardhat/console.sol";
 
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?
@@ -122,6 +124,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     constructor(IBentoBox bentoBox_) public {
         bentoBox = bentoBox_;
         masterContract = LendingPair(this);
+
         dev = msg.sender;
         feeTo = msg.sender;
         emit LogDev(msg.sender);

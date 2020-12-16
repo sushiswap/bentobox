@@ -1,4 +1,5 @@
 const {
+  BigNumber,
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 
@@ -6,11 +7,15 @@ const { BN } = require("bn.js")
 
 const { parseUnits } = require("ethers/lib/utils")
 
-const bn = (amount) => {
-  return ethers.BigNumber.from(amount)
+const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
+
+const BASE_TEN = 10
+
+function bn(amount) {
+  return BigNumber.from(amount)
 }
 
-const roundBN = (number) => {
+function roundBN(number) {
   return new BN(number.toString())
     .divRound(new BN("10000000000000000"))
     .toString()
@@ -29,7 +34,7 @@ const PERMIT_TYPEHASH = keccak256(
   )
 )
 
-const e18 = (amount) => {
+function e18(amount) {
   return parseUnits(String(amount), 18)
 }
 
@@ -89,12 +94,28 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
 }
 
 function sansBorrowFee(amount) {
-  return amount
-    .mul(ethers.BigNumber.from(2000))
-    .div(ethers.BigNumber.from(2001))
+  return amount.mul(BigNumber.from(2000)).div(BigNumber.from(2001))
 }
 
+async function advanceTimeAndBlock(time, ethers) {
+  await advanceTime(time, ethers)
+  await advanceBlock(ethers)
+}
+
+async function advanceTime(time, ethers) {
+  await ethers.provider.send("evm_increaseTime", [time])
+}
+
+async function advanceBlock(ethers) {
+  await ethers.provider.send("evm_mine")
+}
+
+// function (amount, decimals) {
+//   return amount.times(new BigNumber(BASE_TEN).pow(decimals))
+// }
+
 module.exports = {
+  ADDRESS_ZERO,
   getDomainSeparator,
   getApprovalDigest,
   getApprovalMsg,
@@ -103,4 +124,7 @@ module.exports = {
   bn,
   encodePrice,
   roundBN,
+  advanceTime,
+  advanceBlock,
+  advanceTimeAndBlock,
 }
