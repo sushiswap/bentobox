@@ -2,6 +2,10 @@
 
 ...
 
+## HardHat
+
+npx hardhat node
+
 ## Mainnet
 
 yarn mainnet:deploy
