@@ -1,7 +1,6 @@
 const { ethers } = require("hardhat")
-const { expect, assert } = require("chai")
-const { e18, roundBN } = require("../utilities")
-const { advanceBlock } = require("../utilities/timeWarp")
+const { expect } = require("chai")
+const { e18, roundBN, advanceTime } = require("../utilities")
 
 describe("CompositeOracle", function () {
   before(async function () {
@@ -145,7 +144,9 @@ describe("CompositeOracle", function () {
       )[1]
       expect(roundBN(price)).to.be.equal("80")
     })
+  })
 
+  describe("get", function () {
     it("should update prices after swap", async function () {
       //update exchange rate
       await this.compositeOracle.get(this.compositeOracleData)
@@ -189,5 +190,18 @@ describe("CompositeOracle", function () {
 
       expect(roundBN(price2)).to.be.equal("160")
     })
+  })
+
+  it("Assigns name SushiSwap TWAP+SushiSwap TWAP to Composite Oracle", async function () {
+    console.log(await this.compositeOracle.name(this.compositeOracleData))
+    expect(await this.compositeOracle.name(this.compositeOracleData)).to.equal(
+      "SushiSwap TWAP+SushiSwap TWAP"
+    )
+  })
+
+  it("Assigns symbol S+S to Composite Oracle", async function () {
+    expect(
+      await this.compositeOracle.symbol(this.compositeOracleData)
+    ).to.equal("S+S")
   })
 })

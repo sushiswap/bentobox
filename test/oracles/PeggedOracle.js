@@ -12,8 +12,17 @@ describe("PeggedOracle", function () {
     this.oracleData = await this.oracle.getDataParameter(e18(1))
   })
 
+  it("Assigns name to Pegged", async function () {
+    expect(await this.oracle.name(this.oracleData)).to.equal("Pegged")
+  })
+
+  it("Assigns symbol to PEG", async function () {
+    expect(await this.oracle.symbol(this.oracleData)).to.equal("PEG")
+  })
+
   it("should return 1e18 on rate request", async function () {
-    let result = await this.oracle.peek(this.oracleData)
-    expect(result[1]).to.be.equal(e18(1))
+    const [success, rate] = await this.oracle.peek(this.oracleData)
+    expect(success).to.be.true
+    expect(rate).to.be.equal(e18(1))
   })
 })

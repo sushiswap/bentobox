@@ -1,8 +1,10 @@
-const { ethers } = require("hardhat")
+const {
+  ethers: { utils },
+} = require("hardhat")
 const { expect, assert } = require("chai")
-const { e18, sansBorrowFee } = require("./utilities")
-const { advanceBlock } = require("./utilities/timeWarp")
-const { parseEther, parseUnits } = require("ethers/lib/utils")
+const { e18, sansBorrowFee, advanceBlock } = require("./utilities")
+
+const { parseEther, parseUnits } = utils
 
 describe("Lending Pair", function () {
   before(async function () {
@@ -118,18 +120,30 @@ describe("Lending Pair", function () {
     await this.pair.updateExchangeRate()
   })
 
-  describe("name, symbol and decimals", function () {
-    it("should autogen a nice name and symbol", async function () {
-      //assert.equal(await this.pair.symbol(), "bmA>B-TEST");
+  describe("Depolyment", function () {
+    it("Assigns a name", async function () {
       //assert.equal(await this.pair.name(), "Bento Med Risk Token A>Token B-TEST");
+    })
+    it("Assigns a symbol", async function () {
+      //assert.equal(await this.pair.symbol(), "bmA>B-TEST");
     })
   })
 
-  describe("init", function () {
-    it("should not allow to init initialized pair", async function () {
+  describe("Init", function () {
+    it("Reverts init for initilised pair", async function () {
       expect(this.pair.init(this.initData)).to.be.revertedWith(
         "LendingPair: already initialized"
       )
+    })
+    it("Successfully executes init for non-initilised pair ", async function () {
+      const initData = await this.lendingPair.getInitData(
+        this.b.address,
+        this.a.address,
+        this.oracle.address,
+        this.oracleData
+      )
+
+      await this.bentoBox.deploy(this.lendingPair.address, initData)
     })
   })
 
