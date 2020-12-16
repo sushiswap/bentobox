@@ -1,13 +1,17 @@
 name: Coveralls
 
+# Controls when the action will run. 
 on:
+  # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ $default-branch ]
+    branches: [ hardhat ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ hardhat ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-18.04
@@ -41,4 +45,4 @@ jobs:
     - name: Coveralls
       uses: coverallsapp/github-action@master
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.github_token }}
