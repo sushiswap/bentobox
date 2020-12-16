@@ -261,9 +261,9 @@ describe("Lending Pair", function () {
   describe("Add Asset", function () {
     it("should revert if MasterContract is not approved", async function () {
       await this.b.connect(this.charlie).approve(this.bentoBox.address, 300)
-      await expect(this.pair.connect(this.charlie).addAsset(290)).to.be.revertedWith(
-        "BentoBox: Transfer not approved"
-      )
+      await expect(
+        this.pair.connect(this.charlie).addAsset(290)
+      ).to.be.revertedWith("BentoBox: Transfer not approved")
     })
 
     it("should take a deposit of assets from BentoBox", async function () {
@@ -289,9 +289,9 @@ describe("Lending Pair", function () {
 
   describe("Remove Asset", function () {
     it("should not allow a remove without assets", async function () {
-      await expect(this.pair.removeAsset(1, this.alice.address)).to.be.revertedWith(
-        "BoringMath: Underflow"
-      )
+      await expect(
+        this.pair.removeAsset(1, this.alice.address)
+      ).to.be.revertedWith("BoringMath: Underflow")
     })
 
     it("should allow to remove asset to Bento", async function () {
@@ -431,9 +431,9 @@ describe("Lending Pair", function () {
         sansBorrowFee(getBigNumber(75)),
         this.alice.address
       )
-      await expect(this.pair.borrow(100, this.alice.address)).to.be.revertedWith(
-        "user insolvent"
-      )
+      await expect(
+        this.pair.borrow(100, this.alice.address)
+      ).to.be.revertedWith("user insolvent")
     })
 
     it("should report insolvency due to interest", async function () {
@@ -847,7 +847,8 @@ describe("Lending Pair", function () {
 
       const accrue = this.pair.interface.encodeFunctionData("accrue", [])
 
-      await expect(this.pair.batch([addAsset, accrue, accrue], true)).to.be.reverted
+      await expect(this.pair.batch([addAsset, accrue, accrue], true)).to.be
+        .reverted
     })
   })
 

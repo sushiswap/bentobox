@@ -46,13 +46,7 @@ describe("Ownable", function () {
           .transferOwnership(this.alice.address, { from: this.alice.address })
       ).to.be.revertedWith("Ownable: caller is not the owner")
     })
-
-    it("Guards ownership against stuck state", async function () {
-      await expect(this.ownable.transferOwnership(ADDRESS_ZERO)).to.be.revertedWith(
-        "Ownable: new owner is the zero address"
-      )
-    })
-
+    
     it("Changes pending owner after transfer", async function () {
       await this.ownable.transferOwnership(this.alice.address)
 
@@ -62,9 +56,9 @@ describe("Ownable", function () {
 
   describe("Transfer Ownership Direct", function () {
     it("Reverts given a zero address as newOwner argument", async function () {
-      await expect(this.ownable.transferOwnership(ADDRESS_ZERO)).to.be.revertedWith(
-        "Ownable: new owner is the zero address"
-      )
+      await expect(
+        this.ownable.transferOwnershipDirect(ADDRESS_ZERO)
+      ).to.be.revertedWith("Ownable: new owner is the zero address")
     })
 
     it("Mutates owner", async function () {
