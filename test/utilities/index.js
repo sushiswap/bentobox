@@ -5,15 +5,9 @@ const {
 
 const { BN } = require("bn.js")
 
-const { parseUnits } = require("ethers/lib/utils")
-
 const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
 const BASE_TEN = 10
-
-function bn(amount) {
-  return BigNumber.from(amount)
-}
 
 function roundBN(number) {
   return new BN(number.toString())
@@ -21,10 +15,10 @@ function roundBN(number) {
     .toString()
 }
 
-const encodePrice = (reserve0, reserve1) => {
+function encodePrice(reserve0, reserve1) {
   return [
-    reserve1.mul(bn("2").pow(bn("112"))).div(reserve0),
-    reserve0.mul(bn("2").pow(bn("112"))).div(reserve1),
+    reserve1.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve0),
+    reserve0.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve1),
   ]
 }
 
@@ -33,10 +27,6 @@ const PERMIT_TYPEHASH = keccak256(
     "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
   )
 )
-
-function e18(amount) {
-  return parseUnits(String(amount), 18)
-}
 
 function getDomainSeparator(tokenAddress, chainId) {
   return keccak256(
@@ -110,9 +100,9 @@ async function advanceBlock(ethers) {
   await ethers.provider.send("evm_mine")
 }
 
-// function (amount, decimals) {
-//   return amount.times(new BigNumber(BASE_TEN).pow(decimals))
-// }
+function getBigNumber(amount, decimals = 18) {
+  return BigNumber.from(amount).mul(BigNumber.from(BASE_TEN).pow(decimals))
+}
 
 module.exports = {
   ADDRESS_ZERO,
@@ -120,11 +110,10 @@ module.exports = {
   getApprovalDigest,
   getApprovalMsg,
   sansBorrowFee,
-  e18,
-  bn,
   encodePrice,
   roundBN,
   advanceTime,
   advanceBlock,
   advanceTimeAndBlock,
+  getBigNumber,
 }
