@@ -1,67 +1,18 @@
 # BentoBox
 
-...
+Platforms like Compound and Aave allow users to deposit assets as collateral and borrow other assets against this. These protocols have attracted billions of dollars, but they suffer from some major limitations. Taking away these limitations could see much larger adoption. BentoBox aims to do just that.
+We solve these issues by having a platform with:
 
-## Deployment
+- Isolated lending pairs. Anyone can create a pair, it’s up to users which pairs they find safe enough. Risk is isolated to just that pair.
+- Flexible oracles, both on-chain and off-chain.
+  Liquid interest rates based on a specific target utilization range, such as 70-80%.
+- Contracts optimized for low gas.
+- The supplied assets can be used for flash loans, providing extra revenue for suppliers.
 
-npx hardhat run --network hardhat scripts/deploy.js
+## Docs
 
-## Local environment
+[Development](docs/DEVELOPMENT.md)
 
-npx hardhat node
+## Licence
 
-## Mainnet forking
-
-npx hardhat node --fork https://eth-mainnet.alchemyapi.io/v2/API_KEY
-
-https://hardhat.org/guides/mainnet-forking.html#mainnet-forking
-
-## Testing
-
-yarn test
-
-### Single files
-
-yarn test test/LendingPair.js
-
-Mocha & Chai with Waffle matchers (these are really useful).
-
-https://ethereum-waffle.readthedocs.io/en/latest/matchers.html
-
-### Running Tests on VSCode
-
-https://hardhat.org/guides/vscode-tests.html#running-tests-on-visual-studio-code
-
-## Console
-
-yarn console
-
-https://hardhat.org/guides/hardhat-console.html
-
-## Coverage
-
-yarn test:coverage
-
-https://hardhat.org/plugins/solidity-coverage.html#tasks
-
-## Gas Usage
-
-yarn test:gas
-
-https://github.com/cgewecke/hardhat-gas-reporter
-
-## Lint
-
-yarn lint
-
-## Verify
-
-> run the verify task, passing the address of the contract, the network where it's deployed, and the constructor arguments that were used to deploy it (if any)
-
-npx hardhat verify --network mainnet DEPLOYED_CONTRACT_ADDRESS "Constructor argument 1"
-
-https://hardhat.org/plugins/nomiclabs-hardhat-etherscan.html#hardhat-etherscan
-
-## Watch
-
-npx hardhat watch compile
+UNLICENCED
