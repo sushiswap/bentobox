@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: AGPL-3.0-only
 
 // Using the same Copyleft License as in the original Repository
-// SPDX-License-Identifier: AGPL-3.0-only
 // solium-disable security/no-block-members
 
 pragma solidity 0.6.12;
