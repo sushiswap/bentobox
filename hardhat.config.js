@@ -111,11 +111,7 @@ module.exports = {
     enabled: process.env.REPORT_GAS ? true : false,
     currency: "USD",
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    excludeContracts: [
-      "contracts/mocks/",
-      "contracts/external/",
-      "contracts/libraries/",
-    ],
+    excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
   hardhat: {
     forking: {
