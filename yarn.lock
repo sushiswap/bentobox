@@ -728,7 +728,7 @@
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.8.2.tgz#a6a5e93ac8dca6884a99a532f133beba59b87b69"
   integrity sha512-8LySx3qrNXPgB5JiULfG10O3V7QTxI/TLzSw5hFQhXWSkVxZBAv4rZQ0sYgLEbc8g3L2lmnujj1hKul38Eu5NQ==
 
-"@sushiswap/core@^1.4.1":
+"@sushiswap/core@1.4.1":
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/@sushiswap/core/-/core-1.4.1.tgz#c3adb42ce0388e6b88c26476ec882039ebd6aca3"
   integrity sha512-14PbvnWuc2Vz6I3ttrVnRRdPFZ7Qbd10Mckb5kZwJGu1KAVq+qlKRHBjJCW/u4y+yBV7NHogHfrJQNJ1fDpdcA==
