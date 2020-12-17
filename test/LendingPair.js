@@ -228,33 +228,34 @@ describe("Lending Pair", function () {
         this.alice.address
       )
       await this.pair.accrue()
-      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.startingInterestPerBlock())
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(
+        await this.pair.startingInterestPerBlock()
+      )
     })
     it("should lock interest rate at minimum", async function () {
-      let totalBorrowBefore = (await this.pair.totalBorrow()).amount 
+      let totalBorrowBefore = (await this.pair.totalBorrow()).amount
 
       await this.b.approve(this.bentoBox.address, getBigNumber(900))
       await this.pair.addAsset(getBigNumber(100))
       await this.a.approve(this.bentoBox.address, getBigNumber(300))
       await this.pair.addCollateral(getBigNumber(300))
-      await this.pair.borrow(
-        1,
-        this.alice.address
-      )
+      await this.pair.borrow(1, this.alice.address)
       await this.pair.accrue()
-      for(let i = 0; i < 2000; i++){
+      for (let i = 0; i < 2000; i++) {
         await advanceBlock(ethers)
       }
       await this.pair.accrue()
-      for(let i = 0; i < 2000; i++){
+      for (let i = 0; i < 2000; i++) {
         await advanceBlock(ethers)
       }
       await this.pair.accrue()
 
-      let totalBorrow = (await this.pair.totalBorrow()).amount 
+      let totalBorrow = (await this.pair.totalBorrow()).amount
       let totalAsset = (await this.pair.totalAsset()).amount
       let utilization = totalBorrow.mul(getBigNumber(1)).div(totalAsset)
-      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.minimumInterestPerBlock())
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(
+        await this.pair.minimumInterestPerBlock()
+      )
     })
     it("should lock interest rate at maximum", async function () {
       /*
@@ -935,7 +936,6 @@ describe("Lending Pair", function () {
     })
   })
 
-
   describe("Swipe", function () {
     it("Reverts if caller is not the owner", async function () {
       await expect(
@@ -949,7 +949,7 @@ describe("Lending Pair", function () {
     })
     it("allows the swiping of ETH", async function () {
       const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-      await this.pair.batch([accrue], false,{ value: 200 })
+      await this.pair.batch([accrue], false, { value: 200 })
       await this.pair.swipe(ADDRESS_ZERO)
     })
 
