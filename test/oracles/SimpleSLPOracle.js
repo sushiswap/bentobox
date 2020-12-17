@@ -83,9 +83,41 @@ describe("SimpleSLPOracle", function () {
     await this.oracle.deployed()
     this.oracleData = await this.oracle.getDataParameter(this.pair.address)
   })
+
+  describe("name", function () {
+    it("should get name", async function() {
+      expect(await this.oracle.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
+    })
+  })
+
+  describe("symbol", function () {
+    it("should get symbol", async function() {
+      expect(await this.oracle.symbol(this.oracleData)).to.be.equal("S")
+    })
+  })
   describe("peek", function () {
     it("should return false on first peek", async function () {
       expect((await this.oracle.peek(this.oracleData))[1]).to.equal("0")
+    })
+
+    it("should get price even when time since last update is longer than period", async function () {
+      const blockTimestamp = (await this.pair.getReserves())[2]
+
+      await this.oracle.get(this.oracleData)
+      await advanceTime(30, ethers)
+      await this.oracle.get(this.oracleData)
+      await advanceTime(271, ethers)
+      await this.oracle.get(this.oracleData)
+
+      let info = (
+        await this.oracle.pairs(this.pair.address)
+      ).priceAverage.toString()
+      await advanceTime(301, ethers)
+
+      expect(info).to.be.equal(this.expectedPrice[1].toString())
+      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(
+        getBigNumber(1).mul(5).div(10)
+      )
     })
   })
 

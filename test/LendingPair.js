@@ -5,6 +5,7 @@ const {
   sansBorrowFee,
   advanceBlock,
   ADDRESS_ZERO,
+  advanceTime,
 } = require("./utilities")
 
 describe("Lending Pair", function () {
@@ -226,7 +227,81 @@ describe("Lending Pair", function () {
         await this.pair.balanceOf(this.alice.address),
         this.alice.address
       )
-      await expect(this.pair.accrue()).to.emit(this.pair, "LogAccrue")
+      await this.pair.accrue()
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.startingInterestPerBlock())
+    })
+    it("should lock interest rate at minimum", async function () {
+      let totalBorrowBefore = (await this.pair.totalBorrow()).amount 
+
+      await this.b.approve(this.bentoBox.address, getBigNumber(900))
+      await this.pair.addAsset(getBigNumber(100))
+      await this.a.approve(this.bentoBox.address, getBigNumber(300))
+      await this.pair.addCollateral(getBigNumber(300))
+      await this.pair.borrow(
+        1,
+        this.alice.address
+      )
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+
+      let totalBorrow = (await this.pair.totalBorrow()).amount 
+      let totalAsset = (await this.pair.totalAsset()).amount
+      let utilization = totalBorrow.mul(getBigNumber(1)).div(totalAsset)
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.minimumInterestPerBlock())
+    })
+    it("should lock interest rate at maximum", async function () {
+      /*
+      await this.b.approve(this.bentoBox.address, getBigNumber(900))
+      await this.pair.addAsset(getBigNumber(100))
+      await this.a.approve(this.bentoBox.address, getBigNumber(300))
+      await this.pair.addCollateral(getBigNumber(300))
+      await this.pair.borrow(
+        sansBorrowFee(getBigNumber(100)),
+        this.alice.address
+      )
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 2000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+      for(let i = 0; i < 1000; i++){
+        await advanceBlock(ethers)
+      }
+      await this.pair.accrue()
+    
+      let totalBorrow = (await this.pair.totalBorrow()).amount 
+      let totalAsset = (await this.pair.totalAsset()).amount
+      let utilization = totalBorrow.mul(getBigNumber(1)).div(totalAsset)
+      console.log(totalBorrow.toString(), totalAsset.toString(), utilization.toString(), (await this.pair.maximumTargetUtilization()).toString())
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.maximumInterestPerBlock())
+      */
     })
 
     it("should emit Accrue if on target utilization", async function () {
@@ -860,7 +935,6 @@ describe("Lending Pair", function () {
     })
   })
 
-  describe("Batch", function () {})
 
   describe("Swipe", function () {
     it("Reverts if caller is not the owner", async function () {
@@ -870,14 +944,22 @@ describe("Lending Pair", function () {
           .swipe(this.a.address, { from: this.bob.address })
       ).to.be.revertedWith("LendingPair: caller is not the owner")
     })
+    it("allows swiping call with zero balance of ETH", async function () {
+      await this.pair.swipe(ADDRESS_ZERO)
+    })
     it("allows the swiping of ETH", async function () {
-      await this.pair.addAsset(0, { value: 2 })
+      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
+      await this.pair.batch([accrue], false,{ value: 200 })
       await this.pair.swipe(ADDRESS_ZERO)
     })
 
     it("allows the swiping of WETH", async function () {
       await this.weth9.deposit({ value: 200 })
       await this.weth9.transfer(this.pair.address, 10)
+      await this.pair.swipe(this.weth9.address)
+    })
+
+    it("allows the swiping of zero token balance", async function () {
       await this.pair.swipe(this.weth9.address)
     })
 
