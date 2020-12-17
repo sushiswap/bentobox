@@ -8,6 +8,7 @@
     "max-states-count": ["error", 18],
     "max-line-length": ["warn", 125],
     "not-rely-on-time": "warn",
-    "prettier/prettier": "error"
+    "quotes": ["warn","double"],
+    "prettier/prettier": "off"
   }
 }

@@ -199,7 +199,7 @@ module.exports = {
     },
   },
   spdxLicenseIdentifier: {
-    overwrite: true,
+    overwrite: false,
     runOnCompile: true,
   },
   tenderly: {
