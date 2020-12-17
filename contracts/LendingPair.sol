@@ -23,7 +23,7 @@ pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
-import "./libraries/Ownable.sol";
+import "./Ownable.sol";
 import "./ERC20.sol";
 import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";
@@ -587,7 +587,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             }
         } else {
             uint256 excessAmount = bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.amount : totalCollateralAmount);
-            bentoBox.transfer(token, owner, excessAmount);
+            bentoBox.transfer(token, masterContract.owner(), excessAmount);
         }
     }
 }
