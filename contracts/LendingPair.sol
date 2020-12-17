@@ -23,7 +23,7 @@ pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
-import "./libraries/Ownable.sol";
+import "./Ownable.sol";
 import "./ERC20.sol";
 import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";

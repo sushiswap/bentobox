@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: UNLICENSED
+
 // Using the same Copyleft License as in the original Repository
 // SPDX-License-Identifier: AGPL-3.0-only
 // solium-disable security/no-block-members
@@ -6,8 +8,8 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "../interfaces/IOracle.sol";
 import "../libraries/BoringMath.sol";
-import "../external/interfaces/IUniswapV2Factory.sol";
-import "../external/interfaces/IUniswapV2Pair.sol";
+import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
+import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "../libraries/FixedPoint.sol";
 
 // adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleSlidingWindowOracle.sol

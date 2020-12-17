@@ -80,7 +80,7 @@ describe("ERC20", function () {
     })
 
     it("Succeeds for zero value transfer", async function () {
-      expect(() =>
+      await expect(() =>
         this.token.transfer(this.alice.address, 0)
       ).to.changeTokenBalances(this.token, [this.owner, this.alice], [-0, 0])
     })
@@ -110,7 +110,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Transfer event with expected arguments for zero value transfer ", async function () {
-      expect(this.token.transfer(this.alice.address, 0))
+      await expect(this.token.transfer(this.alice.address, 0))
         .to.emit(this.token, "Transfer")
         .withArgs(this.owner.address, this.alice.address, 0)
     })
