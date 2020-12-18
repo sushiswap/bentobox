@@ -16,7 +16,7 @@
 
 // WARNING!!! DO NOT USE!!! BEING AUDITED!!!
 
-// solium-disable security/no-low-level-calls
+// solhint-disable avoid-low-level-calls
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -129,29 +129,29 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     // Settings for the Medium Risk LendingPair
-    uint256 public constant closedCollaterizationRate = 75000; // 75%
-    uint256 public constant openCollaterizationRate = 77000; // 77%
-    uint256 public constant minimumTargetUtilization = 7e17; // 70%
-    uint256 public constant maximumTargetUtilization = 8e17; // 80%
+    uint256 public constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
+    uint256 public constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
+    uint256 public constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
+    uint256 public constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
 
-    uint256 public constant startingInterestPerBlock = 4566210045; // approx 1% APR
-    uint256 public constant minimumInterestPerBlock = 1141552511; // approx 0.25% APR
-    uint256 public constant maximumInterestPerBlock = 4566210045000;  // approx 1000% APR
-    uint256 public constant interestElasticity = 2000e36; // Half or double in 2000 blocks (approx 8 hours)
+    uint256 public constant STARTING_INTEREST_PER_BLOCK = 4566210045; // approx 1% APR
+    uint256 public constant MINIMUM_INTEREST_PER_BLOCK = 1141552511; // approx 0.25% APR
+    uint256 public constant MAXIMUM_INTEREST_PER_BLOCK = 4566210045000;  // approx 1000% APR
+    uint256 public constant INTEREST_ELASTICITY = 2000e36; // Half or double in 2000 blocks (approx 8 hours)
 
-    uint256 public constant liquidationMultiplier = 112000; // add 12%
+    uint256 public constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
 
     // Fees
-    uint256 public constant protocolFee = 10000; // 10%
-    uint256 public constant devFee = 10000; // 10% of the protocolFee = 1%
-    uint256 public constant borrowOpeningFee = 50; // 0.05%
+    uint256 public constant PROTOCOL_FEE = 10000; // 10%
+    uint256 public constant DEV_FEE = 10000; // 10% of the PROTOCOL_FEE = 1%
+    uint256 public constant BORROW_OPENING_FEE = 50; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
     function init(bytes calldata data) public override {
         require(address(collateral) == address(0), "LendingPair: already initialized");
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
-        accrueInfo.interestPerBlock = uint64(startingInterestPerBlock);  // 1% APR, with 1e18 being 100%
+        accrueInfo.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK);  // 1% APR, with 1e18 being 100%
         updateExchangeRate();
     }
 
@@ -175,7 +175,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (_totalBorrow.amount > 0) {
             // Accrue interest
             extraAmount = uint256(_totalBorrow.amount).mul(info.interestPerBlock).mul(blocks) / 1e18;
-            feeAmount = extraAmount.mul(protocolFee) / 1e5; // % of interest paid goes to fee
+            feeAmount = extraAmount.mul(PROTOCOL_FEE) / 1e5; // % of interest paid goes to fee
             _totalBorrow.amount = _totalBorrow.amount.add(extraAmount.to128());
             totalBorrow = _totalBorrow;
             _totalAsset.amount = _totalAsset.amount.add(extraAmount.sub(feeAmount).to128());
@@ -184,9 +184,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         }
 
         if (_totalAsset.amount == 0) {
-            if (info.interestPerBlock != startingInterestPerBlock) {
-                info.interestPerBlock = uint64(startingInterestPerBlock);
-                emit LogAccrue(extraAmount, feeAmount, startingInterestPerBlock, 0);
+            if (info.interestPerBlock != STARTING_INTEREST_PER_BLOCK) {
+                info.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK);
+                emit LogAccrue(extraAmount, feeAmount, STARTING_INTEREST_PER_BLOCK, 0);
             }
             accrueInfo = info; return;
         }
@@ -194,16 +194,16 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // Update interest rate
         uint256 utilization = uint256(_totalBorrow.amount).mul(1e18) / _totalAsset.amount;
         uint256 newInterestPerBlock;
-        if (utilization < minimumTargetUtilization) {
-            uint256 underFactor = minimumTargetUtilization.sub(utilization).mul(1e18) / minimumTargetUtilization;
-            uint256 scale = interestElasticity.add(underFactor.mul(underFactor).mul(blocks));
-            newInterestPerBlock = uint256(info.interestPerBlock).mul(interestElasticity) / scale;
-            if (newInterestPerBlock < minimumInterestPerBlock) {newInterestPerBlock = minimumInterestPerBlock;} // 0.25% APR minimum
-       } else if (utilization > maximumTargetUtilization) {
-            uint256 overFactor = utilization.sub(maximumTargetUtilization).mul(1e18) / uint256(1e18).sub(maximumTargetUtilization);
-            uint256 scale = interestElasticity.add(overFactor.mul(overFactor).mul(blocks));
-            newInterestPerBlock = uint256(info.interestPerBlock).mul(scale) / interestElasticity;
-            if (newInterestPerBlock > maximumInterestPerBlock) {newInterestPerBlock = maximumInterestPerBlock;} // 1000% APR maximum
+        if (utilization < MINIMUM_TARGET_UTILIZATION) {
+            uint256 underFactor = MINIMUM_TARGET_UTILIZATION.sub(utilization).mul(1e18) / MINIMUM_TARGET_UTILIZATION;
+            uint256 scale = INTEREST_ELASTICITY.add(underFactor.mul(underFactor).mul(blocks));
+            newInterestPerBlock = uint256(info.interestPerBlock).mul(INTEREST_ELASTICITY) / scale;
+            if (newInterestPerBlock < MINIMUM_INTEREST_PER_BLOCK) {newInterestPerBlock = MINIMUM_INTEREST_PER_BLOCK;} // 0.25% APR minimum
+       } else if (utilization > MAXIMUM_TARGET_UTILIZATION) {
+            uint256 overFactor = utilization.sub(MAXIMUM_TARGET_UTILIZATION).mul(1e18) / uint256(1e18).sub(MAXIMUM_TARGET_UTILIZATION);
+            uint256 scale = INTEREST_ELASTICITY.add(overFactor.mul(overFactor).mul(blocks));
+            newInterestPerBlock = uint256(info.interestPerBlock).mul(scale) / INTEREST_ELASTICITY;
+            if (newInterestPerBlock > MAXIMUM_INTEREST_PER_BLOCK) {newInterestPerBlock = MAXIMUM_INTEREST_PER_BLOCK;} // 1000% APR maximum
         } else {
             emit LogAccrue(extraAmount, feeAmount, info.interestPerBlock, utilization);
             accrueInfo = info; return;
@@ -223,7 +223,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
         TokenTotals memory _totalBorrow = totalBorrow;
 
-        return userCollateralAmount[user].mul(1e13).mul(open ? openCollaterizationRate : closedCollaterizationRate)
+        return userCollateralAmount[user].mul(1e13).mul(open ? OPEN_COLLATERIZATION_RATE : CLOSED_COLLATERIZATION_RATE)
             >= (userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction).mul(exchangeRate);
     }
 
@@ -386,19 +386,19 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     // Borrows the given amount from the supply to the specified address
     function borrow(uint256 amount, address to) public {
         accrue();
-        bentoBox.withdraw(asset, to, amount); // TODO: reentrancy issue?
-        uint256 feeAmount = amount.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
+        uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowAmount(msg.sender, amount.add(feeAmount));
         totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
+        bentoBox.withdraw(asset, to, amount);
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     function borrowToBento(uint256 amount, address to) public {
         accrue();
-        bentoBox.transfer(asset, to, amount);
-        uint256 feeAmount = amount.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
+        uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowAmount(msg.sender, amount.add(feeAmount));
         totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
+        bentoBox.transfer(asset, to, amount);
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
@@ -426,7 +426,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
         // Swaps the borrowable asset for collateral
         swapper.swap(asset, collateral, assetAmount, minCollateralAmount);
-        uint256 returnedCollateralAmount = bentoBox.skim(collateral);
+        uint256 returnedCollateralAmount = bentoBox.skim(collateral); // TODO: Reentrancy issue? Should we take a before and after balance?
         require(returnedCollateralAmount >= minCollateralAmount, "LendingPair: not enough");
         _addCollateralAmount(msg.sender, returnedCollateralAmount);
 
@@ -443,7 +443,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
         // Swaps the collateral back for the borrowal asset
         uint256 usedAmount = swapper.swapExact(collateral, asset, maxAmountCollateral, borrowAmount, address(this));
-        uint256 returnedAssetAmount = bentoBox.skim(asset);
+        uint256 returnedAssetAmount = bentoBox.skim(asset); // TODO: Reentrancy issue? Should we take a before and after balance?
         require(returnedAssetAmount >= borrowAmount, "LendingPair: Not enough");
 
         _removeCollateralAmount(msg.sender, maxAmountCollateral.sub(usedAmount));
@@ -468,7 +468,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
                 // Calculates the user's amount borrowed
                 uint256 borrowAmount = borrowFraction.mul(_totalBorrow.amount) / _totalBorrow.fraction;
                 // Calculates the amount of collateral that's going to be swapped for the asset
-                uint256 collateralAmount = borrowAmount.mul(liquidationMultiplier).mul(exchangeRate) / 1e23;
+                uint256 collateralAmount = borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(exchangeRate) / 1e23;
 
                 // Removes the amount of collateral from the user's balance
                 userCollateralAmount[user] = userCollateralAmount[user].sub(collateralAmount);
@@ -496,11 +496,11 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             // Swaps the users' collateral for the borrowed asset
             bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralAmount);
             swapper.swap(collateral, asset, allCollateralAmount, allBorrowAmount);
-            uint256 returnedAssetAmount = bentoBox.skim(asset);
+            uint256 returnedAssetAmount = bentoBox.skim(asset); // TODO: Reentrancy issue? Should we take a before and after balance?
             uint256 extraAssetAmount = returnedAssetAmount.sub(allBorrowAmount);
 
             // The extra asset gets added to the pool
-            uint256 feeAmount = extraAssetAmount.mul(protocolFee) / 1e5; // % of profit goes to fee
+            uint256 feeAmount = extraAssetAmount.mul(PROTOCOL_FEE) / 1e5; // % of profit goes to fee
             accrueInfo.feesPendingAmount = accrueInfo.feesPendingAmount.add(feeAmount.to128());
             totalAsset.amount = totalAsset.amount.add(extraAssetAmount.sub(feeAmount).to128());
             emit LogAddAsset(address(0), extraAssetAmount, 0);
@@ -517,7 +517,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             // Open (flash) liquidation: get proceeds first and provide the borrow after
             bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralAmount);
             swapper.swap(collateral, asset, allCollateralAmount, allBorrowAmount);
-            uint256 returnedAssetAmount = bentoBox.skim(asset);
+            uint256 returnedAssetAmount = bentoBox.skim(asset); // TODO: Reentrancy issue? Should we take a before and after balance?
             uint256 extraAssetAmount = returnedAssetAmount.sub(allBorrowAmount);
 
             totalAsset.amount = totalAsset.amount.add(extraAssetAmount.to128());
@@ -543,7 +543,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         address _feeTo = masterContract.feeTo();
         address _dev = masterContract.dev();
         uint256 feeAmount = accrueInfo.feesPendingAmount.sub(1);
-        uint256 devFeeAmount = _dev == address(0) ? 0 : feeAmount.mul(devFee) / 1e5;
+        uint256 devFeeAmount = _dev == address(0) ? 0 : feeAmount.mul(DEV_FEE) / 1e5;
         accrueInfo.feesPendingAmount = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
         bentoBox.withdraw(asset, _feeTo, feeAmount.sub(devFeeAmount));
         if (devFeeAmount > 0) {
@@ -552,7 +552,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         emit LogWithdrawFees();
     }
 
-    // Admin functions
+    // MasterContract Only Admin functions
     function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
     }
@@ -570,24 +570,25 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         emit LogDev(newDev);
     }
 
+    // Clone contract Admin functions
     function swipe(IERC20 token) public {
         require(msg.sender == masterContract.owner(), "LendingPair: caller is not owner");
 
         if (address(token) == address(0)) {
             uint256 balanceETH = address(this).balance;
             if (balanceETH > 0) {
-                (bool success,) = owner.call{value: balanceETH}(new bytes(0));
+                (bool success,) = msg.sender.call{value: balanceETH}(new bytes(0));
                 require(success, "LendingPair: ETH transfer failed");
             }
         } else if (address(token) != address(asset) && address(token) != address(collateral)) {
             uint256 balanceAmount = token.balanceOf(address(this));
             if (balanceAmount > 0) {
-                (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, owner, balanceAmount));
+                (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, msg.sender, balanceAmount));
                 require(success && (data.length == 0 || abi.decode(data, (bool))), "LendingPair: Transfer failed");
             }
         } else {
             uint256 excessAmount = bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.amount : totalCollateralAmount);
-            bentoBox.transfer(token, masterContract.owner(), excessAmount);
+            bentoBox.transfer(token, msg.sender, excessAmount);
         }
     }
 }

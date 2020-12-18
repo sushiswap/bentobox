@@ -10,20 +10,20 @@ interface IUniswapAnchoredView {
 contract CompoundOracle is IOracle {
     using BoringMath for uint256;
 
-    IUniswapAnchoredView constant private oracle = IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1);
+    IUniswapAnchoredView constant private ORACLE = IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1);
 
     struct PriceInfo {
         uint128 price;
         uint128 blockNumber;
     }
 
-    mapping(string => PriceInfo) prices;
+    mapping(string => PriceInfo) public prices;
 
     function _peekPrice(string memory symbol) internal view returns(uint256) {
         if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number + 8 > info.blockNumber) {
-            return uint128(oracle.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+            return uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
         }
         return info.price;
     }
@@ -32,7 +32,7 @@ contract CompoundOracle is IOracle {
         if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number + 8 > info.blockNumber) {
-            info.price = uint128(oracle.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
+            info.price = uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
             info.blockNumber = uint128(block.number); // Blocknumber will fit in uint128
             prices[symbol] = info;
         }

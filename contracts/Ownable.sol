@@ -27,13 +27,13 @@ contract Ownable is OwnableData {
     }
 
     function transferOwnershipDirect(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        require(newOwner != address(0), "Ownable: zero address");
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
     }
 
     function claimOwnership() public {
-        require(msg.sender == pendingOwner, "Ownable: caller is not the pending owner");
+        require(msg.sender == pendingOwner, "Ownable: caller != pending owner");
         emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
         pendingOwner = address(0);

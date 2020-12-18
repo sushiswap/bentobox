@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
-// solium-disable security/no-inline-assembly
-// solium-disable security/no-block-members
+// solhint-disable no-inline-assembly
+// solhint-disable not-rely-on-time
 
 // ReturnFalseERC20 does not revert on errors, it just returns false
 pragma solidity 0.6.12;
@@ -9,10 +9,11 @@ pragma solidity 0.6.12;
 contract ReturnFalseERC20Mock {
 	string public symbol;
 	string public name;
+	// solhint-disable-next-line const-name-snakecase
 	uint8 public constant decimals = 18;
 	uint256 public totalSupply;
 	mapping(address => uint256) public balanceOf;
-	mapping(address => mapping(address => uint256)) allowance;
+	mapping(address => mapping(address => uint256)) public allowance;
 	mapping(address => uint256) public nonces;
 
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
@@ -40,11 +41,7 @@ contract ReturnFalseERC20Mock {
 		}
 	}
 
-	function transferFrom(
-		address from,
-		address to,
-		uint256 amount
-	) public returns (bool success) {
+	function transferFrom(address from, address to, uint256 amount) public returns (bool success) {
 		if (balanceOf[from] >= amount && allowance[from][msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
 			balanceOf[from] -= amount;
 			allowance[from][msg.sender] -= amount;
@@ -62,6 +59,7 @@ contract ReturnFalseERC20Mock {
 		return true;
 	}
 
+    // solhint-disable-next-line func-name-mixedcase
 	function DOMAIN_SEPARATOR() public view returns (bytes32) {
 		uint256 chainId;
 		assembly {
@@ -101,7 +99,7 @@ contract ReturnFalseERC20Mock {
 				)
 			);
 		address recoveredAddress = ecrecover(digest, v, r, s);
-		require(recoveredAddress == owner, "ReturnFalseERC20: Invalid Signature");
+		require(recoveredAddress == owner, "ReturnFalseERC20: Invalid Sig");
 		allowance[owner][spender] = value;
 		emit Approval(owner, spender, value);
 	}

@@ -4,12 +4,13 @@ pragma experimental ABIEncoderV2;
 import "./IERC20.sol";
 
 interface IBentoBox {
-    event LogDeploy(address indexed masterContract, bytes data, address indexed clone_address);
+    event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
     event LogDeposit(address indexed token, address indexed from, address indexed to, uint256 amount);
     event LogFlashLoan(address indexed user, address indexed token, uint256 amount, uint256 feeAmount);
     event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool indexed approved);
     event LogTransfer(address indexed token, address indexed from, address indexed to, uint256 amount);
     event LogWithdraw(address indexed token, address indexed from, address indexed to, uint256 amount);
+    // solhint-disable-next-line func-name-mixedcase
     function WETH() external view returns (IERC20);
     function balanceOf(IERC20, address) external view returns (uint256);
     function masterContractApproved(address, address) external view returns (bool);

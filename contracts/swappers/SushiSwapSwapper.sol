@@ -42,11 +42,11 @@ contract SushiSwapSwapper is ISwapper {
         uint256 amountTo;
         if (pair.token0() == address(from)) {
             amountTo = getAmountOut(amountFrom, reserve0, reserve1);
-            require(amountTo >= amountToMin, 'SushiSwapSwapper: return not enough');
+            require(amountTo >= amountToMin, "SushiSwapSwapper: not enough");
             pair.swap(0, amountTo, address(bentoBox), new bytes(0));
         } else {
             amountTo = getAmountOut(amountFrom, reserve1, reserve0);
-            require(amountTo >= amountToMin, 'SushiSwapSwapper: return not enough');
+            require(amountTo >= amountToMin, "SushiSwapSwapper: not enough");
             pair.swap(amountTo, 0, address(bentoBox), new bytes(0));
         }
         return amountTo;
@@ -63,12 +63,12 @@ contract SushiSwapSwapper is ISwapper {
         uint256 amountFrom;
         if (pair.token0() == address(from)) {
             amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
-            require(amountFrom <= amountFromMax, 'SushiSwapSwapper: return not enough');
+            require(amountFrom <= amountFromMax, "SushiSwapSwapper: not enough");
             bentoBox.withdraw(from, address(pair), amountFrom);
             pair.swap(0, exactAmountTo, address(bentoBox), new bytes(0));
         } else {
             amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
-            require(amountFrom <= amountFromMax, 'SushiSwapSwapper: return not enough');
+            require(amountFrom <= amountFromMax, "SushiSwapSwapper: not enough");
             bentoBox.withdraw(from, address(pair), amountFrom);
             pair.swap(exactAmountTo, 0, address(bentoBox), new bytes(0));
         }

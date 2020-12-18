@@ -15,8 +15,8 @@
 
 // WARNING!!! DO NOT USE!!! BEING AUDITED!!!
 
-// solium-disable security/no-inline-assembly
-// solium-disable security/no-low-level-calls
+// solhint-disable no-inline-assembly
+// solhint-disable avoid-low-level-calls
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "./libraries/BoringMath.sol";
@@ -28,18 +28,20 @@ contract BentoBox {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
 
-    event LogDeploy(address indexed masterContract, bytes data, address indexed clone_address);
+    event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
     event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool indexed approved);
     event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 amount);
 
     mapping(address => address) public masterContractOf; // Mapping from clone contracts to their masterContract
-    mapping(address => mapping(address => bool)) public masterContractApproved; // Mapping from masterContract to user to approval state
+    mapping(address => mapping(address => bool)) public masterContractApproved; // masterContract to user to approval state
     mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract
     mapping(IERC20 => uint256) public totalSupply;
+    // solhint-disable-next-line var-name-mixedcase
     IERC20 public immutable WETH;
 
+    // solhint-disable-next-line var-name-mixedcase
     constructor(IERC20 WETH_) public {
         WETH = WETH_;
     }
@@ -81,8 +83,13 @@ contract BentoBox {
         _deposit(token, from, to, amount);
     }
 
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable { depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); }
-    function depositWithPermitTo(IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable allowed(from) {
+    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable 
+    { 
+        depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); 
+    }
+    function depositWithPermitTo(
+        IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s
+    ) public payable allowed(from) {
         token.permit(from, address(this), amount, deadline, v, r, s);
         _deposit(token, from, to, amount);
     }
@@ -103,7 +110,10 @@ contract BentoBox {
         emit LogTransfer(token, from, to, amount);
     }
 
-    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) public { transferMultipleFrom(token, msg.sender, tos, amounts); }
+    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) public
+    {
+        transferMultipleFrom(token, msg.sender, tos, amounts);
+    }
     function transferMultipleFrom(IERC20 token, address from, address[] calldata tos, uint256[] calldata amounts) public allowed(from) {
         require(tos[0] != address(0), "BentoBox: to[0] not set"); // To avoid a bad UI from burning funds
         uint256 totalAmount;
@@ -142,6 +152,7 @@ contract BentoBox {
         }
     }
 
+    // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 
     // *** Private functions *** //

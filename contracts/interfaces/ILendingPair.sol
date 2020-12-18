@@ -21,6 +21,7 @@ interface ILendingPair {
     event LogWithdrawFees();
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
+    // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() external view returns (bytes32);
     function accrueInfo() external view returns (uint64 interestPerBlock, uint64 lastBlockAccrued, uint128 feesPendingAmount);
     function allowance(address, address) external view returns (uint256);
@@ -68,7 +69,8 @@ interface ILendingPair {
     function name() external pure returns (string memory);
     function decimals() external view returns (uint8);
     function init(bytes calldata data) external;
-    function getInitData(IERC20 collateral_, IERC20 asset_, IOracle oracle_, bytes calldata oracleData_) external pure returns (bytes memory data);
+    function getInitData(IERC20 collateral_, IERC20 asset_, IOracle oracle_, bytes calldata oracleData_)
+        external pure returns (bytes memory data);
     function accrue() external;
     function isSolvent(address user, bool open) external view returns (bool);
     function peekExchangeRate() external view returns (bool, uint256);

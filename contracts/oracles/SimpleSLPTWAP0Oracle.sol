@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Using the same Copyleft License as in the original Repository
-// solium-disable security/no-block-members
+// solhint-disable not-rely-on-time
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -33,7 +33,7 @@ contract SimpleSLPTWAP0Oracle is IOracle {
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
         if (blockTimestampLast != blockTimestamp) {
-            priceCumulative += uint256(FixedPoint.fraction(reserve1, reserve0)._x) * (blockTimestamp - blockTimestampLast); // overflows are desired
+            priceCumulative += uint256(FixedPoint.fraction(reserve1, reserve0)._x) * (blockTimestamp - blockTimestampLast); // overflows ok
         }
 
         // overflow is desired, casting never truncates
