@@ -103,7 +103,7 @@ describe("BentoBox", function () {
           "0x0000000000000000000000000000000000000000",
           true
         )
-      ).to.be.revertedWith("BentoBox: masterContract must be set")
+      ).to.be.revertedWith("BentoBox: masterContract not set")
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
@@ -148,7 +148,7 @@ describe("BentoBox", function () {
     it("Reverts without approval", async function () {
       await expect(
         this.bentoBox.deposit(this.a.address, this.alice.address, 1)
-      ).to.be.revertedWith("BentoBox: TransferFrom failed at ERC20")
+      ).to.be.revertedWith("BentoBox: TransferFrom failed")
 
       expect(
         await this.bentoBox.balanceOf(this.a.address, this.alice.address)

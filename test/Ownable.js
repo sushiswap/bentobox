@@ -58,7 +58,7 @@ describe("Ownable", function () {
     it("Reverts given a zero address as newOwner argument", async function () {
       await expect(
         this.ownable.transferOwnershipDirect(ADDRESS_ZERO)
-      ).to.be.revertedWith("Ownable: new owner is the zero address")
+      ).to.be.revertedWith("Ownable: zero address")
     })
 
     it("Mutates owner", async function () {
@@ -100,7 +100,7 @@ describe("Ownable", function () {
         this.ownable
           .connect(this.alice)
           .claimOwnership({ from: this.alice.address })
-      ).to.be.revertedWith("Ownable: caller is not the pending owner")
+      ).to.be.revertedWith("Ownable: caller != pending owner")
     })
 
     it("Emit OwnershipTransferred event with expected arguments", async function () {

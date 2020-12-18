@@ -76,7 +76,7 @@ describe("ERC20", function () {
     it("Fails transfering 10001 tokens from owner to alice", async function () {
       await expect(
         this.token.transfer(this.alice.address, 10001)
-      ).to.be.revertedWith("LendingPair: balance too low")
+      ).to.be.revertedWith("ERC20: balance too low")
     })
 
     it("Succeeds for zero value transfer", async function () {
@@ -120,7 +120,7 @@ describe("ERC20", function () {
     it("transferFrom should fail if balance is too low", async function () {
       await expect(
         this.token.transferFrom(this.owner.address, this.alice.address, 10001)
-      ).to.be.revertedWith("LendingPair: balance too low")
+      ).to.be.revertedWith("ERC20: balance too low")
     })
   })
 
@@ -236,7 +236,7 @@ describe("ERC20", function () {
           .transferFrom(this.owner.address, this.bob.address, 60, {
             from: this.alice.address,
           })
-      ).to.be.revertedWith("LendingPair: allowance too low")
+      ).to.be.revertedWith("ERC20: allowance too low")
     })
 
     it("approvals: attempt withdrawal from account with no allowance (should fail)", async function () {
@@ -246,7 +246,7 @@ describe("ERC20", function () {
           .transferFrom(this.owner.address, this.bob.address, 60, {
             from: this.alice.address,
           })
-      ).to.be.revertedWith("LendingPair: allowance too low")
+      ).to.be.revertedWith("ERC20: allowance too low")
     })
 
     it("approvals: allow this.alice.address 100 to withdraw from this.owner.address. Withdraw 60 and then approve 0 & attempt transfer.", async function () {
@@ -264,7 +264,7 @@ describe("ERC20", function () {
           .transferFrom(this.owner.address, this.bob.address, 10, {
             from: this.alice.address,
           })
-      ).to.be.revertedWith("LendingPair: allowance too low")
+      ).to.be.revertedWith("ERC20: allowance too low")
     })
 
     it("approvals: approve max (2^256 - 1)", async function () {

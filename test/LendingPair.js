@@ -113,9 +113,7 @@ describe("Lending Pair", function () {
       this.lendingPair.address,
       this.initData
     )
-
-    const cloneAddress = (await deployTx.wait()).events[1].args.clone_address
-
+    const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
     this.pair = await this.LendingPair.attach(cloneAddress)
     await this.pair.updateExchangeRate()
   })
@@ -229,7 +227,7 @@ describe("Lending Pair", function () {
       )
       await this.pair.accrue()
       expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(
-        await this.pair.startingInterestPerBlock()
+        await this.pair.STARTING_INTEREST_PER_BLOCK()
       )
     })
     it("should lock interest rate at minimum", async function () {
@@ -254,7 +252,7 @@ describe("Lending Pair", function () {
       let totalAsset = (await this.pair.totalAsset()).amount
       let utilization = totalBorrow.mul(getBigNumber(1)).div(totalAsset)
       expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(
-        await this.pair.minimumInterestPerBlock()
+        await this.pair.MINIMUM_INTEREST_PER_BLOCK()
       )
     })
     it("should lock interest rate at maximum", async function () {
@@ -673,7 +671,7 @@ describe("Lending Pair", function () {
           getBigNumber(200),
           getBigNumber(200)
         )
-      ).to.be.revertedWith("SushiSwapSwapper: return not enough")
+      ).to.be.revertedWith("SushiSwapSwapper: not enough")
     })
 
     it("should not allow shorting into insolvency", async function () {
@@ -795,7 +793,7 @@ describe("Lending Pair", function () {
             "0x0000000000000000000000000000000000000000",
             true
           )
-      ).to.be.revertedWith("all users are solvent")
+      ).to.be.revertedWith("LendingPair: all are solvent")
     })
 
     it("should allow open liquidate", async function () {
@@ -942,7 +940,7 @@ describe("Lending Pair", function () {
         this.pair
           .connect(this.bob)
           .swipe(this.a.address, { from: this.bob.address })
-      ).to.be.revertedWith("LendingPair: caller is not the owner")
+      ).to.be.revertedWith("LendingPair: caller is not owner")
     })
     it("allows swiping call with zero balance of ETH", async function () {
       await this.pair.swipe(ADDRESS_ZERO)
