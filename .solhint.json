@@ -6,7 +6,7 @@
     "avoid-sha3": "warn",
     "compiler-version": "off",
     "max-states-count": ["error", 18],
-    "max-line-length": ["warn", 125],
+    "max-line-length": ["warn", 145],
     "not-rely-on-time": "warn",
     "quotes": ["warn","double"],
     "prettier/prettier": "off"

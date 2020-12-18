@@ -17,7 +17,6 @@ contract ERC20 is ERC20Data {
 
     function transfer(address to, uint256 amount) public returns (bool success) {
         require(balanceOf[msg.sender] >= amount, 'LendingPair: balance too low');
-        require(amount >= 0, 'LendingPair: amount should be >= 0');
         require(balanceOf[to] + amount >= balanceOf[to], 'LendingPair: overflow detected');
         balanceOf[msg.sender] -= amount;
         balanceOf[to] += amount;
@@ -28,7 +27,6 @@ contract ERC20 is ERC20Data {
     function transferFrom(address from, address to, uint256 amount) public returns (bool success) {
         require(balanceOf[from] >= amount, 'LendingPair: balance too low');
         require(allowance[from][msg.sender] >= amount, 'LendingPair: allowance too low');
-        require(amount >= 0, 'LendingPair: amount should be > 0');
         require(balanceOf[to] + amount >= balanceOf[to], 'LendingPair: overflow detected');
         balanceOf[from] -= amount;
         allowance[from][msg.sender] -= amount;

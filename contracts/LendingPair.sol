@@ -148,7 +148,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     // Serves as the constructor, as clones can't have a regular constructor
     function init(bytes calldata data) public override {
-        require(address(collateral) == address(0), 'LendingPair: already initialized');
+        require(address(collateral) == address(0), "LendingPair: already initialized");
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
         accrueInfo.interestPerBlock = uint64(startingInterestPerBlock);  // 1% APR, with 1e18 being 100%
@@ -356,7 +356,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         accrue();
         _removeCollateralAmount(msg.sender, amount);
         // Only allow withdrawing if user is solvent (in case of a closed liquidation)
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
         bentoBox.withdraw(collateral, to, amount);
     }
 
@@ -364,7 +364,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         accrue();
         _removeCollateralAmount(msg.sender, amount);
         // Only allow withdrawing if user is solvent (in case of a closed liquidation)
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
         bentoBox.transfer(collateral, to, amount);
     }
 
@@ -390,7 +390,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         uint256 feeAmount = amount.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowAmount(msg.sender, amount.add(feeAmount));
         totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     function borrowToBento(uint256 amount, address to) public {
@@ -399,7 +399,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         uint256 feeAmount = amount.mul(borrowOpeningFee) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowAmount(msg.sender, amount.add(feeAmount));
         totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     // Repays the given fraction
@@ -419,7 +419,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     // Handles shorting with an approved swapper
     function short(ISwapper swapper, uint256 assetAmount, uint256 minCollateralAmount) public {
-        require(masterContract.swappers(swapper), 'LendingPair: Invalid swapper');
+        require(masterContract.swappers(swapper), "LendingPair: Invalid swapper");
         accrue();
         _addBorrowAmount(msg.sender, assetAmount);
         bentoBox.transferFrom(asset, address(this), address(swapper), assetAmount);
@@ -427,15 +427,15 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // Swaps the borrowable asset for collateral
         swapper.swap(asset, collateral, assetAmount, minCollateralAmount);
         uint256 returnedCollateralAmount = bentoBox.skim(collateral);
-        require(returnedCollateralAmount >= minCollateralAmount, 'LendingPair: not enough collateral returned');
+        require(returnedCollateralAmount >= minCollateralAmount, "LendingPair: not enough");
         _addCollateralAmount(msg.sender, returnedCollateralAmount);
 
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     // Handles unwinding shorts with an approved swapper
     function unwind(ISwapper swapper, uint256 borrowFraction, uint256 maxAmountCollateral) public {
-        require(masterContract.swappers(swapper), 'LendingPair: Invalid swapper');
+        require(masterContract.swappers(swapper), "LendingPair: Invalid swapper");
         accrue();
         bentoBox.transferFrom(collateral, address(this), address(swapper), maxAmountCollateral);
 
@@ -444,11 +444,11 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         // Swaps the collateral back for the borrowal asset
         uint256 usedAmount = swapper.swapExact(collateral, asset, maxAmountCollateral, borrowAmount, address(this));
         uint256 returnedAssetAmount = bentoBox.skim(asset);
-        require(returnedAssetAmount >= borrowAmount, 'LendingPair: Not enough assets returned');
+        require(returnedAssetAmount >= borrowAmount, "LendingPair: Not enough");
 
         _removeCollateralAmount(msg.sender, maxAmountCollateral.sub(usedAmount));
 
-        require(isSolvent(msg.sender, false), 'LendingPair: user insolvent');
+        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     // Handles the liquidation of users' balances, once the users' amount of collateral is too low
@@ -483,7 +483,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
                 allBorrowFraction = allBorrowFraction.add(borrowFraction);
             }
         }
-        require(allBorrowAmount != 0, 'LendingPair: all users are solvent');
+        require(allBorrowAmount != 0, "LendingPair: all are solvent");
         _totalBorrow.amount = _totalBorrow.amount.sub(allBorrowAmount.to128());
         _totalBorrow.fraction = _totalBorrow.fraction.sub(allBorrowFraction.to128());
         totalBorrow = _totalBorrow;
@@ -491,7 +491,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
         if (!open) {
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
-            require(masterContract.swappers(swapper), 'LendingPair: Invalid swapper');
+            require(masterContract.swappers(swapper), "LendingPair: Invalid swapper");
 
             // Swaps the users' collateral for the borrowed asset
             bentoBox.transferFrom(collateral, address(this), address(swapper), allCollateralAmount);
@@ -530,7 +530,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         bytes[] memory results = new bytes[](calls.length);
         for (uint256 i = 0; i < calls.length; i++) {
             (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
-            require(success || !revertOnFail, 'LendingPair: Transaction failed');
+            require(success || !revertOnFail, "LendingPair: Transaction failed");
             successes[i] = success;
             results[i] = result;
         }
@@ -565,13 +565,13 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     function setDev(address newDev) public
     {
-        require(msg.sender == dev, 'LendingPair: Not dev');
+        require(msg.sender == dev, "LendingPair: Not dev");
         dev = newDev;
         emit LogDev(newDev);
     }
 
     function swipe(IERC20 token) public {
-        require(msg.sender == masterContract.owner(), "LendingPair: caller is not the owner");
+        require(msg.sender == masterContract.owner(), "LendingPair: caller is not owner");
 
         if (address(token) == address(0)) {
             uint256 balanceETH = address(this).balance;
@@ -583,7 +583,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             uint256 balanceAmount = token.balanceOf(address(this));
             if (balanceAmount > 0) {
                 (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, owner, balanceAmount));
-                require(success && (data.length == 0 || abi.decode(data, (bool))), "LendingPair: Transfer failed at ERC20");
+                require(success && (data.length == 0 || abi.decode(data, (bool))), "LendingPair: Transfer failed");
             }
         } else {
             uint256 excessAmount = bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.amount : totalCollateralAmount);
