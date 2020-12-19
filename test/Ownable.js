@@ -3,7 +3,7 @@ const { expect } = require("chai")
 
 describe("Ownable", function () {
   before(async function () {
-    await prepare(this, ["OwnableMock"]);
+    await prepare(this, ["OwnableMock"])
   })
 
   beforeEach(async function () {
@@ -19,17 +19,13 @@ describe("Ownable", function () {
 
   describe("Renounce Ownership", function () {
     it("Prevents non-owners from renouncement", async function () {
-      await expect(
-        this.ownable
-          .connect(this.bob)
-          .renounceOwnership({ from: this.bob.address })
-      ).to.be.revertedWith("Ownable: caller is not the owner")
+      await expect(this.ownable.connect(this.bob).renounceOwnership({ from: this.bob.address })).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      )
     })
 
     it("Assigns owner to address zero", async function () {
-      await expect(this.ownable.renounceOwnership())
-        .to.emit(this.ownable, "OwnershipTransferred")
-        .withArgs(this.alice.address, ADDRESS_ZERO)
+      await expect(this.ownable.renounceOwnership()).to.emit(this.ownable, "OwnershipTransferred").withArgs(this.alice.address, ADDRESS_ZERO)
 
       expect(await this.ownable.owner()).to.equal(ADDRESS_ZERO)
     })
@@ -37,11 +33,9 @@ describe("Ownable", function () {
 
   describe("Transfer Ownership", function () {
     it("Prevents non-owners from transferring", async function () {
-      await expect(
-        this.ownable
-          .connect(this.bob)
-          .transferOwnership(this.bob.address, { from: this.bob.address })
-      ).to.be.revertedWith("Ownable: caller is not the owner")
+      await expect(this.ownable.connect(this.bob).transferOwnership(this.bob.address, { from: this.bob.address })).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      )
     })
 
     it("Changes pending owner after transfer", async function () {
@@ -53,9 +47,7 @@ describe("Ownable", function () {
 
   describe("Transfer Ownership Direct", function () {
     it("Reverts given a zero address as newOwner argument", async function () {
-      await expect(
-        this.ownable.transferOwnershipDirect(ADDRESS_ZERO)
-      ).to.be.revertedWith("Ownable: zero address")
+      await expect(this.ownable.transferOwnershipDirect(ADDRESS_ZERO)).to.be.revertedWith("Ownable: zero address")
     })
 
     it("Mutates owner", async function () {
@@ -75,9 +67,7 @@ describe("Ownable", function () {
     it("Mutates owner", async function () {
       await this.ownable.transferOwnership(this.bob.address)
 
-      await this.ownable
-        .connect(this.bob)
-        .claimOwnership({ from: this.bob.address })
+      await this.ownable.connect(this.bob).claimOwnership({ from: this.bob.address })
 
       expect(await this.ownable.owner()).to.equal(this.bob.address)
     })
@@ -85,29 +75,21 @@ describe("Ownable", function () {
     it("Assigns previous owner to address zero", async function () {
       await this.ownable.transferOwnership(this.bob.address)
 
-      await this.ownable
-        .connect(this.bob)
-        .claimOwnership({ from: this.bob.address })
+      await this.ownable.connect(this.bob).claimOwnership({ from: this.bob.address })
 
       expect(await this.ownable.pendingOwner()).to.equal(ADDRESS_ZERO)
     })
 
     it("Prevents anybody but pending owner from claiming ownership", async function () {
-      await expect(
-        this.ownable
-          .connect(this.bob)
-          .claimOwnership({ from: this.bob.address })
-      ).to.be.revertedWith("Ownable: caller != pending owner")
+      await expect(this.ownable.connect(this.bob).claimOwnership({ from: this.bob.address })).to.be.revertedWith(
+        "Ownable: caller != pending owner"
+      )
     })
 
     it("Emit OwnershipTransferred event with expected arguments", async function () {
       await this.ownable.transferOwnership(this.bob.address)
 
-      await expect(
-        this.ownable
-          .connect(this.bob)
-          .claimOwnership({ from: this.bob.address })
-      )
+      await expect(this.ownable.connect(this.bob).claimOwnership({ from: this.bob.address }))
         .to.emit(this.ownable, "OwnershipTransferred")
         .withArgs(this.alice.address, this.bob.address)
     })

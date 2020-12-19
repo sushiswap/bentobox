@@ -1,16 +1,19 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
-const {
-  getBigNumber,
-  roundBN,
-  encodePrice,
-  advanceTime,
-  prepare,
-} = require("../utilities")
+const { getBigNumber, roundBN, encodePrice, advanceTime, prepare } = require("../utilities")
 
 describe("SimpleSLPOracle", function () {
   before(async function () {
-    await prepare(this, ["WETH9Mock", "BentoBox", "UniswapV2Pair", "UniswapV2Factory", "ReturnFalseERC20Mock", "RevertingERC20Mock", "SimpleSLPTWAP0Oracle", "SimpleSLPTWAP1Oracle"])
+    await prepare(this, [
+      "WETH9Mock",
+      "BentoBox",
+      "UniswapV2Pair",
+      "UniswapV2Factory",
+      "ReturnFalseERC20Mock",
+      "RevertingERC20Mock",
+      "SimpleSLPTWAP0Oracle",
+      "SimpleSLPTWAP1Oracle",
+    ])
   })
 
   beforeEach(async function () {
@@ -20,27 +23,16 @@ describe("SimpleSLPOracle", function () {
     this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
     await this.bentoBox.deployed()
 
-    this.collateral = await this.ReturnFalseERC20Mock.deploy(
-      "Token A",
-      "A",
-      getBigNumber(10000000)
-    )
+    this.collateral = await this.ReturnFalseERC20Mock.deploy("Token A", "A", getBigNumber(10000000))
     await this.collateral.deployed()
 
-    this.asset = await this.RevertingERC20Mock.deploy(
-      "Token B",
-      "B",
-      getBigNumber(10000000)
-    )
+    this.asset = await this.RevertingERC20Mock.deploy("Token B", "B", getBigNumber(10000000))
     await this.asset.deployed()
 
     this.factory = await this.UniswapV2Factory.deploy(this.alice.address)
     await this.factory.deployed()
 
-    const createPairTx = await this.factory.createPair(
-      this.collateral.address,
-      this.asset.address
-    )
+    const createPairTx = await this.factory.createPair(this.collateral.address, this.asset.address)
 
     const sushipair = (await createPairTx.wait()).events[0].args.pair
 
@@ -63,9 +55,7 @@ describe("SimpleSLPOracle", function () {
 
   describe("name", function () {
     it("should get name", async function () {
-      expect(await this.oracle.name(this.oracleData)).to.be.equal(
-        "SushiSwap TWAP"
-      )
+      expect(await this.oracle.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
     })
   })
 
@@ -88,15 +78,11 @@ describe("SimpleSLPOracle", function () {
       await advanceTime(271, ethers)
       await this.oracle.get(this.oracleData)
 
-      let info = (
-        await this.oracle.pairs(this.pair.address)
-      ).priceAverage.toString()
+      let info = (await this.oracle.pairs(this.pair.address)).priceAverage.toString()
       await advanceTime(301, ethers)
 
       expect(info).to.be.equal(this.expectedPrice[1].toString())
-      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(
-        getBigNumber(1).mul(5).div(10)
-      )
+      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(getBigNumber(1).mul(5).div(10))
     })
   })
 
@@ -111,14 +97,10 @@ describe("SimpleSLPOracle", function () {
       await this.oracle.get(this.oracleData)
       await this.oracle.get(this.oracleData)
 
-      let info = (
-        await this.oracle.pairs(this.pair.address)
-      ).priceAverage.toString()
+      let info = (await this.oracle.pairs(this.pair.address)).priceAverage.toString()
 
       expect(info).to.be.equal(this.expectedPrice[1].toString())
-      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(
-        getBigNumber(1).mul(5).div(10)
-      )
+      expect((await this.oracle.peek(this.oracleData))[1]).to.be.equal(getBigNumber(1).mul(5).div(10))
     })
 
     it("should update prices after swap", async function () {
@@ -136,9 +118,7 @@ describe("SimpleSLPOracle", function () {
       const price1 = (await this.oracle.peek(this.oracleData))[1]
 
       expect(price0).to.be.equal(getBigNumber(1).mul(5).div(10))
-      expect(roundBN(price1)).to.be.equal(
-        roundBN(getBigNumber(1).mul(75).div(100))
-      )
+      expect(roundBN(price1)).to.be.equal(roundBN(getBigNumber(1).mul(75).div(100)))
     })
   })
 

@@ -3,7 +3,7 @@ const { prepare } = require("./utilities")
 
 describe("BentoHelper", function () {
   before(async function () {
-    await prepare(this, ["BentoHelper"]);
+    await prepare(this, ["BentoHelper"])
   })
 
   beforeEach(async function () {
