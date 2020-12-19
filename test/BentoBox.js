@@ -1,28 +1,11 @@
 const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest } = require("./utilities")
+const { getApprovalDigest, prepare } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
   before(async function () {
-    this.ERC20 = await ethers.getContractFactory("ERC20Mock")
-
-    this.ReturnFalseERC20 = await ethers.getContractFactory(
-      "ReturnFalseERC20Mock"
-    )
-
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
-
-    this.signers = await ethers.getSigners()
-
-    this.alice = this.signers[0]
-
-    this.bob = this.signers[1]
-
-    this.carol = this.signers[2]
-
-    this.carolPrivateKey =
-      "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+    await prepare(this, ["ERC20Mock", "ReturnFalseERC20Mock", "RevertingERC20Mock"])
   })
 
   beforeEach(async function () {
@@ -32,14 +15,14 @@ describe("BentoBox", function () {
 
     this.bentoBox = await ethers.getContract("BentoBox")
 
-    this.erc20 = await this.ERC20.deploy(10000000)
+    this.erc20 = await this.ERC20Mock.deploy(10000000)
     await this.erc20.deployed()
 
-    this.a = await this.ReturnFalseERC20.deploy("Token A", "A", 10000000)
+    this.a = await this.ReturnFalseERC20Mock.deploy("Token A", "A", 10000000)
 
     await this.a.deployed()
 
-    this.b = await this.RevertingERC20.deploy("Token B", "B", 10000000)
+    this.b = await this.RevertingERC20Mock.deploy("Token B", "B", 10000000)
 
     await this.b.deployed()
 

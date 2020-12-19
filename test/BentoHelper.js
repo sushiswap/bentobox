@@ -1,8 +1,9 @@
 const { expect } = require("chai")
+const { prepare } = require("./utilities")
 
 describe("BentoHelper", function () {
   before(async function () {
-    this.BentoHelper = await ethers.getContractFactory("BentoHelper")
+    await prepare(this, ["BentoHelper"]);
   })
 
   beforeEach(async function () {

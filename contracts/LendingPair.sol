@@ -126,6 +126,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         feeTo = msg.sender;
         emit LogDev(msg.sender);
         emit LogFeeTo(msg.sender);
+
+        // Not really an issue, but https://blog.trailofbits.com/2020/12/16/breaking-aave-upgradeability/
+        collateral = IERC20(address(1));
     }
 
     // Settings for the Medium Risk LendingPair

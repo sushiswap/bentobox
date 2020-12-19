@@ -1,72 +1,25 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
-const { getBigNumber, roundBN, advanceTime } = require("../utilities")
+const { getBigNumber, roundBN, advanceTime, prepare, deploy } = require("../utilities")
 
 describe("CompositeOracle", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
-
-    this.BentoBox = await ethers.getContractFactory("BentoBox")
-
-    this.UniswapV2Pair = await ethers.getContractFactory("UniswapV2Pair")
-
-    this.SushiSwapFactory = await ethers.getContractFactory("UniswapV2Factory")
-
-    this.ReturnFalseERC20 = await ethers.getContractFactory(
-      "ReturnFalseERC20Mock"
-    )
-
-    this.SimpleSLPOracle0 = await ethers.getContractFactory(
-      "SimpleSLPTWAP0Oracle"
-    )
-
-    this.SimpleSLPOracle1 = await ethers.getContractFactory(
-      "SimpleSLPTWAP1Oracle"
-    )
-
-    this.CompositeOracle = await ethers.getContractFactory("CompositeOracle")
-
-    this.signers = await ethers.getSigners()
-
-    this.alice = this.signers[0]
+    await prepare(this, ["WETH9Mock", "BentoBox", "UniswapV2Pair", "UniswapV2Factory", "ReturnFalseERC20Mock", "SimpleSLPTWAP0Oracle", "SimpleSLPTWAP1Oracle", "CompositeOracle"])
 
     this.sushiAmount = getBigNumber(400)
-
     this.ethAmount = getBigNumber(1)
-
     this.daiAmount = getBigNumber(500)
   })
 
   beforeEach(async function () {
-    this.weth9 = await this.WETH9.deploy()
-    await this.weth9.deployed()
-
-    this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
-    await this.bentoBox.deployed()
-
-    this.sushiToken = await this.ReturnFalseERC20.deploy(
-      "SUSHI",
-      "SUSHI",
-      getBigNumber("10000000")
-    )
-    await this.sushiToken.deployed()
-
-    this.ethToken = await this.ReturnFalseERC20.deploy(
-      "WETH",
-      "ETH",
-      getBigNumber("10000000")
-    )
-    await this.ethToken.deployed()
-
-    this.daiToken = await this.ReturnFalseERC20.deploy(
-      "DAI",
-      "DAI",
-      getBigNumber("10000000")
-    )
-    await this.daiToken.deployed()
-
-    this.factory = await this.SushiSwapFactory.deploy(this.alice.address)
-    await this.factory.deployed()
+    await deploy(this, [
+      ["weth9", this.WETH9Mock],
+      ["sushiToken", this.ReturnFalseERC20Mock, ["SUSHI", "SUSHI", getBigNumber("10000000")]],
+      ["ethToken", this.ReturnFalseERC20Mock, ["WETH", "ETH", getBigNumber("10000000")]],
+      ["daiToken", this.ReturnFalseERC20Mock, ["DAI", "DAI", getBigNumber("10000000")]],
+      ["factory", this.UniswapV2Factory, [this.alice.address]]
+    ])
+    await deploy(this, [["bentoBox", this.BentoBox, [this.weth9.address]]]);
 
     let createPairTx = await this.factory.createPair(
       this.sushiToken.address,
@@ -83,9 +36,9 @@ describe("CompositeOracle", function () {
     await this.pairSushiEth.mint(this.alice.address)
 
     if (this.ethToken.address == (await this.pairSushiEth.token0())) {
-      this.oracleSushiEth = await this.SimpleSLPOracle0.deploy()
+      this.oracleSushiEth = await this.SimpleSLPTWAP0Oracle.deploy()
     } else {
-      this.oracleSushiEth = await this.SimpleSLPOracle1.deploy()
+      this.oracleSushiEth = await this.SimpleSLPTWAP1Oracle.deploy()
     }
     await this.oracleSushiEth.deployed()
     this.oracleDataA = await this.oracleSushiEth.getDataParameter(
@@ -107,9 +60,9 @@ describe("CompositeOracle", function () {
     await this.pairDaiEth.mint(this.alice.address)
 
     if (this.daiToken.address == (await this.pairDaiEth.token0())) {
-      this.oracleDaiEth = await this.SimpleSLPOracle0.deploy()
+      this.oracleDaiEth = await this.SimpleSLPTWAP0Oracle.deploy()
     } else {
-      this.oracleDaiEth = await this.SimpleSLPOracle1.deploy()
+      this.oracleDaiEth = await this.SimpleSLPTWAP1Oracle.deploy()
     }
     await this.oracleDaiEth.deployed()
     this.oracleDataB = await this.oracleDaiEth.getDataParameter(

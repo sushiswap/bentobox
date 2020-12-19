@@ -5,59 +5,36 @@ const {
   roundBN,
   encodePrice,
   advanceTime,
+  prepare,
 } = require("../utilities")
 
 describe("SimpleSLPOracle", function () {
   before(async function () {
-    this.WETH9 = await ethers.getContractFactory("WETH9Mock")
-
-    this.BentoBox = await ethers.getContractFactory("BentoBox")
-
-    this.UniswapV2Pair = await ethers.getContractFactory("UniswapV2Pair")
-
-    this.SushiSwapFactory = await ethers.getContractFactory("UniswapV2Factory")
-
-    this.ReturnFalseERC20 = await ethers.getContractFactory(
-      "ReturnFalseERC20Mock"
-    )
-
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
-
-    this.SimpleSLPOracle0 = await ethers.getContractFactory(
-      "SimpleSLPTWAP0Oracle"
-    )
-
-    this.SimpleSLPOracle1 = await ethers.getContractFactory(
-      "SimpleSLPTWAP1Oracle"
-    )
-
-    this.signers = await ethers.getSigners()
-
-    this.alice = this.signers[0]
+    await prepare(this, ["WETH9Mock", "BentoBox", "UniswapV2Pair", "UniswapV2Factory", "ReturnFalseERC20Mock", "RevertingERC20Mock", "SimpleSLPTWAP0Oracle", "SimpleSLPTWAP1Oracle"])
   })
 
   beforeEach(async function () {
-    this.weth9 = await this.WETH9.deploy()
+    this.weth9 = await this.WETH9Mock.deploy()
     await this.weth9.deployed()
 
     this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
     await this.bentoBox.deployed()
 
-    this.collateral = await this.ReturnFalseERC20.deploy(
+    this.collateral = await this.ReturnFalseERC20Mock.deploy(
       "Token A",
       "A",
       getBigNumber(10000000)
     )
     await this.collateral.deployed()
 
-    this.asset = await this.RevertingERC20.deploy(
+    this.asset = await this.RevertingERC20Mock.deploy(
       "Token B",
       "B",
       getBigNumber(10000000)
     )
     await this.asset.deployed()
 
-    this.factory = await this.SushiSwapFactory.deploy(this.alice.address)
+    this.factory = await this.UniswapV2Factory.deploy(this.alice.address)
     await this.factory.deployed()
 
     const createPairTx = await this.factory.createPair(
@@ -76,9 +53,9 @@ describe("SimpleSLPOracle", function () {
     await this.pair.mint(this.alice.address)
 
     if (this.asset.address == (await this.pair.token0())) {
-      this.oracle = await this.SimpleSLPOracle0.deploy()
+      this.oracle = await this.SimpleSLPTWAP0Oracle.deploy()
     } else {
-      this.oracle = await this.SimpleSLPOracle1.deploy()
+      this.oracle = await this.SimpleSLPTWAP1Oracle.deploy()
     }
     await this.oracle.deployed()
     this.oracleData = await this.oracle.getDataParameter(this.pair.address)

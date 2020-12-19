@@ -6,38 +6,12 @@ const {
   advanceBlock,
   ADDRESS_ZERO,
   advanceTime,
+  prepare,
 } = require("./utilities")
 
 describe("Lending Pair", function () {
   before(async function () {
-    this.LendingPair = await ethers.getContractFactory("LendingPair")
-
-    this.SushiSwapSwapper = await ethers.getContractFactory("SushiSwapSwapper")
-
-    this.SushiSwapFactory = await ethers.getContractFactory(
-      "SushiSwapFactoryMock"
-    )
-
-    this.SushiSwapPair = await ethers.getContractFactory("SushiSwapPairMock")
-
-    this.ReturnFalseERC20 = await ethers.getContractFactory(
-      "ReturnFalseERC20Mock"
-    )
-
-    this.RevertingERC20 = await ethers.getContractFactory("RevertingERC20Mock")
-
-    this.Oracle = await ethers.getContractFactory("OracleMock")
-
-    const [alice, bob, carol] = await ethers.getSigners()
-
-    this.alice = alice
-
-    this.bob = bob
-
-    this.carol = carol
-
-    this.carolPrivateKey =
-      "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"
+    await prepare(this, ["LendingPair", "SushiSwapSwapper", "SushiSwapFactoryMock", "SushiSwapPairMock", "ReturnFalseERC20Mock", "RevertingERC20Mock", "OracleMock"]);
   })
 
   beforeEach(async function () {
@@ -47,14 +21,14 @@ describe("Lending Pair", function () {
 
     this.bentoBox = await ethers.getContract("BentoBox")
 
-    this.a = await this.ReturnFalseERC20.deploy(
+    this.a = await this.ReturnFalseERC20Mock.deploy(
       "Token A",
       "A",
       getBigNumber(10000000)
     )
     await this.a.deployed()
 
-    this.b = await this.RevertingERC20.deploy(
+    this.b = await this.RevertingERC20Mock.deploy(
       "Token B",
       "B",
       getBigNumber(10000000)
@@ -78,7 +52,7 @@ describe("Lending Pair", function () {
 
     const pair = (await createPairTx.wait()).events[0].args.pair
 
-    this.sushiSwapPair = await this.SushiSwapPair.attach(pair)
+    this.sushiSwapPair = await this.SushiSwapPairMock.attach(pair)
 
     await this.a.transfer(this.sushiSwapPair.address, getBigNumber(5000))
     await this.b.transfer(this.sushiSwapPair.address, getBigNumber(5000))

@@ -1,9 +1,9 @@
 const { expect } = require("chai")
-const { getBigNumber } = require("../utilities")
+const { getBigNumber, prepare } = require("../utilities")
 
 describe("PeggedOracle", function () {
   before(async function () {
-    this.PeggedOracle = await ethers.getContractFactory("PeggedOracle")
+    await prepare(this, ["PeggedOracle"])
   })
 
   beforeEach(async function () {

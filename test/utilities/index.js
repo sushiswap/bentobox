@@ -105,6 +105,26 @@ function getBigNumber(amount, decimals = 18) {
   return BigNumber.from(amount).mul(BigNumber.from(BASE_TEN).pow(decimals))
 }
 
+async function prepare(thisObject, contracts) {
+  for(let i in contracts) {
+    let contract = contracts[i]
+    thisObject[contract] = await ethers.getContractFactory(contract)
+  }
+  thisObject.signers = await ethers.getSigners()
+  thisObject.alice = thisObject.signers[0]
+  thisObject.bob = thisObject.signers[1]
+  thisObject.carol = thisObject.signers[2]
+  thisObject.carolPrivateKey = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+}
+
+async function deploy(thisObject, contracts) {
+  for(let i in contracts) {
+    let contract = contracts[i]
+    thisObject[contract[0]] = await contract[1].deploy(...(contract[2] || []))
+    await thisObject[contract[0]].deployed()
+  }
+}
+
 module.exports = {
   ADDRESS_ZERO,
   getDomainSeparator,
@@ -117,4 +137,6 @@ module.exports = {
   advanceBlock,
   advanceTimeAndBlock,
   getBigNumber,
+  prepare,
+  deploy,
 }

@@ -1,9 +1,10 @@
 const { expect } = require("chai")
+const { prepare } = require("../utilities")
 
 // TODO: Can we test this in isolation?
 describe("SushiSwapSwapper", function () {
   before(async function () {
-    this.SushiSwapSwapper = await ethers.getContractFactory("SushiSwapSwapper")
+    await prepare(this, ["SushiSwapSwapper"])
   })
 
   beforeEach(async function () {
