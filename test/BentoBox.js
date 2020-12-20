@@ -70,10 +70,22 @@ describe("BentoBox", function () {
   })
 
   describe("Set Master Contract Approval", function () {
-    it("Reverts with address zero", async function () {
+    it("Reverts with address zero as user", async function () {
+      let test = "0x7465737400000000000000000000000000000000000000000000000000000000"
+      await expect(
+        this.bentoBox.setMasterContractApproval("0x0000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000", true, 0, test, test)
+      ).to.be.revertedWith("BentoBox: User cannot be 0")
+    })
+
+    it("Reverts with address zero as mastercontract", async function () {
       await expect(
         setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, "0x0000000000000000000000000000000000000000", true)
       ).to.be.revertedWith("BentoBox: masterContract not set")
+    })
+
+    it("Reverts if signature is incorrect", async function () {
+      await expect(setMasterContractApproval(this.bentoBox, this.bob, this.carolPrivateKey, this.lendingPair.address, true))
+        .to.be.revertedWith("BentoBox: Invalid Signature")
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
