@@ -7,7 +7,11 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   const bentoBox = await deployments.get("BentoBox")
 
-  const response = await deploy("LendingPair", {
+  const chainId = await getChainId()
+
+  const lendingPairContract = chainId !== 31337 ? "LendingPair" : "LendingPairMock"
+
+  const response = await deploy(lendingPairContract, {
     from: deployer,
     args: [bentoBox.address],
     log: true,
@@ -16,7 +20,8 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   })
 
   if (response.newlyDeployed) {
-    const lendingPair = await ethers.getContract("LendingPair")
+    const lendingPair = await ethers.getContract(lendingPairContract)
+
     lendingPair.setSwapper(sushiSwapSwapper.address, true)
   }
 }
