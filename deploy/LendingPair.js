@@ -7,7 +7,11 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   const bentoBox = await deployments.get("BentoBox")
 
-  const response = await deploy("LendingPair", {
+  const chainId = await getChainId()
+
+  const lendingPairContract = chainId !== 31337 ? "LendingPair" : "LendingPairMock"
+
+  const response = await deploy(lendingPairContract, {
     from: deployer,
     args: [bentoBox.address],
     log: true,
@@ -16,26 +20,9 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   })
 
   if (response.newlyDeployed) {
-    const lendingPair = await ethers.getContract("LendingPair")
-
-    // console.log("lending pair deployer", deployer)
-    // console.log("lending pair owner", await lendingPair.owner())
-
-    const peggedOracle = await ethers.getContract("PeggedOracle")
+    const lendingPair = await ethers.getContract(lendingPairContract)
 
     lendingPair.setSwapper(sushiSwapSwapper.address, true)
-
-    const oracleData = peggedOracle.getDataParameter("0")
-
-    const initData = await lendingPair.getInitData(
-      "0x0000000000000000000000000000000000000000",
-      "0x0000000000000000000000000000000000000000",
-      peggedOracle.address,
-      oracleData
-    )
-    console.log("Initilising lendingPair...")
-    lendingPair.init(initData)
-    console.log("lendingPair initilised...")
   }
 }
 

@@ -6,7 +6,6 @@ require("@nomiclabs/hardhat-solhint")
 require("@tenderly/hardhat-tenderly")
 require("@nomiclabs/hardhat-waffle")
 require("hardhat-abi-exporter")
-// require("hardhat-dependency-compiler")
 require("hardhat-deploy")
 require("hardhat-deploy-ethers")
 require("hardhat-gas-reporter")
@@ -14,23 +13,14 @@ require("hardhat-spdx-license-identifier")
 require("hardhat-watcher")
 require("solidity-coverage")
 
-const {
-  normalizeHardhatNetworkAccountsConfig,
-} = require("hardhat/internal/core/providers/util")
+const { normalizeHardhatNetworkAccountsConfig } = require("hardhat/internal/core/providers/util")
 
-const {
-  BN,
-  bufferToHex,
-  privateToAddress,
-  toBuffer,
-} = require("ethereumjs-util")
+const { BN, bufferToHex, privateToAddress, toBuffer } = require("ethereumjs-util")
 
 const { removeConsoleLog } = require("hardhat-preprocessor")
 
 const accounts = {
-  mnemonic:
-    process.env.MNEMONIC ||
-    "test test test test test test test test test test test junk",
+  mnemonic: process.env.MNEMONIC || "test test test test test test test test test test test junk",
   accountsBalance: "990000000000000000000",
 }
 
@@ -47,9 +37,7 @@ task("accounts", "Prints the list of accounts", async (_, { config }) => {
   for (const [index, account] of accounts.entries()) {
     const address = bufferToHex(privateToAddress(toBuffer(account.privateKey)))
     const privateKey = bufferToHex(toBuffer(account.privateKey))
-    const balance = new BN(account.balance)
-      .div(new BN(10).pow(new BN(18)))
-      .toString(10)
+    const balance = new BN(account.balance).div(new BN(10).pow(new BN(18))).toString(10)
     console.log(`Account #${index}: ${address} (${balance} ETH)
 Private Key: ${privateKey}
 `)
@@ -76,37 +64,17 @@ task("pairs", "Prints the list of pairs", async () => {
 module.exports = {
   abiExporter: {
     path: "./build/abi",
-    //clear: true,
+    clear: true,
     flat: true,
-    // only: ['ERC20'],
-    // except: ['ERC20']
+    // only: [],
+    // except: []
   },
-  // dependencyCompiler: {
-  //   paths: [
-  //     "@sushiswap/core/uniswapv2/UniswapV2Factory.sol",
-  //     "@sushiswap/core/uniswapv2/UniswapV2Pair.sol",
-  //   ],
-  // },
   defaultNetwork: "hardhat",
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
-  // external: {
-  //   contracts: [
-  //     {
-  //       artifacts: "node_modules/@cartesi/arbitration/export/artifacts",
-  //       deploy: "node_modules/@cartesi/arbitration/export/deploy",
-  //     },
-  //     {
-  //       artifacts: "node_modules/someotherpackage/artifacts",
-  //     },
-  //   ],
-  //   deployments: {
-  //     ropsten: ["node_modules/@sushiswap/core"],
-  //   },
-  // },
   gasReporter: {
     enabled: process.env.REPORT_GAS ? true : false,
     currency: "USD",
@@ -184,10 +152,7 @@ module.exports = {
     // },
   },
   preprocess: {
-    eachLine: removeConsoleLog(
-      (bre) =>
-        bre.network.name !== "hardhat" && bre.network.name !== "localhost"
-    ),
+    eachLine: removeConsoleLog((bre) => bre.network.name !== "hardhat" && bre.network.name !== "localhost"),
   },
   solidity: {
     version: "0.6.12",
