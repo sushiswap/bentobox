@@ -39,13 +39,13 @@ contract BentoBox {
     mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract
     mapping(IERC20 => uint256) public totalSupply;
     // solhint-disable-next-line var-name-mixedcase
-    IERC20 public immutable WETH;
+    IERC20 public immutable WethToken;
 
     mapping(address => uint256) public nonces;
 
     // solhint-disable-next-line var-name-mixedcase
-    constructor(IERC20 WETH_) public {
-        WETH = WETH_;
+    constructor(IERC20 WethToken_) public {
+        WethToken = WethToken_;
     }
 
     // Deploys a given master Contract as a clone.
@@ -68,7 +68,7 @@ contract BentoBox {
         emit LogDeploy(masterContract, data, cloneAddress);
     }
 
-    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+    function domainSeparator() public view returns (bytes32) {
         uint256 chainId;
         assembly {chainId := chainid()}
         return keccak256(abi.encode(keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"), "BentoBox V1", chainId, address(this)));
@@ -80,7 +80,7 @@ contract BentoBox {
         require(masterContract != address(0), "BentoBox: masterContract not set"); // Important for security
 
         bytes32 digest = keccak256(abi.encodePacked(
-            "\x19\x01", DOMAIN_SEPARATOR(),
+            "\x19\x01", domainSeparator(),
             keccak256(abi.encode(
                 // keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
                 0x1962bc9f5484cb7a998701b81090e966ee1fce5771af884cceee7c081b14ade2,
@@ -152,8 +152,8 @@ contract BentoBox {
 
     function skimETH() external returns (uint256 amount) { amount = skimETHTo(msg.sender); }
     function skimETHTo(address to) public returns (uint256 amount) {
-        IWETH(address(WETH)).deposit{value: address(this).balance}();
-        amount = skimTo(WETH, to);
+        IWETH(address(WethToken)).deposit{value: address(this).balance}();
+        amount = skimTo(WethToken, to);
     }
 
     function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory successes, bytes[] memory results) {
@@ -177,8 +177,8 @@ contract BentoBox {
         uint256 supply = totalSupply[token];
         totalSupply[token] = supply.add(amount);
 
-        if (address(token) == address(WETH)) {
-            IWETH(address(WETH)).deposit{value: amount}();
+        if (address(token) == address(WethToken)) {
+            IWETH(address(WethToken)).deposit{value: amount}();
         } else {
             if (supply == 0) { // During the first deposit, we check that this token is 'real'
                 require(token.totalSupply() > 0, "BentoBox: No tokens");
@@ -193,8 +193,8 @@ contract BentoBox {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
         balanceOf[token][from] = balanceOf[token][from].sub(amount);
         totalSupply[token] = totalSupply[token].sub(amount);
-        if (address(token) == address(WETH)) {
-            IWETH(address(WETH)).withdraw(amount);
+        if (address(token) == address(WethToken)) {
+            IWETH(address(WethToken)).withdraw(amount);
             (bool success,) = to.call{value: amount}(new bytes(0));
             require(success, "BentoBox: ETH transfer failed");
         } else {
