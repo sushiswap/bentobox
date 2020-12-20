@@ -18,12 +18,10 @@ interface IBentoBox {
     function deploy(address masterContract, bytes calldata data) external;
     function deposit(IERC20 token, address from, uint256 amount) external payable;
     function depositTo(IERC20 token, address from, address to, uint256 amount) external payable;
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external payable;
-    function depositWithPermitTo(
-        IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external payable;
     function masterContractApproved(address, address) external view returns (bool);
     function masterContractOf(address) external view returns (address);
     function nonces(address) external view returns (uint256);
+    function permit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
     function setMasterContractApproval(address user, address masterContract, bool approved, uint8 v, bytes32 r, bytes32 s) external;
     function skim(IERC20 token) external returns (uint256 amount);
     function skimETH() external returns (uint256 amount);

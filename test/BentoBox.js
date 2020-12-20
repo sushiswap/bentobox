@@ -63,7 +63,7 @@ describe("BentoBox", function () {
     })
 
     it("Returns true for pair which has been set", async function () {
-      await setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, true);
+      await setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, true)
 
       expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.carol.address)).to.be.true
     })
@@ -71,9 +71,9 @@ describe("BentoBox", function () {
 
   describe("Set Master Contract Approval", function () {
     it("Reverts with address zero", async function () {
-      await expect(setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, "0x0000000000000000000000000000000000000000", true)).to.be.revertedWith(
-        "BentoBox: masterContract not set"
-      )
+      await expect(
+        setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, "0x0000000000000000000000000000000000000000", true)
+      ).to.be.revertedWith("BentoBox: masterContract not set")
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
@@ -191,9 +191,8 @@ describe("BentoBox", function () {
       )
       const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(this.carolPrivateKey.replace("0x", ""), "hex"))
 
-      await this.bentoBox
-        .connect(this.carol)
-        .depositWithPermit(this.a.address, this.carol.address, 1, deadline, v, r, s, { from: this.carol.address })
+      await this.bentoBox.connect(this.carol).permit(this.a.address, this.carol.address, 1, deadline, v, r, s)
+      await this.bentoBox.connect(this.carol).deposit(this.a.address, this.carol.address, 1)
 
       const amount = await this.bentoBox.balanceOf(this.a.address, this.carol.address)
 

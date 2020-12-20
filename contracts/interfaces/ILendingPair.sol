@@ -23,19 +23,7 @@ interface ILendingPair {
     event LogWithdrawFees();
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event Transfer(address indexed _from, address indexed _to, uint256 _value);
-    function BORROW_OPENING_FEE() external view returns (uint256);
-    function CLOSED_COLLATERIZATION_RATE() external view returns (uint256);
-    function DEV_FEE() external view returns (uint256);
     function DOMAIN_SEPARATOR() external view returns (bytes32);
-    function INTEREST_ELASTICITY() external view returns (uint256);
-    function LIQUIDATION_MULTIPLIER() external view returns (uint256);
-    function MAXIMUM_INTEREST_PER_BLOCK() external view returns (uint256);
-    function MAXIMUM_TARGET_UTILIZATION() external view returns (uint256);
-    function MINIMUM_INTEREST_PER_BLOCK() external view returns (uint256);
-    function MINIMUM_TARGET_UTILIZATION() external view returns (uint256);
-    function OPEN_COLLATERIZATION_RATE() external view returns (uint256);
-    function PROTOCOL_FEE() external view returns (uint256);
-    function STARTING_INTEREST_PER_BLOCK() external view returns (uint256);
     function accrue() external;
     function accrueInfo() external view returns (uint64 interestPerBlock, uint64 lastBlockAccrued, uint128 feesPendingAmount);
     function addAsset(uint256 amount, bool useBento) external payable;
@@ -69,6 +57,7 @@ interface ILendingPair {
     function peekExchangeRate() external view returns (bool, uint256);
     function pendingOwner() external view returns (address);
     function permit(address owner_, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+    function permitToken(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
     function removeAsset(uint256 fraction, address to, bool useBento) external;
     function removeCollateral(uint256 amount, address to, bool useBento) external;
     function renounceOwnership() external;

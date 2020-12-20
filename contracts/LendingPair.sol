@@ -132,22 +132,22 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     // Settings for the Medium Risk LendingPair
-    uint256 public constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
-    uint256 public constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
-    uint256 public constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
-    uint256 public constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
+    uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
+    uint256 private constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
+    uint256 private constant MINIMUM_TARGET_UTILIZATION = 7e17; // 70%
+    uint256 private constant MAXIMUM_TARGET_UTILIZATION = 8e17; // 80%
 
-    uint256 public constant STARTING_INTEREST_PER_BLOCK = 4566210045; // approx 1% APR
-    uint256 public constant MINIMUM_INTEREST_PER_BLOCK = 1141552511; // approx 0.25% APR
-    uint256 public constant MAXIMUM_INTEREST_PER_BLOCK = 4566210045000;  // approx 1000% APR
-    uint256 public constant INTEREST_ELASTICITY = 2000e36; // Half or double in 2000 blocks (approx 8 hours)
+    uint256 private constant STARTING_INTEREST_PER_BLOCK = 4566210045; // approx 1% APR
+    uint256 private constant MINIMUM_INTEREST_PER_BLOCK = 1141552511; // approx 0.25% APR
+    uint256 private constant MAXIMUM_INTEREST_PER_BLOCK = 4566210045000;  // approx 1000% APR
+    uint256 private constant INTEREST_ELASTICITY = 2000e36; // Half or double in 2000 blocks (approx 8 hours)
 
-    uint256 public constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
+    uint256 private constant LIQUIDATION_MULTIPLIER = 112000; // add 12%
 
     // Fees
-    uint256 public constant PROTOCOL_FEE = 10000; // 10%
-    uint256 public constant DEV_FEE = 10000; // 10% of the PROTOCOL_FEE = 1%
-    uint256 public constant BORROW_OPENING_FEE = 50; // 0.05%
+    uint256 private constant PROTOCOL_FEE = 10000; // 10%
+    uint256 private constant DEV_FEE = 10000; // 10% of the PROTOCOL_FEE = 1%
+    uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
     function init(bytes calldata data) public override {
@@ -164,6 +164,10 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     function setApproval(address user, bool approved, uint8 v, bytes32 r, bytes32 s) external {
         bentoBox.setMasterContractApproval(user, address(masterContract), approved, v, r, s);
+    }
+
+    function permitToken(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        bentoBox.permit(token, from, amount, deadline, v, r, s);
     }
 
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees

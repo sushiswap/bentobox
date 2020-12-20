@@ -1,6 +1,15 @@
 const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getBigNumber, sansBorrowFee, advanceBlock, ADDRESS_ZERO, advanceTime, prepare, setMasterContractApproval, setLendingPairContractApproval } = require("./utilities")
+const {
+  getBigNumber,
+  sansBorrowFee,
+  advanceBlock,
+  ADDRESS_ZERO,
+  advanceTime,
+  prepare,
+  setMasterContractApproval,
+  setLendingPairContractApproval,
+} = require("./utilities")
 
 describe("Lending Pair", function () {
   before(async function () {
@@ -155,7 +164,7 @@ describe("Lending Pair", function () {
       await this.pair.repay(borrowFractionLeft, false)
       await this.pair.removeAsset(await this.pair.balanceOf(this.alice.address), this.alice.address, false)
       await this.pair.accrue()
-      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.STARTING_INTEREST_PER_BLOCK())
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(4566210045)
     })
     it("should lock interest rate at minimum", async function () {
       let totalBorrowBefore = (await this.pair.totalBorrow()).amount
@@ -178,7 +187,7 @@ describe("Lending Pair", function () {
       let totalBorrow = (await this.pair.totalBorrow()).amount
       let totalAsset = (await this.pair.totalAsset()).amount
       let utilization = totalBorrow.mul(getBigNumber(1)).div(totalAsset)
-      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(await this.pair.MINIMUM_INTEREST_PER_BLOCK())
+      expect((await this.pair.accrueInfo()).interestPerBlock).to.be.equal(1141552511)
     })
     it("should lock interest rate at maximum", async function () {
       /*
@@ -525,7 +534,9 @@ describe("Lending Pair", function () {
       // virtual balance of 1000 is higher than the contract has
       await expect(this.pair.connect(this.bob).removeAsset(bobBal, this.bob.address, false)).to.be.revertedWith("BoringMath: Underflow")
       // 750 still too much, as 250 should be kept to rewind all shorts
-      await expect(this.pair.connect(this.bob).removeAsset(getBigNumber(750), this.bob.address, false)).to.be.revertedWith("BoringMath: Underflow")
+      await expect(this.pair.connect(this.bob).removeAsset(getBigNumber(750), this.bob.address, false)).to.be.revertedWith(
+        "BoringMath: Underflow"
+      )
       await this.pair.connect(this.bob).removeAsset(getBigNumber(499), this.bob.address, false)
     })
   })

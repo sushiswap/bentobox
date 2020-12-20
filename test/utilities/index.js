@@ -52,18 +52,15 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
   return pack
 }
 
-const BENTOBOX_MASTER_APPROVAL_TYPEHASH = keccak256(toUtf8Bytes("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)"))
+const BENTOBOX_MASTER_APPROVAL_TYPEHASH = keccak256(
+  toUtf8Bytes("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)")
+)
 
 function getBentoBoxDomainSeparator(address, chainId) {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "string", "uint256", "address"],
-      [
-        keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), 
-        "BentoBox V1", 
-        chainId, 
-        address
-      ]
+      [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V1", chainId, address]
     )
   )
 }
@@ -73,12 +70,12 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
   const msg = defaultAbiCoder.encode(
     ["bytes32", "string", "address", "address", "bool", "uint256"],
     [
-      BENTOBOX_MASTER_APPROVAL_TYPEHASH, 
+      BENTOBOX_MASTER_APPROVAL_TYPEHASH,
       approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
       user.address,
       masterContractAddress,
       approved,
-      nonce
+      nonce,
     ]
   )
   const pack = solidityPack(["bytes1", "bytes1", "bytes32", "bytes32"], ["0x19", "0x01", DOMAIN_SEPARATOR, keccak256(msg)])
@@ -91,9 +88,7 @@ async function setMasterContractApproval(bentoBox, user, privateKey, masterContr
   const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await bentoBox
-    .connect(user)
-    .setMasterContractApproval(user.address, masterContractAddress, approved, v, r, s)
+  return await bentoBox.connect(user).setMasterContractApproval(user.address, masterContractAddress, approved, v, r, s)
 }
 
 async function setLendingPairContractApproval(bentoBox, user, privateKey, lendingPair, approved) {
@@ -102,9 +97,7 @@ async function setLendingPairContractApproval(bentoBox, user, privateKey, lendin
   const digest = getBentoBoxApprovalDigest(bentoBox, user, lendingPair.address, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await bentoBox
-    .connect(user)
-    .setMasterContractApproval(user.address, lendingPair.address, approved, v, r, s)
+  return await bentoBox.connect(user).setMasterContractApproval(user.address, lendingPair.address, approved, v, r, s)
 }
 
 function sansBorrowFee(amount) {

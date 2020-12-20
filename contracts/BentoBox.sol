@@ -100,19 +100,12 @@ contract BentoBox {
         _;
     }
 
-    function deposit(IERC20 token, address from, uint256 amount) external payable { depositTo(token, from, msg.sender, amount); }
-    function depositTo(IERC20 token, address from, address to, uint256 amount) public payable allowed(from) {
-        _deposit(token, from, to, amount);
+    function permit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
+        token.permit(from, address(this), amount, deadline, v, r, s);
     }
 
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external payable 
-    { 
-        depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); 
-    }
-    function depositWithPermitTo(
-        IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s
-    ) public payable allowed(from) {
-        token.permit(from, address(this), amount, deadline, v, r, s);
+    function deposit(IERC20 token, address from, uint256 amount) external payable { depositTo(token, from, msg.sender, amount); }
+    function depositTo(IERC20 token, address from, address to, uint256 amount) public payable allowed(from) {
         _deposit(token, from, to, amount);
     }
 
