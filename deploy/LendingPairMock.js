@@ -17,25 +17,7 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   if (response.newlyDeployed) {
     const lendingPair = await ethers.getContract("LendingPairMock")
-
-    // console.log("lending pair deployer", deployer)
-    // console.log("lending pair owner", await lendingPair.owner())
-
-    const peggedOracle = await ethers.getContract("PeggedOracle")
-
     lendingPair.setSwapper(sushiSwapSwapper.address, true)
-
-    const oracleData = peggedOracle.getDataParameter("0")
-
-    const initData = await lendingPair.getInitData(
-      "0x0000000000000000000000000000000000000000",
-      "0x0000000000000000000000000000000000000000",
-      peggedOracle.address,
-      oracleData
-    )
-    console.log("Initilising lendingPair...")
-    lendingPair.init(initData)
-    console.log("lendingPair initilised...")
   }
 }
 

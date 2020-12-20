@@ -22,7 +22,7 @@ contract CompoundOracle is IOracle {
     function _peekPrice(string memory symbol) internal view returns(uint256) {
         if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
-        if (block.number + 8 > info.blockNumber) {
+        if (block.number > info.blockNumber + 8) {
             return uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
         }
         return info.price;
@@ -31,7 +31,7 @@ contract CompoundOracle is IOracle {
     function _getPrice(string memory symbol) internal returns(uint256) {
         if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
-        if (block.number + 8 > info.blockNumber) {
+        if (block.number > info.blockNumber + 8) {
             info.price = uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
             info.blockNumber = uint128(block.number); // Blocknumber will fit in uint128
             prices[symbol] = info;

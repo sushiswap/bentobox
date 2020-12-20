@@ -162,6 +162,10 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         return abi.encode(collateral_, asset_, oracle_, oracleData_);
     }
 
+    function setApproval(address user, bool approved, uint8 v, bytes32 r, bytes32 s) external {
+        bentoBox.setMasterContractApproval(user, address(masterContract), approved, v, r, s);
+    }
+
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
         AccrueInfo memory info = accrueInfo;
@@ -325,99 +329,56 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     // Deposits an amount of collateral from the caller
-    function addCollateral(uint256 amount) public payable { addCollateralTo(amount, msg.sender); }
-    function addCollateralTo(uint256 amount, address to) public payable {
+    function addCollateral(uint256 amount, bool useBento) public payable { addCollateralTo(amount, msg.sender, useBento); }
+    function addCollateralTo(uint256 amount, address to, bool useBento) public payable {
         _addCollateralAmount(to, amount);
-        bentoBox.deposit{value: msg.value}(collateral, msg.sender, amount);
-    }
-
-    function addCollateralFromBento(uint256 amount) public { addCollateralFromBentoTo(amount, msg.sender); }
-    function addCollateralFromBentoTo(uint256 amount, address to) public {
-        _addCollateralAmount(to, amount);
-        bentoBox.transferFrom(collateral, msg.sender, address(this), amount);
+        useBento 
+            ? bentoBox.transferFrom(collateral, msg.sender, address(this), amount)
+            : bentoBox.deposit{value: msg.value}(collateral, msg.sender, amount);
     }
 
     // Deposits an amount of supply (the borrowable token) from the caller
-    function addAsset(uint256 amount) public payable { addAssetTo(amount, msg.sender); }
-    function addAssetTo(uint256 amount, address to) public payable {
+    function addAsset(uint256 amount, bool useBento) public payable { addAssetTo(amount, msg.sender, useBento); }
+    function addAssetTo(uint256 amount, address to, bool useBento) public payable {
         // Accrue interest before calculating pool amounts in _addAssetAmount
         accrue();
         _addAssetAmount(to, amount);
-        bentoBox.deposit{value: msg.value}(asset, msg.sender, amount);
-    }
-
-    function addAssetFromBento(uint256 amount) public payable { addAssetFromBentoTo(amount, msg.sender); }
-    function addAssetFromBentoTo(uint256 amount, address to) public payable {
-        // Accrue interest before calculating pool amounts in _addAssetAmount
-        accrue();
-        _addAssetAmount(to, amount);
-        bentoBox.transferFrom(asset, msg.sender, address(this), amount);
+        useBento ? bentoBox.transferFrom(asset, msg.sender, address(this), amount) : bentoBox.deposit{value: msg.value}(asset, msg.sender, amount);
     }
 
     // Withdraws a amount of collateral of the caller to the specified address
-    function removeCollateral(uint256 amount, address to) public {
+    function removeCollateral(uint256 amount, address to, bool useBento) public {
         accrue();
         _removeCollateralAmount(msg.sender, amount);
         // Only allow withdrawing if user is solvent (in case of a closed liquidation)
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
-        bentoBox.withdraw(collateral, to, amount);
-    }
-
-    function removeCollateralToBento(uint256 amount, address to) public {
-        accrue();
-        _removeCollateralAmount(msg.sender, amount);
-        // Only allow withdrawing if user is solvent (in case of a closed liquidation)
-        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
-        bentoBox.transfer(collateral, to, amount);
+        useBento ? bentoBox.transfer(collateral, to, amount) : bentoBox.withdraw(collateral, to, amount);
     }
 
     // Withdraws a amount of supply (the borrowable token) of the caller to the specified address
-    function removeAsset(uint256 fraction, address to) public {
+    function removeAsset(uint256 fraction, address to, bool useBento) public {
         // Accrue interest before calculating pool amounts in _removeAssetFraction
         accrue();
         uint256 amount = _removeAssetFraction(msg.sender, fraction);
-        bentoBox.withdraw(asset, to, amount);
-    }
-
-    function removeAssetToBento(uint256 fraction, address to) public {
-        // Accrue interest before calculating pool amounts in _removeAssetFraction
-        accrue();
-        uint256 amount = _removeAssetFraction(msg.sender, fraction);
-        bentoBox.transfer(asset, to, amount);
+        useBento ? bentoBox.transfer(asset, to, amount) : bentoBox.withdraw(asset, to, amount);
     }
 
     // Borrows the given amount from the supply to the specified address
-    function borrow(uint256 amount, address to) public {
+    function borrow(uint256 amount, address to, bool useBento) public {
         accrue();
         uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / 1e5; // A flat % fee is charged for any borrow
         _addBorrowAmount(msg.sender, amount.add(feeAmount));
         totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
-        bentoBox.withdraw(asset, to, amount);
-        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
-    }
-
-    function borrowToBento(uint256 amount, address to) public {
-        accrue();
-        uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / 1e5; // A flat % fee is charged for any borrow
-        _addBorrowAmount(msg.sender, amount.add(feeAmount));
-        totalAsset.amount = totalAsset.amount.add(feeAmount.to128());
-        bentoBox.transfer(asset, to, amount);
+        useBento ? bentoBox.transfer(asset, to, amount) : bentoBox.withdraw(asset, to, amount);
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
     // Repays the given fraction
-    function repay(uint256 fraction) public { repayFor(fraction, msg.sender); }
-    function repayFor(uint256 fraction, address beneficiary) public {
+    function repay(uint256 fraction, bool useBento) public { repayFor(fraction, msg.sender, useBento); }
+    function repayFor(uint256 fraction, address beneficiary, bool useBento) public {
         accrue();
         uint256 amount = _removeBorrowFraction(beneficiary, fraction);
-        bentoBox.deposit(asset, msg.sender, amount);
-    }
-
-    function repayFromBento(uint256 fraction) public { repayFromBentoTo(fraction, msg.sender); }
-    function repayFromBentoTo(uint256 fraction, address beneficiary) public {
-        accrue();
-        uint256 amount = _removeBorrowFraction(beneficiary, fraction);
-        bentoBox.transferFrom(asset, msg.sender, address(this), amount);
+        useBento ? bentoBox.transferFrom(asset, msg.sender, address(this), amount) : bentoBox.deposit(asset, msg.sender, amount);
     }
 
     // Handles shorting with an approved swapper

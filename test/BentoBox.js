@@ -1,6 +1,6 @@
 const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, prepare } = require("./utilities")
+const { getApprovalDigest, getBentoBoxApprovalDigest, setMasterContractApproval, prepare } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBox", function () {
@@ -63,31 +63,31 @@ describe("BentoBox", function () {
     })
 
     it("Returns true for pair which has been set", async function () {
-      this.bentoBox.setMasterContractApproval(this.lendingPair.address, true)
+      await setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, true);
 
-      expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.alice.address)).to.be.true
+      expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.carol.address)).to.be.true
     })
   })
 
   describe("Set Master Contract Approval", function () {
     it("Reverts with address zero", async function () {
-      await expect(this.bentoBox.setMasterContractApproval("0x0000000000000000000000000000000000000000", true)).to.be.revertedWith(
+      await expect(setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, "0x0000000000000000000000000000000000000000", true)).to.be.revertedWith(
         "BentoBox: masterContract not set"
       )
     })
 
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
-      await expect(this.bentoBox.setMasterContractApproval(this.lendingPair.address, true))
+      await expect(setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, true))
         .to.emit(this.bentoBox, "LogSetMasterContractApproval")
-        .withArgs(this.lendingPair.address, this.alice.address, true)
+        .withArgs(this.lendingPair.address, this.carol.address, true)
     })
 
     it("Should allow to retract approval of masterContract", async function () {
-      await this.bentoBox.setMasterContractApproval(this.lendingPair.address, true)
+      await setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, true)
 
-      await this.bentoBox.setMasterContractApproval(this.lendingPair.address, false)
+      await setMasterContractApproval(this.bentoBox, this.carol, this.carolPrivateKey, this.lendingPair.address, false)
 
-      expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.alice.address)).to.be.false
+      expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.carol.address)).to.be.false
     })
   })
 

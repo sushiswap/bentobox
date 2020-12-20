@@ -41,13 +41,15 @@ contract BentoBox {
     // solhint-disable-next-line var-name-mixedcase
     IERC20 public immutable WETH;
 
+    mapping(address => uint256) public nonces;
+
     // solhint-disable-next-line var-name-mixedcase
     constructor(IERC20 WETH_) public {
         WETH = WETH_;
     }
 
     // Deploys a given master Contract as a clone.
-    function deploy(address masterContract, bytes calldata data) public {
+    function deploy(address masterContract, bytes calldata data) external {
         bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
         address cloneAddress; // Address where the clone contract will reside.
 
@@ -66,11 +68,31 @@ contract BentoBox {
         emit LogDeploy(masterContract, data, cloneAddress);
     }
 
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        uint256 chainId;
+        assembly {chainId := chainid()}
+        return keccak256(abi.encode(keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"), "BentoBox V1", chainId, address(this)));
+    }
+
     // *** Public actions *** //
-    function setMasterContractApproval(address masterContract, bool approved) public {
+    function setMasterContractApproval(address user, address masterContract, bool approved, uint8 v, bytes32 r, bytes32 s) external {
+        require(user != address(0), "BentoBox: User cannot be 0");
         require(masterContract != address(0), "BentoBox: masterContract not set"); // Important for security
-        masterContractApproved[masterContract][msg.sender] = approved;
-        emit LogSetMasterContractApproval(masterContract, msg.sender, approved);
+
+        bytes32 digest = keccak256(abi.encodePacked(
+            "\x19\x01", DOMAIN_SEPARATOR(),
+            keccak256(abi.encode(
+                // keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
+                0x1962bc9f5484cb7a998701b81090e966ee1fce5771af884cceee7c081b14ade2,
+                approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
+                user, masterContract, approved, nonces[user]++
+            ))
+        ));
+        address recoveredAddress = ecrecover(digest, v, r, s);
+        require(recoveredAddress == user, "BentoBox: Invalid Signature");
+
+        masterContractApproved[masterContract][user] = approved;
+        emit LogSetMasterContractApproval(masterContract, user, approved);
     }
 
     modifier allowed(address from) {
@@ -78,12 +100,12 @@ contract BentoBox {
         _;
     }
 
-    function deposit(IERC20 token, address from, uint256 amount) public payable { depositTo(token, from, msg.sender, amount); }
+    function deposit(IERC20 token, address from, uint256 amount) external payable { depositTo(token, from, msg.sender, amount); }
     function depositTo(IERC20 token, address from, address to, uint256 amount) public payable allowed(from) {
         _deposit(token, from, to, amount);
     }
 
-    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public payable 
+    function depositWithPermit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external payable 
     { 
         depositWithPermitTo(token, from, msg.sender, amount, deadline, v, r, s); 
     }
@@ -94,14 +116,14 @@ contract BentoBox {
         _deposit(token, from, to, amount);
     }
 
-    function withdraw(IERC20 token, address to, uint256 amount) public { withdrawFrom(token, msg.sender, to, amount); }
+    function withdraw(IERC20 token, address to, uint256 amount) external { withdrawFrom(token, msg.sender, to, amount); }
     function withdrawFrom(IERC20 token, address from, address to, uint256 amount) public allowed(from) {
         _withdraw(token, from, to, amount);
     }
 
     // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
-    function transfer(IERC20 token, address to, uint256 amount) public { transferFrom(token, msg.sender, to, amount); }
+    function transfer(IERC20 token, address to, uint256 amount) external { transferFrom(token, msg.sender, to, amount); }
     function transferFrom(IERC20 token, address from, address to, uint256 amount) public allowed(from) {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
         balanceOf[token][from] = balanceOf[token][from].sub(amount);
@@ -110,7 +132,7 @@ contract BentoBox {
         emit LogTransfer(token, from, to, amount);
     }
 
-    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) public
+    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata amounts) external
     {
         transferMultipleFrom(token, msg.sender, tos, amounts);
     }
@@ -126,7 +148,7 @@ contract BentoBox {
         balanceOf[token][from] = balanceOf[token][from].sub(totalAmount);
     }
 
-    function skim(IERC20 token) public returns (uint256 amount) { amount = skimTo(token, msg.sender); }
+    function skim(IERC20 token) external returns (uint256 amount) { amount = skimTo(token, msg.sender); }
     function skimTo(IERC20 token, address to) public returns (uint256 amount) {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
         amount = token.balanceOf(address(this)).sub(totalSupply[token]);
@@ -135,7 +157,7 @@ contract BentoBox {
         emit LogDeposit(token, address(this), to, amount);
     }
 
-    function skimETH() public returns (uint256 amount) { amount = skimETHTo(msg.sender); }
+    function skimETH() external returns (uint256 amount) { amount = skimETHTo(msg.sender); }
     function skimETHTo(address to) public returns (uint256 amount) {
         IWETH(address(WETH)).deposit{value: address(this).balance}();
         amount = skimTo(WETH, to);
