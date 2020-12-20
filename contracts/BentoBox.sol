@@ -23,8 +23,9 @@ import "./libraries/BoringMath.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IMasterContract.sol";
+import "./Ownable.sol";
 
-contract BentoBox {
+contract BentoBox is Ownable{
     using BoringMath for uint256;
     using BoringMath128 for uint128;
 
@@ -42,6 +43,8 @@ contract BentoBox {
     IERC20 public immutable WethToken;
 
     mapping(address => uint256) public nonces;
+
+    mapping(address => bool) public whitelistedMasterContracts;
 
     // solhint-disable-next-line var-name-mixedcase
     constructor(IERC20 WethToken_) public {
@@ -75,6 +78,17 @@ contract BentoBox {
     }
 
     // *** Public actions *** //
+    function whitelistMasterContract(address masterContract, bool approved) external onlyOwner{
+        whitelistedMasterContracts[masterContract] = approved;
+    }
+
+    function setMasterContractApprovalFallback(address masterContract, bool approved) external {
+        require(masterContract != address(0), "BentoBox: masterContract not set"); // Important for security
+        require(whitelistedMasterContracts[masterContract], "BentoBox: not whitelisted");
+        masterContractApproved[masterContract][msg.sender] = approved;
+        emit LogSetMasterContractApproval(masterContract, msg.sender, approved);
+    }
+
     function setMasterContractApproval(address user, address masterContract, bool approved, uint8 v, bytes32 r, bytes32 s) external {
         require(user != address(0), "BentoBox: User cannot be 0");
         require(masterContract != address(0), "BentoBox: masterContract not set"); // Important for security

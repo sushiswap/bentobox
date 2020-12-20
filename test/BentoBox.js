@@ -69,6 +69,47 @@ describe("BentoBox", function () {
     })
   })
 
+  describe("whitelist Master Contract", function () {
+    it("Reverts if caller is not the owner", async function () {
+      await expect(this.bentoBox.connect(this.bob).whitelistMasterContract(this.a.address, true)).to.be.revertedWith("Ownable: caller is not the owner")
+     })
+
+     it("Allows to WhiteList MasterContract", async function () {
+      await this.bentoBox.connect(this.alice).whitelistMasterContract(this.lendingPair.address, true)
+      expect(await this.bentoBox.whitelistedMasterContracts(this.lendingPair.address)).to.be.true
+     })
+  })
+
+  describe("Set Master Contract Approval Fallback", function () {
+    it("Reverts with address zero as masterContract", async function () {
+      await expect(
+        this.bentoBox.setMasterContractApprovalFallback("0x0000000000000000000000000000000000000000", true)
+      ).to.be.revertedWith("BentoBox: masterContract not set")
+    })
+
+    it("Reverts with non whiteListed master contract", async function () {
+      await expect(
+        this.bentoBox.setMasterContractApprovalFallback("0x0000000000000000000000000000000000000001", true)
+      ).to.be.revertedWith("BentoBox: not whitelisted")
+    })
+
+    it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
+      await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
+      await expect(this.bentoBox.setMasterContractApprovalFallback(this.lendingPair.address, true))
+        .to.emit(this.bentoBox, "LogSetMasterContractApproval")
+        .withArgs(this.lendingPair.address, this.alice.address, true)
+    })
+
+    it("Should allow to retract approval of masterContract", async function () {
+      await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
+
+      await this.bentoBox.setMasterContractApprovalFallback(this.lendingPair.address, true)
+
+      await this.bentoBox.setMasterContractApprovalFallback(this.lendingPair.address, false)
+
+      expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.alice.address)).to.be.false
+    })
+  })
   describe("Set Master Contract Approval", function () {
     it("Reverts with address zero as user", async function () {
       let test = "0x7465737400000000000000000000000000000000000000000000000000000000"
