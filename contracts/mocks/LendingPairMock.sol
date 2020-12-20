@@ -7,9 +7,9 @@ import "../interfaces/IBentoBox.sol";
 import "../LendingPair.sol";
 
 contract LendingPairMock is LendingPair {
-    constructor(IBentoBox bentoBox) public LendingPair(bentoBox) {}
+	constructor(IBentoBox bentoBox) public LendingPair(bentoBox) {}
 
-    function setInterestPerBlock(uint64 interestPerBlock) public {
-        accrueInfo.interestPerBlock = interestPerBlock;
-    }
+	function setInterestPerBlock(uint64 interestPerBlock) public {
+		accrueInfo.interestPerBlock = interestPerBlock;
+	}
 }
