@@ -1,9 +1,12 @@
 {
   "name": "@sushiswap/bentobox",
-  "version": "1.0.0",
-  "private": true,
+  "version": "0.3.0",
   "description": "BentoBox",
   "main": "index.js",
+  "files": [
+    "contracts",
+    "deployments"
+  ],
   "directories": {
     "test": "test"
   },
