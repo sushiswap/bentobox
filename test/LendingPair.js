@@ -6,6 +6,7 @@ const {
   advanceBlock,
   ADDRESS_ZERO,
   advanceTime,
+  lendingPairPermit,
   prepare,
   setMasterContractApproval,
   setLendingPairContractApproval,
@@ -108,6 +109,12 @@ describe("Lending Pair", function () {
   describe("Init", function () {
     it("Reverts init for initilised pair", async function () {
       await expect(this.pair.init(this.initData)).to.be.revertedWith("LendingPair: already initialized")
+    })
+  })
+
+  describe("Permit", function () {
+    it("should allow permit", async function(){
+      await lendingPairPermit(this.bentoBox, this.a, this.alice, this.alicePrivateKey, this.lendingPair, 1);
     })
   })
 

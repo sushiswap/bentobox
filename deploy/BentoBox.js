@@ -18,7 +18,7 @@ module.exports = async function ({ deployments, getChainId, getNamedAccounts }) 
     from: deployer,
     args: [wethAddress],
     log: true,
-    deterministicDeployment: true,
+    deterministicDeployment: false,
   })
 }
 

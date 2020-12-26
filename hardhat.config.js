@@ -64,7 +64,7 @@ task("pairs", "Prints the list of pairs", async () => {
 module.exports = {
   abiExporter: {
     path: "./build/abi",
-    clear: true,
+    //clear: true,
     flat: true,
     // only: [],
     // except: []

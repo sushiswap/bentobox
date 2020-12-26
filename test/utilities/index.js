@@ -97,7 +97,28 @@ async function setLendingPairContractApproval(bentoBox, user, privateKey, lendin
   const digest = getBentoBoxApprovalDigest(bentoBox, user, lendingPair.address, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await bentoBox.connect(user).setMasterContractApproval(user.address, lendingPair.address, approved, v, r, s)
+  return await lendingPair.connect(user).setApproval(user.address, approved, v, r, s)
+}
+
+async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair, amount) {
+  const nonce = await token.nonces(user.address)
+
+  const deadline = (await user.provider._internalBlockNumber).respTime + 10000
+
+  const digest = await getApprovalDigest(
+    token,
+    {
+      owner: user.address,
+      spender: bentoBox.address,
+      value: amount,
+    },
+    nonce,
+    deadline,
+    user.provider._network.chainId
+  )
+  const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+
+  return await lendingPair.connect(user).permitToken(token.address, user.address, amount, deadline, v, r, s)
 }
 
 function sansBorrowFee(amount) {
@@ -151,6 +172,7 @@ module.exports = {
   getApprovalMsg,
   getBentoBoxDomainSeparator,
   getBentoBoxApprovalDigest,
+  lendingPairPermit,
   setMasterContractApproval,
   setLendingPairContractApproval,
   sansBorrowFee,

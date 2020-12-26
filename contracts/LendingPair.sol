@@ -178,8 +178,8 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         if (blocks == 0) {return;}
         info.lastBlockAccrued = uint64(block.number);
 
-        uint256 extraAmount;
-        uint256 feeAmount;
+        uint256 extraAmount = 0;
+        uint256 feeAmount = 0;
 
         TokenTotals memory _totalBorrow = totalBorrow;
         TokenTotals memory _totalAsset = totalAsset;
@@ -235,7 +235,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         TokenTotals memory _totalBorrow = totalBorrow;
 
         return userCollateralAmount[user].mul(1e13).mul(open ? OPEN_COLLATERIZATION_RATE : CLOSED_COLLATERIZATION_RATE)
-            >= (userBorrowFraction[user].mul(_totalBorrow.amount) / _totalBorrow.fraction).mul(exchangeRate);
+            >= userBorrowFraction[user].mul(_totalBorrow.amount).mul(exchangeRate) / _totalBorrow.fraction;
     }
 
     function peekExchangeRate() public view returns (bool, uint256) {
@@ -267,7 +267,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function _addAssetAmount(address user, uint256 amount) private {
         TokenTotals memory _totalAsset = totalAsset;
         // Calculates what amount of the pool the user gets for the amount deposited
-        uint256 newFraction = _totalAsset.fraction == 0 ? amount : amount.mul(_totalAsset.fraction) / _totalAsset.amount;
+        uint256 newFraction = _totalAsset.amount == 0 ? amount : amount.mul(_totalAsset.fraction) / _totalAsset.amount;
         // Adds this amount to user
         balanceOf[user] = balanceOf[user].add(newFraction);
         // Adds this amount to the total of supply amounts
@@ -282,7 +282,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     function _addBorrowAmount(address user, uint256 amount) private {
         TokenTotals memory _totalBorrow = totalBorrow;
         // Calculates what amount of the borrowed funds the user gets for the amount borrowed
-        uint256 newFraction = _totalBorrow.fraction == 0 ? amount : amount.mul(_totalBorrow.fraction) / _totalBorrow.amount;
+        uint256 newFraction = _totalBorrow.amount == 0 ? amount : amount.mul(_totalBorrow.fraction) / _totalBorrow.amount;
         // Adds this amount to the user
         userBorrowFraction[user] = userBorrowFraction[user].add(newFraction);
         // Adds amount borrowed to the total amount borrowed
@@ -424,9 +424,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         accrue();
         updateExchangeRate();
 
-        uint256 allCollateralAmount;
-        uint256 allBorrowAmount;
-        uint256 allBorrowFraction;
+        uint256 allCollateralAmount = 0;
+        uint256 allBorrowAmount = 0;
+        uint256 allBorrowFraction = 0;
         TokenTotals memory _totalBorrow = totalBorrow;
         for (uint256 i = 0; i < users.length; i++) {
             address user = users[i];
@@ -533,7 +533,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
 
     function setDev(address newDev) public
     {
-        require(msg.sender == dev, "LendingPair: Not dev");
+        require(msg.sender == dev || (dev == address(0) && msg.sender == owner), "LendingPair: Not dev");
         dev = newDev;
         emit LogDev(newDev);
     }
