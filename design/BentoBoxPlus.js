@@ -104,10 +104,11 @@ class LendingPair {
         let share = fraction * this.totalAssetShare / this.totalAssetFraction;
         let borrowAmount = fraction * this.totalBorrowAmount / this.totalAssetFraction;
 
-        this.bento.withdraw(this.asset, "PAIR", user, share + this.bento.toShare("SUSHI", borrowAmount));
+        let actualShare = share + this.bento.toShare("SUSHI", borrowAmount);
+        this.bento.withdraw(this.asset, "PAIR", user, actualShare);
         this.userAssetFraction[this.asset + "-" + user] -= fraction;
         this.totalAssetFraction -= fraction;
-        this.totalAssetShare -= share;
+        this.totalAssetShare -= actualShare;
     }
 
     borrow(user, amount) {
@@ -146,8 +147,8 @@ bento.profit("SUSHI", 500);
 pair.accrue(200);
 bento.profit("SUSHI", 500);
 
-pair.repay("Bob", pair.userBorrowPart["Bob"]);
 pair.removeAsset("Alice", pair.userAssetFraction["SUSHI-Alice"]);
+pair.repay("Bob", pair.userBorrowPart["Bob"]);
 
 bento.profit("SUSHI", 500);
 bento.withdraw("SUSHI", "Saver","Saver",  bento.userShare["SUSHI-Saver"]);
