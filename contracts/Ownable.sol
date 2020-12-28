@@ -17,19 +17,14 @@ contract Ownable is OwnableData {
         emit OwnershipTransferred(address(0), msg.sender);
     }
 
-    function renounceOwnership() public onlyOwner {
-        emit OwnershipTransferred(owner, address(0));
-        owner = address(0);
-    }
-
-    function transferOwnership(address newOwner) public onlyOwner {
-        pendingOwner = newOwner;
-    }
-
-    function transferOwnershipDirect(address newOwner) public onlyOwner {
-        require(newOwner != address(0), "Ownable: zero address");
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+    function transferOwnership(address newOwner, bool direct, bool renounce) public onlyOwner {
+        if (direct) {
+            require(newOwner != address(0) || renounce, "Ownable: zero address");
+            emit OwnershipTransferred(owner, newOwner);
+            owner = newOwner;
+        } else {
+            pendingOwner = newOwner;
+        }
     }
 
     function claimOwnership() public {
