@@ -62,13 +62,7 @@ describe("ERC20", function () {
     })
 
     it("Emits Transfer event with expected arguments", async function () {
-      await expect(
-        this.token.connect(this.alice).transfer(this.bob.address, 2666, {
-          from: this.alice.address,
-        })
-      )
-        .to.emit(this.token, "Transfer")
-        .withArgs(this.alice.address, this.bob.address, 2666)
+      await expect(this.token.transfer(this.bob.address, 2666)).to.emit(this.token, "Transfer").withArgs(this.alice.address, this.bob.address, 2666)
     })
 
     it("Emits Transfer event with expected arguments for zero value transfer ", async function () {
