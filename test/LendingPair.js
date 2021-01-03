@@ -113,8 +113,8 @@ describe("Lending Pair", function () {
   })
 
   describe("Permit", function () {
-    it("should allow permit", async function(){
-      await lendingPairPermit(this.bentoBox, this.a, this.alice, this.alicePrivateKey, this.lendingPair, 1);
+    it("should allow permit", async function () {
+      await lendingPairPermit(this.bentoBox, this.a, this.alice, this.alicePrivateKey, this.lendingPair, 1)
     })
   })
 
