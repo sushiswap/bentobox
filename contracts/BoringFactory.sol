@@ -10,7 +10,7 @@ contract BoringFactory {
     mapping(address => address) public masterContractOf; // Mapping from clone contracts to their masterContract
 
     // Deploys a given master Contract as a clone.
-    function deploy(address masterContract, bytes calldata data) external {
+    function deploy(address masterContract, bytes calldata data) public payable {
         require(masterContract != address(0), "BoringFactory: No masterContract");
         bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
         address cloneAddress; // Address where the clone contract will reside.
@@ -25,7 +25,7 @@ contract BoringFactory {
         }
         masterContractOf[cloneAddress] = masterContract;
 
-        IMasterContract(cloneAddress).init(data);
+        IMasterContract(cloneAddress).init{value: msg.value}(data);
 
         emit LogDeploy(masterContract, data, cloneAddress);
     }

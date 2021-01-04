@@ -3,7 +3,7 @@
 // The BentoBox Plus
 
 //  ▄▄▄▄· ▄▄▄ . ▐ ▄ ▄▄▄▄▄      ▄▄▄▄·       ▐▄• ▄ 
-//  ▐█ ▀█▪▀▄.▀·•█▌▐█•██  ▪     ▐█ ▀█▪▪      █▌█▌▪
+//  ▐█ ▀█▪▀▄.▀·█▌▐█•██  ▪     ▐█ ▀█▪▪      █▌█▌▪
 //  ▐█▀▀█▄▐▀▀▪▄▐█▐▐▌ ▐█.▪ ▄█▀▄ ▐█▀▀█▄ ▄█▀▄  ·██· 
 //  ██▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▌.▐▌██▄▪▐█▐█▌.▐▌▪▐█·█▌ Plus!!
 //  ·▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀█▄▀▪·▀▀▀▀  ▀█▄▀▪•▀▀ ▀▀
@@ -19,6 +19,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+import "./libraries/BoringERC20.sol";
 import "./libraries/BoringRebase.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
@@ -32,45 +33,36 @@ interface IFlashLoaner {
 contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
+    using BoringERC20 for IERC20;
     using RebaseLibrary for Rebase;
-
-    // solhint-disable-next-line var-name-mixedcase
-    IERC20 public immutable WethToken;
-
-    // solhint-disable-next-line var-name-mixedcase
-    constructor(IERC20 WethToken_) public {
-        WethToken = WethToken_;
-    }
 
     event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
     event LogFlashLoan(address indexed receiver, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed user);
 
+    IERC20 private immutable wethToken;
     mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract
     mapping(IERC20 => Rebase) public totals;
 
+    constructor(IERC20 wethToken_) public {
+        wethToken = wethToken_;
+    }
+
     modifier allowed(address from) {
-        require(
-            msg.sender == from || masterContractApproved[masterContractOf[msg.sender]][from], 
-            "BentoBox: Transfer not approved"
-        );
+        if (msg.sender != from) {
+            address masterContract = masterContractOf[msg.sender];
+            require(masterContract != address(0), "BentoBox: no masterContract");
+            require(masterContractApproved[masterContract][from], "BentoBox: Transfer not approved");
+        }
         _;
-    }
-
-    function toShare(IERC20 token, uint256 amount) public view returns (uint256 share) {
-        share = totals[token].toShare(amount);
-    }
-
-    function toAmount(IERC20 token, uint256 share) public view returns (uint256 amount) {
-        amount = totals[token].toAmount(share);
     }
 
     function deposit(
         IERC20 token_, address from, address to, uint256 amount, uint256 share
-    ) public payable allowed(from) returns (uint256 shareOut) {
+    ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
-        IERC20 token = token_ == IERC20(0) ? WethToken : token_; 
+        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
 
         // During the first deposit, we check that this token is 'real'
@@ -83,19 +75,20 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         totals[token] = total;
 
         if (token_ == IERC20(0)) {
-            IWETH(address(WethToken)).deposit{value: amount}();
+            IWETH(address(wethToken)).deposit{value: amount}();
         } else {
-            _safeTransferFrom(token, from, amount);
+            token.safeTransferFrom(from, amount);
         }
         emit LogDeposit(token, from, to, amount, share);
+        amountOut = amount;
         shareOut = share;
     }
 
     function withdraw(
         IERC20 token_, address from, address to, uint256 amount, uint256 share
-    ) public allowed(from) {
+    ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
-        IERC20 token = token_ == IERC20(0) ? WethToken : token_;
+        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
         if (share == 0) { share = total.toShare(amount); }
         else { amount = total.toAmount(share); }
@@ -107,8 +100,8 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         require(total.share >= 10000, "BentoBox: cannot empty");
         totals[token] = total;
 
-        if (token_ == WethToken) {
-            IWETH(address(WethToken)).withdraw(amount);
+        if (token_ == wethToken) {
+            IWETH(address(wethToken)).withdraw(amount);
             (bool success,) = to.call{value: amount}(new bytes(0));
             require(success, "BentoBox: ETH transfer failed");
         } else {
@@ -119,9 +112,9 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
 
     function skim(IERC20 token_, address to) public returns (uint256 amount, uint256 share) {
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
-        IERC20 token = token_ == IERC20(0) ? WethToken : token_;
-        if (token_ == WethToken) {
-            IWETH(address(WethToken)).deposit{value: address(this).balance}();
+        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
+        if (token_ == wethToken) {
+            IWETH(address(wethToken)).deposit{value: address(this).balance}();
         }
 
         Rebase memory total = totals[token];
@@ -185,16 +178,6 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
             totals[token] = total;
             emit LogFlashLoan(receiver, token, amounts[i], feeAmounts[i], user);
         }
-    }
-
-    function _safeTransfer(IERC20 token, address to, uint256 amount) private {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0xa9059cbb, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: Transfer failed");
-    }
-
-    function _safeTransferFrom(IERC20 token, address from, uint256 amount) private {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(0x23b872dd, from, address(this), amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BentoBox: TransferFrom failed");
     }
 
     // solhint-disable-next-line no-empty-blocks

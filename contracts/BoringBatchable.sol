@@ -7,8 +7,8 @@ pragma experimental ABIEncoderV2;
 import "./interfaces/IERC20.sol";
 
 contract BoringBatchable {
-    function permit(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
-        token.permit(from, address(this), amount, deadline, v, r, s);
+    function permit(IERC20 token, address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) public {
+        token.permit(from, to, amount, deadline, v, r, s);
     }
 
     function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory successes, bytes[] memory results) {

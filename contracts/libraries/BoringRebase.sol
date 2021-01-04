@@ -10,11 +10,11 @@ struct Rebase {
 library RebaseLibrary {
     using BoringMath for uint256;
 
-    function toShare(Rebase memory tt, uint256 a) internal pure returns (uint256 amount) {
-        amount = tt.amount == 0 ? a : a.mul(tt.share) / tt.amount;
+    function toShare(Rebase memory total, uint256 amount) internal pure returns (uint256 share) {
+        share = total.amount == 0 ? amount : amount.mul(total.share) / total.amount;
     }
 
-    function toAmount(Rebase memory tt, uint256 s) internal pure returns (uint256 share) {
-        share = tt.share == 0 ? s : s.mul(tt.amount) / tt.share;
+    function toAmount(Rebase memory total, uint256 share) internal pure returns (uint256 amount) {
+        amount = total.share == 0 ? share : share.mul(total.amount) / total.share;
     }
 }

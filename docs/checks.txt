@@ -1,0 +1,28 @@
+File
+- SPDX header
+- Solidity version hardcoded to 0.6.12
+- Remove solhints that aren't needed
+
+Variables
+- Is visibility set
+- Can they be private
+- Can it be constant?
+- Can it be immutable?
+
+Structs
+- Are the members split on 256 boundaries
+- Can any members be a smaller type
+
+Functions
+- Change external to public to support batching.
+- Should it be payable?
+- Could it be private?
+- Are any storage slots read multiple times?
+- Can it be combined with another similar function?
+- Check behaviour for all function arguments when wrong or extreme
+
+Events
+- Should any argument be indexed
+
+Contract
+- Are all event there?

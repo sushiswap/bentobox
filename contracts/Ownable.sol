@@ -28,9 +28,10 @@ contract Ownable is OwnableData {
     }
 
     function claimOwnership() public {
-        require(msg.sender == pendingOwner, "Ownable: caller != pending owner");
-        emit OwnershipTransferred(owner, pendingOwner);
-        owner = pendingOwner;
+        address _pendingOwner = pendingOwner;
+        require(msg.sender == _pendingOwner, "Ownable: caller != pending owner");
+        emit OwnershipTransferred(owner, _pendingOwner);
+        owner = _pendingOwner;
         pendingOwner = address(0);
     }
 
