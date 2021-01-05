@@ -8,6 +8,7 @@ Variables
 - Can they be private
 - Can it be constant?
 - Can it be immutable?
+- is SafeMath or Solidity 0.8 used for all used integers?
 
 Structs
 - Are the members split on 256 boundaries
@@ -20,9 +21,21 @@ Functions
 - Are any storage slots read multiple times?
 - Can it be combined with another similar function?
 - Check behaviour for all function arguments when wrong or extreme
+- are any unbounded variables used?
 
 Events
 - Should any argument be indexed
 
 Contract
 - Are all event there?
+
+Contract Calls:
+- is an external contract call needed?
+- are internal values updated before the call? (state changes)
+- is a lock used? if so are the external calls protected?
+
+Front-running:
+- is there money to be made by displacing a transaction?
+
+Time logic:
+- is time calculated over blocks solely?
