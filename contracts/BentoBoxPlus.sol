@@ -41,6 +41,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
     event LogFlashLoan(address indexed receiver, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed user);
 
+    // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
     mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract
     mapping(IERC20 => Rebase) public totals;
@@ -50,7 +51,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
     }
 
     modifier allowed(address from) {
-        if (msg.sender != from) {
+        if (from != msg.sender && from != address(this)) {
             address masterContract = masterContractOf[msg.sender];
             require(masterContract != address(0), "BentoBox: no masterContract");
             require(masterContractApproved[masterContract][from], "BentoBox: Transfer not approved");
@@ -58,25 +59,47 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         _;
     }
 
+    // F1 - F9: OK
+    // F3: Combined deposit(s) and skim functions into one
+    // C1 - C21: OK
     function deposit(
         IERC20 token_, address from, address to, uint256 amount, uint256 share
     ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {
-        require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
+        // Checks
+        require(to != address(0) || from == address(this), "BentoBox: to not set"); // To avoid a bad UI from burning funds
+
+        // Effects
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
 
-        // During the first deposit, we check that this token is 'real'
+        // Skim
+        if (from == address(this)) {
+            // S1 - S4: OK
+            amount = token_ == wethToken ? address(this).balance : token.balanceOf(address(this)).sub(total.amount);
+            share = 0;
+        }
+
+        // S1 - S4: OK
         require(total.amount != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
         if (share == 0) { share = total.toShare(amount); } else { amount = total.toAmount(share); }
 
-        balanceOf[token][to] = balanceOf[token][to].add(share);
+        // If to is not address(0) add the share, otherwise skip this to take profit
+        if (to != address(0)) {
+            balanceOf[token][to] = balanceOf[token][to].add(share);
+            total.share = total.share.add(share.to128());
+        }
         total.amount = total.amount.add(amount.to128());
-        total.share = total.share.add(share.to128());
         totals[token] = total;
 
+        // Interactions
+        // During the first deposit, we check that this token is 'real'
         if (token_ == IERC20(0)) {
+            // X1 - X5: OK
+            // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementaion)
             IWETH(address(wethToken)).deposit{value: amount}();
-        } else {
+        } else if (from != address(this)) {
+            // X1 - X5: OK
+            // X2: If the token implementation is faulty or malicious, it will block adding tokens. Good.
             token.safeTransferFrom(from, amount);
         }
         emit LogDeposit(token, from, to, amount, share);
@@ -108,29 +131,6 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
             token.safeTransfer(to, amount);
         }
         emit LogWithdraw(token, from, to, amount, share);
-    }
-
-    function skim(IERC20 token_, address to) public returns (uint256 amount, uint256 share) {
-        require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
-        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
-        if (token_ == wethToken) {
-            IWETH(address(wethToken)).deposit{value: address(this).balance}();
-        }
-
-        Rebase memory total = totals[token];
-        amount = token.balanceOf(address(this)).sub(total.amount);
-
-        // Skim to address(0) to add profit
-        if (to != address(0)) {
-            share = total.toShare(amount);
-            balanceOf[token][to] = balanceOf[token][to].add(share);
-            total.share = total.share.add(share.to128());
-        }
-
-        total.amount = total.amount.add(amount.to128());
-        totals[token] = total;
-
-        emit LogDeposit(token, address(this), to, amount, share);
     }
 
     // *** Approved contract actions *** //
