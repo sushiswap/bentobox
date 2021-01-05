@@ -105,7 +105,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
             (bool success,) = to.call{value: amount}(new bytes(0));
             require(success, "BentoBox: ETH transfer failed");
         } else {
-            _safeTransfer(token, to, amount);
+            token.safeTransfer(to, amount);
         }
         emit LogWithdraw(token, from, to, amount, share);
     }
@@ -158,13 +158,13 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
     // Take out a flash loan
     function flashLoan(address receiver, IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public {
         uint256[] memory feeAmounts = new uint256[](tokens.length);
-
+        
         uint256 length = tokens.length;
         for (uint256 i = 0; i < length; i++) {
             uint256 amount = amounts[i];
             feeAmounts[i] = amount.mul(5) / 10000;
 
-            _safeTransfer(tokens[i], receiver, amounts[i]);
+            tokens[i].safeTransfer(receiver, amounts[i]);
         }
 
         IFlashLoaner(user).executeOperation(tokens, amounts, feeAmounts, params);

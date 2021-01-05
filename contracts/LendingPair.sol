@@ -154,7 +154,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
 
     // Serves as the constructor, as clones can't have a regular constructor
-    function init(bytes calldata data) public override {
+    function init(bytes calldata data) public payable override {
         require(address(collateral) == address(0), "LendingPair: already initialized");
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
