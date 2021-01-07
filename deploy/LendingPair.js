@@ -5,7 +5,7 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   const sushiSwapSwapper = await deployments.get("SushiSwapSwapper")
 
-  const bentoBox = await deployments.get("BentoBox")
+  const bentoBox = await deployments.get("BentoBoxPlus")
 
   const chainId = await getChainId()
 

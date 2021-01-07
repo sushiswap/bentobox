@@ -60,7 +60,7 @@ function getBentoBoxDomainSeparator(address, chainId) {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "string", "uint256", "address"],
-      [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V1", chainId, address]
+      [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V2", chainId, address]
     )
   )
 }
@@ -82,13 +82,16 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
   return keccak256(pack)
 }
 
-async function setMasterContractApproval(bentoBox, user, privateKey, masterContractAddress, approved) {
+async function setMasterContractApproval(bentoBox, from, user, privateKey, masterContractAddress, approved, fallback) {
+  if(!fallback){
   const nonce = await bentoBox.nonces(user.address)
 
   const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await bentoBox.connect(user).setMasterContractApproval(user.address, masterContractAddress, approved, v, r, s)
+  return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, v, r, s)
+  }
+  return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, 0, "0x0000000000000000000000000000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000000000000000000000000000")
 }
 
 async function setLendingPairContractApproval(bentoBox, user, privateKey, lendingPair, approved) {
