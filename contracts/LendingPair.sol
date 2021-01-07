@@ -34,9 +34,10 @@ import "./interfaces/IWETH.sol";
 // TODO: what to do when the entire pool is underwater?
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
 
-contract LendingPair is ERC20, Ownable, IMasterContract {
+contract LendingPair is ERC20, Ownable, BoringBatchable, IMasterContract {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
+    using RebaseLibrary for Rebase;
 
     // MasterContract variables
     BentoBoxPlus public immutable bentoBox;
@@ -82,8 +83,9 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     struct AccrueInfo {
         uint64 interestPerBlock;
         uint64 lastBlockAccrued;
-        uint128 feesPendingAmount;
+        uint128 feesEarnedFraction;
     }
+    uint256 feesPaidAmount;
     AccrueInfo public accrueInfo;
 
     // ERC20 'variables'
@@ -113,7 +115,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     }
 
     event LogExchangeRate(uint256 rate);
-    event LogAccrue(uint256 accruedAmount, uint256 feeAmount, uint256 rate, uint256 utilization);
+    event LogAccrue(uint256 accruedAmount, uint256 feeFraction, uint256 rate, uint256 utilization);
     event LogAddCollateral(address indexed user, uint256 amount);
     event LogAddAsset(address indexed user, uint256 amount, uint256 fraction);
     event LogAddBorrow(address indexed user, uint256 amount, uint256 fraction);
@@ -121,14 +123,12 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
     event LogRemoveAsset(address indexed user, uint256 amount, uint256 fraction);
     event LogRemoveBorrow(address indexed user, uint256 amount, uint256 fraction);
     event LogFeeTo(address indexed newFeeTo);
-    event LogDev(address indexed newDev);
     event LogWithdrawFees();
 
     constructor(BentoBoxPlus bentoBox_) public {
         bentoBox = bentoBox_;
         masterContract = LendingPair(this);
         feeTo = msg.sender;
-        emit LogDev(msg.sender);
         emit LogFeeTo(msg.sender);
 
         // Not really an issue, but https://blog.trailofbits.com/2020/12/16/breaking-aave-upgradeability/
@@ -170,65 +170,66 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         bentoBox.setMasterContractApproval(user, address(masterContract), approved, v, r, s);
     }
 
-    function permitToken(IERC20 token, address from, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external {
-        bentoBox.permit(token, from, amount, deadline, v, r, s);
-    }
-
-    function deposit(IERC20 token, address to, uint256 amount, uint256 share) public payable returns (uint256 shareOut) {
+    function deposit(IERC20 token, address to, uint256 amount, uint256 share) public payable returns (uint256 amountOut, uint256 shareOut) {
         return bentoBox.deposit(token, msg.sender, to, amount, share);
     }
 
+    // Add more bentobox wrappers
+
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
-        AccrueInfo memory info = accrueInfo;
+        AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of blocks since accrue was called
-        uint256 blocks = block.number - info.lastBlockAccrued;
+        uint256 blocks = block.number - _accrueInfo.lastBlockAccrued;
         if (blocks == 0) {return;}
-        info.lastBlockAccrued = uint64(block.number);
+        _accrueInfo.lastBlockAccrued = uint64(block.number);
 
         uint256 extraAmount = 0;
-        uint256 feeAmount = 0;
+        uint256 feeFraction = 0;
 
         BorrowTokenTotals memory _totalBorrow = totalBorrow;
-        if (_totalBorrow.amount > 0) {
-            // Accrue interest
-            extraAmount = uint256(_totalBorrow.amount).mul(info.interestPerBlock).mul(blocks) / 1e18;
-            feeAmount = extraAmount.mul(PROTOCOL_FEE) / 1e5; // % of interest paid goes to fee
-            _totalBorrow.amount = _totalBorrow.amount.add(extraAmount.to128());
-            totalBorrow = _totalBorrow;
-            info.feesPendingAmount = info.feesPendingAmount.add(feeAmount.to128());
-        }
-
         TokenTotals memory _totalAsset = totalAsset;
         if (_totalAsset.fraction == 0) {
-            if (info.interestPerBlock != STARTING_INTEREST_PER_BLOCK) {
-                info.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK);
-                emit LogAccrue(extraAmount, feeAmount, STARTING_INTEREST_PER_BLOCK, 0);
+            if (_accrueInfo.interestPerBlock != STARTING_INTEREST_PER_BLOCK) {
+                _accrueInfo.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK);
+                emit LogAccrue(0, 0, STARTING_INTEREST_PER_BLOCK, 0);
             }
-            accrueInfo = info; return;
+            return;
+        }
+
+        uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.share);
+        if (_totalBorrow.amount > 0) {
+            // Accrue interest
+            extraAmount = uint256(_totalBorrow.amount).mul(_accrueInfo.interestPerBlock).mul(blocks) / 1e18;
+            uint256 feeAmount = extraAmount.mul(PROTOCOL_FEE) / 1e5; // % of interest paid goes to fee
+            _totalBorrow.amount = _totalBorrow.amount.add(extraAmount.to128());
+            feeFraction = feeAmount.mul(_totalAsset.fraction) / totalAssetAmount.add(_totalBorrow.amount).sub(feeAmount);
+            _accrueInfo.feesEarnedFraction = _accrueInfo.feesEarnedFraction.add(feeFraction.to128());
+            _totalAsset.fraction = _totalAsset.fraction.add(feeFraction.to128());
+            totalBorrow = _totalBorrow;
         }
 
         // Update interest rate
-        uint256 utilization = uint256(_totalBorrow.amount).mul(1e18) / bentoBox.toAmount(asset, _totalAsset.share);
+        uint256 utilization = uint256(_totalBorrow.amount).mul(1e18) / totalAssetAmount.add(_totalBorrow.amount);
         uint256 newInterestPerBlock;
         if (utilization < MINIMUM_TARGET_UTILIZATION) {
             uint256 underFactor = MINIMUM_TARGET_UTILIZATION.sub(utilization).mul(1e18) / MINIMUM_TARGET_UTILIZATION;
             uint256 scale = INTEREST_ELASTICITY.add(underFactor.mul(underFactor).mul(blocks));
-            newInterestPerBlock = uint256(info.interestPerBlock).mul(INTEREST_ELASTICITY) / scale;
+            newInterestPerBlock = uint256(_accrueInfo.interestPerBlock).mul(INTEREST_ELASTICITY) / scale;
             if (newInterestPerBlock < MINIMUM_INTEREST_PER_BLOCK) {newInterestPerBlock = MINIMUM_INTEREST_PER_BLOCK;} // 0.25% APR minimum
        } else if (utilization > MAXIMUM_TARGET_UTILIZATION) {
             uint256 overFactor = utilization.sub(MAXIMUM_TARGET_UTILIZATION).mul(1e18) / uint256(1e18).sub(MAXIMUM_TARGET_UTILIZATION);
             uint256 scale = INTEREST_ELASTICITY.add(overFactor.mul(overFactor).mul(blocks));
-            newInterestPerBlock = uint256(info.interestPerBlock).mul(scale) / INTEREST_ELASTICITY;
+            newInterestPerBlock = uint256(_accrueInfo.interestPerBlock).mul(scale) / INTEREST_ELASTICITY;
             if (newInterestPerBlock > MAXIMUM_INTEREST_PER_BLOCK) {newInterestPerBlock = MAXIMUM_INTEREST_PER_BLOCK;} // 1000% APR maximum
         } else {
-            emit LogAccrue(extraAmount, feeAmount, info.interestPerBlock, utilization);
-            accrueInfo = info; return;
+            emit LogAccrue(extraAmount, feeFraction, _accrueInfo.interestPerBlock, utilization);
+            accrueInfo = _accrueInfo; return;
         }
 
-        info.interestPerBlock = uint64(newInterestPerBlock);
-        emit LogAccrue(extraAmount, feeAmount, newInterestPerBlock, utilization);
-        accrueInfo = info;
+        _accrueInfo.interestPerBlock = uint64(newInterestPerBlock);
+        emit LogAccrue(extraAmount, feeFraction, newInterestPerBlock, utilization);
+        accrueInfo = _accrueInfo;
     }
 
     // Checks if the user is solvent.
@@ -304,6 +305,7 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         accrue();
         TokenTotals memory _totalAsset = totalAsset;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
+        // Share - toamount + Your share of borrow - you share of the fees on the borrow
         uint256 share = fraction.mul(_totalAsset.share) / _totalAsset.fraction;
         _totalAsset.fraction = _totalAsset.fraction.sub(fraction.to128());
         _totalAsset.share = _totalAsset.share.sub(share.to128());
@@ -407,12 +409,13 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
             // Swaps the users' collateral for the borrowed asset
             bentoBox.transfer(collateral, address(this), address(swapper), allCollateralShare);
             swapper.swap(collateral, asset, allCollateralShare, allBorrowAmount);
-            (uint256 returnedAssetAmount,) = bentoBox.skim(asset, address(this)); // TODO: Reentrancy issue? Should we take a before and after balance?
+
+            (uint256 returnedAssetAmount,) = bentoBox.deposit(asset, address(bentoBox), address(this), 0, 0); // TODO: Reentrancy issue? Should we take a before and after balance?
             uint256 extraAssetAmount = returnedAssetAmount.sub(allBorrowAmount);
 
             // The extra asset gets added to the pool
             uint256 feeAmount = extraAssetAmount.mul(PROTOCOL_FEE) / 1e5; // % of profit goes to fee
-            accrueInfo.feesPendingAmount = accrueInfo.feesPendingAmount.add(feeAmount.to128());
+            accrueInfo.feesEarnedAmount = accrueInfo.feesEarnedAmount.add(feeAmount.to128());
             totalAsset.share = totalAsset.share.add(extraAssetAmount.sub(feeAmount).to128());
             emit LogAddAsset(address(0), extraAssetAmount, 0);
         } else {
@@ -427,25 +430,22 @@ contract LendingPair is ERC20, Ownable, IMasterContract {
         }
     }
 
-    function batch(bytes[] calldata calls, bool revertOnFail) external payable returns(bool[] memory, bytes[] memory) {
-        bool[] memory successes = new bool[](calls.length);
-        bytes[] memory results = new bytes[](calls.length);
-        for (uint256 i = 0; i < calls.length; i++) {
-            (bool success, bytes memory result) = address(this).delegatecall(calls[i]);
-            require(success || !revertOnFail, "LendingPair: Transaction failed");
-            successes[i] = success;
-            results[i] = result;
-        }
-        return (successes, results);
-    }
-
     // Withdraws the fees accumulated
     function withdrawFees() public {
         accrue();
         address _feeTo = masterContract.feeTo();
-        uint256 feeAmount = accrueInfo.feesPendingAmount.sub(1);
-        accrueInfo.feesPendingAmount = 1; // Don't set it to 0 as that would increase the gas cost for the next accrue called by a user.
-        bentoBox.withdraw(asset, address(this), _feeTo, feeAmount, 0);
+        AccrueInfo memory _accrueInfo = accrueInfo;
+        TokenTotals memory _totalAsset = totalAsset;
+        
+        uint256 _feeShare = _totalAsset.toShare(_accrueInfo.feesEarnedFraction);
+        _totalAsset.fraction = _totalAsset.fraction.sub(_accrueInfo.feesEarnedFraction);
+        _totalAsset.share = _totalAsset.share.sub(_feeShare);
+        _accrueInfo.feesEarnedFraction = 0;
+        accrueInfo = _accrueInfo;
+        totalAsset = _totalAsset;
+
+        bentoBox.transfer(asset, address(this), _feeTo, _feeShare);
+
         emit LogWithdrawFees();
     }
 

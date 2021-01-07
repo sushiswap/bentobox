@@ -19,6 +19,7 @@ F6 - Check for front-running possibilities, such as the approve function (SWC-11
 F7 - Avoid Insufficient gas grieving (SWC-126)?
 F8 - Gas Limit DoS via Block Stuffing
 F9 - Are the correct modifiers applied, such as onlyOwner
+F10 - Return arguments are always assigned
 
 Modifiers
 M1 - No state changes (except for a reentrancy lock)
@@ -50,6 +51,8 @@ C18 - Never shadow state variables (SWC-119)
 C19 - No unused variables (SWC-131)
 C20 - Is calculation on the fly cheaper than storing the value
 C21 - Are all state variables read from the correct contract: master vs. clone
+C22 - Is > or < or >= or <= correct
+C23 - Are logical operators correct ==, !=, &&, ||, !
 
 Calls in Functions
 X1 - Is the result checked and errors dealt with? (SWC-104)
