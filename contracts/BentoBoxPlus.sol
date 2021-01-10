@@ -102,7 +102,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         // Skim
         if (from == address(this)) {
             // S1 - S4: OK
-            amount = token_ == wethToken ? address(this).balance : token.balanceOf(address(this)).sub(total.amount);
+            amount = token_ == IERC20(0) ? address(this).balance : token.balanceOf(address(this)).sub(total.amount);
             share = 0;
         }
 
