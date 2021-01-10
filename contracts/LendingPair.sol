@@ -23,7 +23,7 @@ pragma experimental ABIEncoderV2;
 
 import "./libraries/BoringMath.sol";
 import "./interfaces/IOracle.sol";
-import "./Ownable.sol";
+import "./BoringOwnable.sol";
 import "./ERC20.sol";
 import "./BentoBoxPlus.sol";
 import "./interfaces/IMasterContract.sol";
@@ -34,7 +34,7 @@ import "./interfaces/IWETH.sol";
 // TODO: what to do when the entire pool is underwater?
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
 
-contract LendingPair is ERC20, Ownable, BoringBatchable, IMasterContract {
+contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using RebaseLibrary for Rebase;

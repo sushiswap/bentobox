@@ -122,7 +122,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         // During the first deposit, we check that this token is 'real'
         if (token_ == IERC20(0)) {
             // X1 - X5: OK
-            // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementaion)
+            // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementation)
             IWETH(address(wethToken)).deposit{value: amount}();
         } else if (from != address(this)) {
             // X1 - X5: OK

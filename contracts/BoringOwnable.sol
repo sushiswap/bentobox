@@ -8,7 +8,7 @@ pragma solidity 0.6.12;
 // Edited by BoringCrypto
 
 // T1 - T4: OK
-contract OwnableData {
+contract BoringOwnableData {
     // V1 - V5: OK
     address public owner;
     // V1 - V5: OK
@@ -16,11 +16,11 @@ contract OwnableData {
 }
 
 // T1 - T4: OK
-contract Ownable is OwnableData {
+contract BoringOwnable is BoringOwnableData {
     // E1: OK
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    constructor () internal {
+    constructor () public {
         owner = msg.sender;
         emit OwnershipTransferred(address(0), msg.sender);
     }
