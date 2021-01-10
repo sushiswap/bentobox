@@ -134,7 +134,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         // Not really an issue, but https://blog.trailofbits.com/2020/12/16/breaking-aave-upgradeability/
         collateral = IERC20(address(1));
     }
-
+    
     // Settings for the Medium Risk LendingPair
     uint256 private constant CLOSED_COLLATERIZATION_RATE = 75000; // 75%
     uint256 private constant OPEN_COLLATERIZATION_RATE = 77000; // 77%
@@ -340,7 +340,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         emit LogRemoveBorrow(msg.sender, amount, part);
         bentoBox.transfer(asset, msg.sender, address(this), amount);
     }
-
+    /*
     function leverage(
         address to,
         uint256 removeCollateralShare,
@@ -448,7 +448,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
 
         emit LogWithdrawFees();
     }
-
+    */
     // MasterContract Only Admin functions
     function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
