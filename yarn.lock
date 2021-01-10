@@ -23,6 +23,10 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
+"@bartjman/boring-solidity@bartjman/BoringSolidity":
+  version "1.0.0"
+  resolved "https://codeload.github.com/bartjman/BoringSolidity/tar.gz/5b2a9cc0d9f8abe72673970a605b2dbd03dcb15e"
+
 "@codechecks/client@^0.1.10":
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/@codechecks/client/-/client-0.1.10.tgz#41fe736c424976d9feb8116b131fb9c1f099d105"

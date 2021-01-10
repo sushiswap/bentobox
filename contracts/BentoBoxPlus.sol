@@ -19,12 +19,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./libraries/BoringERC20.sol";
-import "./libraries/BoringRebase.sol";
+import "@bartjman/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@bartjman/boring-solidity/contracts/libraries/BoringRebase.sol";
+import "@bartjman/boring-solidity/contracts/BoringFactory.sol";
+import "@bartjman/boring-solidity/contracts/BoringBatchable.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
-import "./BoringFactory.sol";
-import "./BoringBatchable.sol";
 
 interface IFlashLoaner {
     function executeOperation(IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) external;
@@ -127,7 +127,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         } else if (from != address(this)) {
             // X1 - X5: OK
             // X2: If the token implementation is faulty or malicious, it will block adding tokens. Good.
-            token.safeTransferFrom(from, amount);
+            token.safeTransferFrom(from, address(this), amount);
         }
         emit LogDeposit(token, from, to, amount, share);
         amountOut = amount;

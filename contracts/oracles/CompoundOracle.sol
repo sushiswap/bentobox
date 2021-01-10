@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
-import "../libraries/BoringMath.sol";
+import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 interface IUniswapAnchoredView {

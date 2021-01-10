@@ -21,12 +21,12 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./libraries/BoringMath.sol";
+import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@bartjman/boring-solidity/contracts/BoringOwnable.sol";
+import "@bartjman/boring-solidity/contracts/ERC20.sol";
+import "@bartjman/boring-solidity/contracts/interfaces/IMasterContract.sol";
 import "./interfaces/IOracle.sol";
-import "./BoringOwnable.sol";
-import "./ERC20.sol";
 import "./BentoBoxPlus.sol";
-import "./interfaces/IMasterContract.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/IWETH.sol";
 

@@ -3,11 +3,11 @@
 
 // P1 - P3: OK
 pragma solidity 0.6.12;
-import "./Ownable.sol";
+import "@bartjman/boring-solidity/contracts/BoringOwnable.sol";
 // solhint-disable no-inline-assembly
 
 // T1 - T4: OK
-contract MasterContractManager is Ownable {
+contract MasterContractManager is BoringOwnable {
     // E1: OK
     event LogWhiteListMasterContract(address indexed masterContract, bool approved);
     // E1: OK
