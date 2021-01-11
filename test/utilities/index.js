@@ -128,6 +128,10 @@ function sansBorrowFee(amount) {
   return amount.mul(BigNumber.from(2000)).div(BigNumber.from(2001))
 }
 
+function sansSafetyAmount(amount) {
+  return amount.sub(BigNumber.from(100000))
+}
+
 async function advanceTimeAndBlock(time, ethers) {
   await advanceTime(time, ethers)
   await advanceBlock(ethers)
@@ -179,6 +183,7 @@ module.exports = {
   setMasterContractApproval,
   setLendingPairContractApproval,
   sansBorrowFee,
+  sansSafetyAmount,
   encodePrice,
   roundBN,
   advanceTime,
