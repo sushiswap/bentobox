@@ -25,26 +25,14 @@ import "@bartjman/boring-solidity/contracts/BoringFactory.sol";
 import "@bartjman/boring-solidity/contracts/BoringBatchable.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
+import "./StrategyManager.sol";
 
-interface IFlashLoaner {
-    function executeOperation(IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) external;
-}
-
-interface IStrategy {
-    function balanceOf() external returns (uint256 amount);
-
-    // Send the assets to the Strategy and call skim to invest them
-    function skim() external returns (uint256 amount);
-
-    // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest() external returns (uint256 amount);
-
-    // Withdraw assets. Withdraw will call harvest first. The returned amount includes the harvested amount.
-    function withdraw(uint256 amount) external returns (uint256 totalAmount);
+interface IFlashBorrowerLike {
+    function onFlashLoan(address sender, address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata) external;
 }
 
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
-contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
+contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, StrategyManager {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using BoringERC20 for IERC20;
@@ -54,8 +42,9 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
     event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     // E1: OK
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
+    // E1: OK
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
-    event LogFlashLoan(address indexed receiver, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed user);
+    event LogFlashLoan(address indexed loaner, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
@@ -177,20 +166,31 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
 
     // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
-    // C2: This isn't combined with transferMultiple for gas optimization
+    // F1 - F10: OK
+    // F3: This isn't combined with transferMultiple for gas optimization
+    // C1 - C23: OK
     function transfer(IERC20 token, address from, address to, uint256 share) public allowed(from) {
+        // Checks
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
+
+        // Effects
         balanceOf[token][from] = balanceOf[token][from].sub(share);
         balanceOf[token][to] = balanceOf[token][to].add(share);
 
         emit LogTransfer(token, from, to, share);
     }
 
-    // C2: This isn't combined with transfer for gas optimization
+    // F1 - F10: OK
+    // F3: This isn't combined with transfer for gas optimization
+    // C1 - C23: OK
     function transferMultiple(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) public allowed(from) {
+        // Checks
         require(tos[0] != address(0), "BentoBox: to[0] not set"); // To avoid a bad UI from burning funds
+
+        // Effects
         uint256 totalAmount;
-        for (uint256 i=0; i < tos.length; i++) {
+        uint256 len = tos.length;
+        for (uint256 i=0; i < len; i++) {
             address to = tos[i];
             balanceOf[token][to] = balanceOf[token][to].add(shares[i]);
             totalAmount = totalAmount.add(shares[i]);
@@ -199,29 +199,62 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable {
         balanceOf[token][from] = balanceOf[token][from].sub(totalAmount);
     }
 
-    // Take out a flash loan
-    function flashLoan(address receiver, IERC20[] calldata tokens, uint256[] calldata amounts, address user, bytes calldata params) public {
-        uint256[] memory feeAmounts = new uint256[](tokens.length);
-        
-        uint256 length = tokens.length;
-        for (uint256 i = 0; i < length; i++) {
-            uint256 amount = amounts[i];
-            feeAmounts[i] = amount.mul(5) / 10000;
+    function flashSupply(address token) public view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
 
-            tokens[i].safeTransfer(receiver, amounts[i]);
+    function flashFee(address, uint256 amount) public pure returns (uint256) {
+        return amount.mul(5) / 10000;
+    }
+
+    function flashLoan(address loaner, address[] calldata tokens, uint256[] calldata amounts, address[] calldata receivers, bytes calldata data) public {
+        uint256[] memory fees = new uint256[](tokens.length);
+        
+        uint256 len = tokens.length;
+        for (uint256 i = 0; i < len; i++) {
+            uint256 amount = amounts[i];
+            fees[i] = amount.mul(5) / 10000;
+
+            IERC20(tokens[i]).safeTransfer(receivers[i], amounts[i]);
         }
 
-        IFlashLoaner(user).executeOperation(tokens, amounts, feeAmounts, params);
+        IFlashBorrowerLike(loaner).onFlashLoan(msg.sender, tokens, amounts, fees, data);
 
-        for (uint256 i = 0; i < length; i++) {
-            Rebase memory total = totals[tokens[i]];
-            IERC20 token = tokens[i];
-            uint128 feeAmount = feeAmounts[i].to128();
+        for (uint256 i = 0; i < len; i++) {
+            IERC20 token = IERC20(tokens[i]);
+            Rebase memory total = totals[token];
+            uint128 feeAmount = fees[i].to128();
             require(token.balanceOf(address(this)) == total.amount.add(feeAmount), "BentoBoxPlus: Wrong amount");
             total.amount = total.amount.add(feeAmount);
             totals[token] = total;
-            emit LogFlashLoan(receiver, token, amounts[i], feeAmounts[i], user);
+            emit LogFlashLoan(loaner, token, amounts[i], fees[i], receivers[i]);
         }
+    }
+
+    function _assetAdded(IERC20 token, IStrategy from, int256 amount) internal {
+        if (amount > 0) {
+            uint256 add = uint256(amount);
+            totals[token].amount = totals[token].amount.add(add.to128());
+            emit LogDeposit(token, address(from), address(this), add, 0);
+        } else if (amount < 0) {
+            uint256 sub = uint256(-amount);
+            totals[token].amount = totals[token].amount.sub(sub.to128());
+            emit LogWithdraw(token, address(this), address(from), sub, 0);
+        }
+
+    }
+
+    function setStrategy(IERC20 token, IStrategy newStrategy) public onlyOwner {
+        _assetAdded(token, strategy[token].strategy, _setStrategy(token, newStrategy));
+    }
+
+    function harvest(IERC20 token) public {
+        _assetAdded(token, strategy[token].strategy, strategy[token].strategy.harvest());
+    }
+
+    function balanceStrategy(IERC20 token) public onlyOwner {
+        harvest(token);
+        _assetAdded(token, strategy[token].strategy, _balanceStrategy(token));
     }
 
     // solhint-disable-next-line no-empty-blocks

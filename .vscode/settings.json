@@ -27,5 +27,7 @@
   "solidity-va.parser.parseImports": false,
   "solidity-va.preview.dot": false,
   "solidity-va.codelens.enable": true,
-  "solidity-va.mode.active": false
+  "solidity-va.mode.active": false,
+  "slither.solcPath": "",
+  "slither.hiddenDetectors": []
 }
