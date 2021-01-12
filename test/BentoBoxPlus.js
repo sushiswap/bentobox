@@ -5,7 +5,7 @@ const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBoxPlus", function () {
   before(async function () {
-    await prepare(this, ["ERC20Mock", 'FlashLoanerMock', "ReturnFalseERC20Mock", "RevertingERC20Mock"])
+    await prepare(this, ["ERC20Mock", "SneakyFlashLoanerMock", 'FlashLoanerMock', "ReturnFalseERC20Mock", "RevertingERC20Mock"])
   })
 
   beforeEach(async function () {
@@ -15,7 +15,8 @@ describe("BentoBoxPlus", function () {
 
     this.bentoBox = await ethers.getContract("BentoBoxPlus")
 
-    await deploy(this, [['flashLoaner', this.FlashLoanerMock]])
+    await deploy(this, [['flashLoaner', this.FlashLoanerMock], 
+                  ["sneakyFlashLoaner", this.SneakyFlashLoanerMock]])
 
     this.erc20 = await this.ERC20Mock.deploy(10000000)
     await this.erc20.deployed()
@@ -220,6 +221,21 @@ describe("BentoBoxPlus", function () {
       })
 
       expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "token should be withdrawn").to.be.equal(100000)
+    })
+
+    it("Reverts if ETH transfer fails", async function () {
+      await this.weth9.connect(this.alice).deposit( {
+        value: 1,
+      })
+      await this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, getBigNumber(1), 0, {
+        from: this.bob.address,
+        value: getBigNumber(1),
+      })
+
+      await expect(this.bentoBox.connect(this.bob).withdraw(ADDRESS_ZERO, this.bob.address, this.flashLoaner.address, sansSafetyAmount(getBigNumber(1)), 0 ,{
+        from: this.bob.address,
+      })).to.be.revertedWith("BentoBox: ETH transfer failed")
+
     })
 
     it("Emits LogWithdraw event with expected arguments", async function () {
@@ -450,6 +466,14 @@ describe("BentoBoxPlus", function () {
         "BoringERC20: Transfer")
     })
 
+    it('should revert on flashloan if amount is not paid back', async function () {
+      await this.a.approve(this.bentoBox.address, getBigNumber(2))
+      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])      
+      await expect(this.bentoBox.flashLoan(this.sneakyFlashLoaner.address, [this.a.address], [getBigNumber(1)], this.sneakyFlashLoaner.address, param)).to.be.revertedWith(
+        "BentoBoxPlus: Wrong amount")
+    })
+    
     it('should allow flashloan', async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1));
@@ -459,7 +483,7 @@ describe("BentoBoxPlus", function () {
       await this.bentoBox.flashLoan(this.flashLoaner.address, [this.a.address], [getBigNumber(1)], [this.flashLoaner.address], param)
       expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1))).to.be.equal(getBigNumber(1).mul(10005).div(10000))
     
-    })
+    }) 
     
   })
 })
