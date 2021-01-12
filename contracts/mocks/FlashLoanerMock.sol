@@ -5,17 +5,19 @@
 pragma solidity 0.6.12;
 import "../BentoBoxPlus.sol";
 
-contract FlashLoanerMock is IFlashLoaner{
+contract FlashLoanerMock is IFlashBorrowerLike{
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
 
-    function executeOperation(IERC20[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata params) public override {
+    function onFlashLoan(
+        address sender, address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata
+    ) external override {
         address bentoBox = address(msg.sender);
         uint256 payback = amounts[0].add(fees[0]);
-        uint256 money = tokens[0].balanceOf(address(this));
-        tokens[0].safeTransfer(address(bentoBox), payback);
+        IERC20 token = IERC20(tokens[0]);
+        uint256 money = token.balanceOf(address(this));
+        token.safeTransfer(address(bentoBox), payback);
         uint256 winnings = money.sub(payback);
-        tokens[0].safeTransfer(address(tx.origin), winnings);
+        token.safeTransfer(sender, winnings);
     }
-
 }
