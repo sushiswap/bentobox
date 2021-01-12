@@ -36,7 +36,7 @@ contract StrategyManager is BoringOwnable {
         }
     }
 
-    function _balanceStrategy(IERC20 token) internal returns (int256 amountAdded) {
+    function _balanceStrategy(IERC20 token) internal {
         StrategyData memory data = strategy[token];
         uint256 committed = data.strategy.balance();
         uint256 balance = token.balanceOf(address(this));
@@ -44,9 +44,8 @@ contract StrategyManager is BoringOwnable {
         if (committed < targetBalance) {
             token.safeTransfer(address(data.strategy), targetBalance.sub(committed));
             data.strategy.skim();
-            amountAdded = 0;
         } else {
-            amountAdded = data.strategy.withdraw(committed.sub(targetBalance));
+            data.strategy.withdraw(committed.sub(targetBalance));
         }
     }
 

@@ -42,8 +42,8 @@ contract SushiStrategy is IStrategy, BoringOwnable {
         uint256 keepShare = balance.mul(totalShares) / totalSushi;
         uint256 harvestShare = share.sub(keepShare);
         bar.leave(harvestShare);
-        amountAdded = sushi.balanceOf(address(this));
-        sushi.safeTransfer(owner, amountAdded); // Add as profit
+        amountAdded = int256(sushi.balanceOf(address(this)));
+        sushi.safeTransfer(owner, uint256(amountAdded)); // Add as profit
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
@@ -56,16 +56,18 @@ contract SushiStrategy is IStrategy, BoringOwnable {
             withdrawShare = share;
         }
         bar.leave(withdrawShare);
-        actualAmount = sushi.balanceOf(address(this));
-        balance = balance.sub(actualAmount); // TODO: Fix for rounding issues
+        uint256 actualAmount = sushi.balanceOf(address(this));
+        balance = balance.sub(actualAmount);
         sushi.safeTransfer(owner, actualAmount);
+        amountAdded = 0;
     }
 
     // Withdraw all assets in the safest way possible. This shouldn't fail.
     function exit() external override onlyOwner returns (int256 amountAdded) {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
-        amount = sushi.balanceOf(address(this)).sub(balance);
+        uint256 amount = sushi.balanceOf(address(this));
+        amountAdded = int256(amount.sub(balance));
         balance = 0;
         sushi.safeTransfer(owner, amount);
     }

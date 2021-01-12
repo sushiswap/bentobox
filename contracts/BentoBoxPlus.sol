@@ -254,7 +254,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
 
     function balanceStrategy(IERC20 token) public onlyOwner {
         harvest(token);
-        _assetAdded(token, strategy[token].strategy, _balanceStrategy(token));
+        _balanceStrategy(token);
     }
 
     // solhint-disable-next-line no-empty-blocks
