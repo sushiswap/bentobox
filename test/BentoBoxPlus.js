@@ -470,7 +470,7 @@ describe("BentoBoxPlus", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
       const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])      
-      await expect(this.bentoBox.flashLoan(this.sneakyFlashLoaner.address, [this.a.address], [getBigNumber(1)], this.sneakyFlashLoaner.address, param)).to.be.revertedWith(
+      await expect(this.bentoBox.flashLoan(this.sneakyFlashLoaner.address, [this.a.address], [getBigNumber(1)], [this.sneakyFlashLoaner.address], param)).to.be.revertedWith(
         "BentoBoxPlus: Wrong amount")
     })
     
@@ -484,6 +484,21 @@ describe("BentoBoxPlus", function () {
       expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1))).to.be.equal(getBigNumber(1).mul(10005).div(10000))
     
     }) 
+    describe('set Strategy' , function () {
+      it('should allow to set strategy', async function () {
+        await this.bentoBox.setStrategy(this.a.address, this.a.address);
+      })
+
+      it('should be reverted if 2 weeks are not up', async function () {
+        await expect(this.bentoBox.setStrategy(this.a.address, ADDRESS_ZERO)).to.be.revertedWith(
+          "StrategyManager: Too early");
+      })
+
+      it('should not allow bob to set Strategy', async function () {
+        await expect(this.bentoBox.connect(this.bob).setStrategy(this.a.address, this.a.address)).to.be.reverted;
+      })
+    })
+    
     
   })
 })

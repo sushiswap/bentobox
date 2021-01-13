@@ -96,7 +96,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
             amount = token_ == IERC20(0) 
                 ? address(this).balance 
-                : token.balanceOf(address(this)).add(strategy[token].balance).sub(total.amount);
+                : token.balanceOf(address(this)).add(strategyData[token].balance).sub(total.amount);
             share = 0;
         }
 
@@ -243,7 +243,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             {
                 uint128 feeAmount = fees[i].to128();
                 // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-                require(token.balanceOf(address(this)).add(strategy[token].balance) == total.amount.add(feeAmount), "BentoBoxPlus: Wrong amount");
+                require(token.balanceOf(address(this)).add(strategyData[token].balance) == total.amount.add(feeAmount), "BentoBoxPlus: Wrong amount");
                 total.amount = total.amount.add(feeAmount);
             }
             totals[token] = total;
@@ -271,7 +271,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // C1 - C23: OK
     function setStrategy(IERC20 token, IStrategy newStrategy) public onlyOwner {
-        _assetAdded(token, strategy[token].strategy, _setStrategy(token, newStrategy));
+        _assetAdded(token, strategy[token], _setStrategy(token, newStrategy));
     }
 
     // F1 - F10: OK
@@ -279,7 +279,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // C1 - C23: OK
     // REENT: Can be used to increase (and maybe decrease) totals[token].amount
     function harvest(IERC20 token, bool balance) public {
-        _assetAdded(token, strategy[token].strategy, strategy[token].strategy.harvest());
+        _assetAdded(token, strategy[token], strategy[token].harvest(totals[token].amount));
         if (balance) {
             _balanceStrategy(token); // REENT: Exit (only for attack on other tokens)
         }
