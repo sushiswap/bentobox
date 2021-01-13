@@ -19,16 +19,22 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "@bartjman/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "@bartjman/boring-solidity/contracts/libraries/BoringRebase.sol";
-import "@bartjman/boring-solidity/contracts/BoringFactory.sol";
-import "@bartjman/boring-solidity/contracts/BoringBatchable.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
 import "./StrategyManager.sol";
 
 interface IFlashBorrowerLike {
-    function onFlashLoan(address sender, address[] calldata tokens, uint256[] calldata amounts, uint256[] calldata fees, bytes calldata) external;
+    function onFlashLoan(
+        address sender, 
+        address[] calldata tokens, 
+        uint256[] calldata amounts, 
+        uint256[] calldata fees, 
+        bytes calldata
+    ) external;
 }
 
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
@@ -56,11 +62,11 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     }
 
     function toShare(IERC20 token, uint256 amount) external view returns(uint256 share) {
-        return totals[token].toShare(amount);
+        return totals[token].toBase(amount);
     }
 
     function toAmount(IERC20 token, uint256 share) external view returns(uint256 amount) {
-        return totals[token].toAmount(share);
+        return totals[token].toElastic(share);
     }
 
     // M1 - M5: OK
@@ -96,20 +102,20 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
             amount = token_ == IERC20(0) 
                 ? address(this).balance 
-                : token.balanceOf(address(this)).add(strategyData[token].balance).sub(total.amount);
+                : token.balanceOf(address(this)).add(strategyData[token].balance).sub(total.elastic);
             share = 0;
         }
 
         // S1 - S4: OK
-        require(total.amount != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
-        if (share == 0) { share = total.toShare(amount); } else { amount = total.toAmount(share); }
+        require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
+        if (share == 0) { share = total.toBase(amount); } else { amount = total.toElastic(share); }
 
         // If to is not address(0) add the share, otherwise skip this to take profit
         if (to != address(0)) {
             balanceOf[token][to] = balanceOf[token][to].add(share);
-            total.share = total.share.add(share.to128());
+            total.base = total.base.add(share.to128());
         }
-        total.amount = total.amount.add(amount.to128());
+        total.elastic = total.elastic.add(amount.to128());
         totals[token] = total;
 
         // Interactions
@@ -141,13 +147,13 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
         // Effects
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
-        if (share == 0) { share = total.toShare(amount); } else { amount = total.toAmount(share); }
+        if (share == 0) { share = total.toBase(amount); } else { amount = total.toElastic(share); }
 
         balanceOf[token][from] = balanceOf[token][from].sub(share);
-        total.amount = total.amount.sub(amount.to128());
-        total.share = total.share.sub(share.to128());
+        total.elastic = total.elastic.sub(amount.to128());
+        total.base = total.base.sub(share.to128());
         // There have to be at least 100000 shares left at all times to prevent reseting the share/amount ratio
-        require(total.share >= 100000, "BentoBox: cannot empty");
+        require(total.base >= 100000, "BentoBox: cannot empty");
         totals[token] = total;
 
         // Interactions
@@ -223,7 +229,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // C1 - C23: OK
     // REENT: Yes
     function flashLoan(
-        address loaner, address[] calldata tokens, uint256[] calldata amounts, address[] calldata receivers, bytes calldata data
+        address loaner, address[] memory tokens, uint256[] memory amounts, address[] memory receivers, bytes memory data
     ) public {
         uint256[] memory fees = new uint256[](tokens.length);
         
@@ -243,8 +249,11 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             {
                 uint128 feeAmount = fees[i].to128();
                 // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-                require(token.balanceOf(address(this)).add(strategyData[token].balance) == total.amount.add(feeAmount), "BentoBoxPlus: Wrong amount");
-                total.amount = total.amount.add(feeAmount);
+                require(
+                    token.balanceOf(address(this)).add(strategyData[token].balance) == total.elastic.add(feeAmount), 
+                    "BentoBoxPlus: Wrong amount"
+                );
+                total.elastic = total.elastic.add(feeAmount);
             }
             totals[token] = total;
             emit LogFlashLoan(loaner, token, amounts[i], fees[i], receivers[i]);
@@ -258,11 +267,11 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
         // Effects
         if (amount > 0) {
             uint256 add = uint256(amount);
-            totals[token].amount = totals[token].amount.add(add.to128());
+            totals[token].elastic = totals[token].elastic.add(add.to128());
             emit LogDeposit(token, address(from), address(this), add, 0);
         } else if (amount < 0) {
             uint256 sub = uint256(-amount);
-            totals[token].amount = totals[token].amount.sub(sub.to128());
+            totals[token].elastic = totals[token].elastic.sub(sub.to128());
             emit LogWithdraw(token, address(this), address(from), sub, 0);
         }
     }
@@ -279,7 +288,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // C1 - C23: OK
     // REENT: Can be used to increase (and maybe decrease) totals[token].amount
     function harvest(IERC20 token, bool balance) public {
-        _assetAdded(token, strategy[token], strategy[token].harvest(totals[token].amount));
+        _assetAdded(token, strategy[token], strategy[token].harvest(strategyData[token].balance));
         if (balance) {
             _balanceStrategy(token); // REENT: Exit (only for attack on other tokens)
         }

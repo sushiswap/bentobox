@@ -3,7 +3,7 @@
 
 // P1 - P3: OK
 pragma solidity 0.6.12;
-import "@bartjman/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 // solhint-disable no-inline-assembly
 
 // T1 - T4: OK

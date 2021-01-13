@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity 0.6.12;
-import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 // WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle

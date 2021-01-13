@@ -65,11 +65,12 @@
     "mocha": "^8.2.1",
     "prettier": "^2.2.1",
     "prettier-plugin-solidity": "^1.0.0-beta.2",
+    "solc": "0.6.12",
     "solhint": "^3.3.2",
     "solhint-plugin-prettier": "^0.0.5",
     "solidity-coverage": "^0.7.12"
   },
   "dependencies": {
-    "@bartjman/boring-solidity": "bartjman/BoringSolidity"
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity"
   }
 }

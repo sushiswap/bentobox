@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "@bartjman/boring-solidity/contracts/interfaces/IERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 interface IBentoBox {
     event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);

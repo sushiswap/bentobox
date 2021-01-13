@@ -6,7 +6,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "../interfaces/IOracle.sol";
-import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "../libraries/FixedPoint.sol";

@@ -2,9 +2,9 @@
 
 pragma solidity 0.6.12;
 import "../interfaces/IStrategy.sol";
-import "@bartjman/boring-solidity/contracts/BoringOwnable.sol";
-import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
-import "@bartjman/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 // solhint-disable not-rely-on-time
 
 interface ISushiBar is IERC20 {
