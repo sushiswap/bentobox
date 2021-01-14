@@ -51,6 +51,7 @@ npm manifest:
       "test": "hardhat test --deploy-fixture",
       "test:coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage",
       "test:gas": "REPORT_GAS=true yarn test",
+      "coverage": ".\\node_modules\\.bin\\hardhat.cmd coverage --deploy-fixture",
       "prettier": "prettier --write test/**/*.js",
       "lint": "yarn prettier && solhint -c .solhint.json 'contracts/**/*.sol'"
     },
@@ -94,13 +95,12 @@ npm manifest:
       "mocha": "^8.2.1",
       "prettier": "^2.2.1",
       "prettier-plugin-solidity": "^1.0.0-beta.2",
+      "solc": "0.6.12",
       "solhint": "^3.3.2",
       "solhint-plugin-prettier": "^0.0.5",
       "solidity-coverage": "^0.7.12"
     },
-    "dependencies": {
-      "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity"
-    }
+    "dependencies": {}
   }
 
 yarn manifest: 
@@ -131,10 +131,6 @@ Lockfile:
       "@babel/helper-validator-identifier" "^7.10.4"
       chalk "^2.0.0"
       js-tokens "^4.0.0"
-  
-  "@boringcrypto/boring-solidity@boringcrypto/BoringSolidity":
-    version "1.0.0"
-    resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/5b2a9cc0d9f8abe72673970a605b2dbd03dcb15e"
   
   "@codechecks/client@^0.1.10":
     version "0.1.10"
@@ -8520,6 +8516,20 @@ Lockfile:
       source-map-resolve "^0.5.0"
       use "^3.1.0"
   
+  solc@0.6.12, solc@^0.6.3:
+    version "0.6.12"
+    resolved "https://registry.yarnpkg.com/solc/-/solc-0.6.12.tgz#48ac854e0c729361b22a7483645077f58cba080e"
+    integrity sha512-Lm0Ql2G9Qc7yPP2Ba+WNmzw2jwsrd3u4PobHYlSOxaut3TtUbj9+5ZrT6f4DUpNPEoBaFUOEg9Op9C0mk7ge9g==
+    dependencies:
+      command-exists "^1.2.8"
+      commander "3.0.2"
+      fs-extra "^0.30.0"
+      js-sha3 "0.8.0"
+      memorystream "^0.3.1"
+      require-from-string "^2.0.0"
+      semver "^5.5.0"
+      tmp "0.0.33"
+  
   solc@0.7.3:
     version "0.7.3"
     resolved "https://registry.yarnpkg.com/solc/-/solc-0.7.3.tgz#04646961bd867a744f63d2b4e3c0701ffdc7d78a"
@@ -8545,20 +8555,6 @@ Lockfile:
       require-from-string "^1.1.0"
       semver "^5.3.0"
       yargs "^4.7.1"
-  
-  solc@^0.6.3:
-    version "0.6.12"
-    resolved "https://registry.yarnpkg.com/solc/-/solc-0.6.12.tgz#48ac854e0c729361b22a7483645077f58cba080e"
-    integrity sha512-Lm0Ql2G9Qc7yPP2Ba+WNmzw2jwsrd3u4PobHYlSOxaut3TtUbj9+5ZrT6f4DUpNPEoBaFUOEg9Op9C0mk7ge9g==
-    dependencies:
-      command-exists "^1.2.8"
-      commander "3.0.2"
-      fs-extra "^0.30.0"
-      js-sha3 "0.8.0"
-      memorystream "^0.3.1"
-      require-from-string "^2.0.0"
-      semver "^5.5.0"
-      tmp "0.0.33"
   
   solhint-plugin-prettier@^0.0.5:
     version "0.0.5"

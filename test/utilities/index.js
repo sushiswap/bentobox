@@ -121,7 +121,7 @@ async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair,
   )
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await lendingPair.connect(user).permitToken(token.address, user.address, amount, deadline, v, r, s)
+  return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
 }
 
 function sansBorrowFee(amount) {
@@ -172,8 +172,14 @@ async function deploy(thisObject, contracts) {
   }
 }
 
+function addr(address) {
+  if (typeof(address) == "object" && address.address) { address = address.address; };
+  return address;
+}
+
 module.exports = {
   ADDRESS_ZERO,
+  addr,
   getDomainSeparator,
   getApprovalDigest,
   getApprovalMsg,

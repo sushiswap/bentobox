@@ -11,6 +11,7 @@ const {
   setMasterContractApproval,
   setLendingPairContractApproval,
 } = require("./utilities")
+const { LendingPair } = require("./utilities/lendingpair");
 
 describe("Lending Pair", function () {
   before(async function () {
@@ -29,8 +30,7 @@ describe("Lending Pair", function () {
     await deployments.fixture()
 
     this.weth9 = await ethers.getContract("WETH9Mock")
-
-    this.bentoBox = await ethers.getContract("BentoBox")
+    this.bentoBox = await ethers.getContract("BentoBoxPlus")
 
     this.a = await this.ReturnFalseERC20Mock.deploy("Token A", "A", getBigNumber(10000000))
     await this.a.deployed()
@@ -66,7 +66,7 @@ describe("Lending Pair", function () {
     await this.oracle.set(getBigNumber(1), this.alice.address)
 
     // Two different ways to approve the lendingPair
-    await setMasterContractApproval(this.bentoBox, this.alice, this.alicePrivateKey, this.lendingPair.address, true)
+    await setMasterContractApproval(this.bentoBox, this.alice, this.alice, this.alicePrivateKey, this.lendingPair.address, true)
     await setLendingPairContractApproval(this.bentoBox, this.bob, this.bobPrivateKey, this.lendingPair, true)
 
     const oracleData = await this.oracle.getDataParameter()
@@ -76,6 +76,8 @@ describe("Lending Pair", function () {
     const deployTx = await this.bentoBox.deploy(this.lendingPair.address, this.initData)
     const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
     this.pair = await this.LendingPair.attach(cloneAddress)
+    this.pairHelper = new LendingPair(this.pair);
+    await this.pairHelper.init(this.bentoBox);
     await this.pair.updateExchangeRate()
   })
 
@@ -95,11 +97,6 @@ describe("Lending Pair", function () {
       expect(await this.pair.totalSupply()).to.be.equal(0)
     })
 
-    it("Assigns dev", async function () {
-      expect(await this.lendingPair.dev()).to.be.equal(this.alice.address)
-      expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
-    })
-
     it("Assigns feeTo", async function () {
       expect(await this.lendingPair.feeTo()).to.be.equal(this.alice.address)
       expect(await this.pair.feeTo()).to.be.equal(ADDRESS_ZERO)
@@ -114,6 +111,7 @@ describe("Lending Pair", function () {
 
   describe("Permit", function () {
     it("should allow permit", async function () {
+      console.log(this.lendingPair);
       await lendingPairPermit(this.bentoBox, this.a, this.alice, this.alicePrivateKey, this.lendingPair, 1)
     })
   })
@@ -121,15 +119,15 @@ describe("Lending Pair", function () {
   describe("Accrue", function () {
     it("should update the interest rate according to utilization", async function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(700))
-      await this.pair.addAsset(getBigNumber(290), false)
+      await (await this.pairHelper.addAsset(this.alice, getBigNumber(290)))
       await this.a.approve(this.bentoBox.address, getBigNumber(800))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
+      await (await this.pairHelper.addCollateral(this.alice, getBigNumber(100)))
+      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
-      await this.pair.repay(borrowFractionLeft, false)
+      /*let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      await this.pair.repay(borrowFractionLeft, false, false)
       let collateralLeft = await this.pair.userCollateralAmount(this.alice.address)
       await this.pair.removeCollateral(collateralLeft, this.alice.address, false)
       // run for a while with 0 utilization
@@ -144,7 +142,7 @@ describe("Lending Pair", function () {
       assert(rate2.lt(rate1), "rate has not adjusted down with low utilization")
 
       // then increase utilization to 90%
-      await this.pair.addCollateral(getBigNumber(400), false)
+      await this.pair.addCollateral(getBigNumber(400), false, false)
       // 300 * 0.9 = 270
       await this.pair.borrow(sansBorrowFee(getBigNumber(270)), this.alice.address, false)
 
@@ -157,7 +155,7 @@ describe("Lending Pair", function () {
       // check results
       await this.pair.accrue()
       rate2 = (await this.pair.accrueInfo()).interestPerBlock
-      assert(rate2.gt(rate1), "rate has not adjusted up with high utilization")
+      assert(rate2.gt(rate1), "rate has not adjusted up with high utilization")*/
     })
 
     it("should reset interest rate if no more assets are available", async function () {
