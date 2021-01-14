@@ -5,6 +5,7 @@ import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "hardhat/console.sol";
 // solhint-disable not-rely-on-time
 
 interface ISushiBar is IERC20 {
@@ -63,6 +64,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
         uint256 amount = sushi.balanceOf(address(this));
+        console.log("Trying to send %s, balance %s ", balance, amount);
         amountAdded = int256(amount.sub(balance));
         sushi.safeTransfer(owner, amount);
     }

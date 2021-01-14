@@ -37,7 +37,10 @@ contract StrategyManager is BoringOwnable {
         } else {
             StrategyData memory data = strategyData[token];
             require(data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate, "StrategyManager: Too early");
-            amountAdded = strategy[token].exit(data.balance); // REENT: Exit (under our control, safe)
+            amountAdded = 0;
+            if(address(strategy[token]) != address(0)){
+                strategy[token].exit(data.balance); // REENT: Exit (under our control, safe)
+            }
             strategy[token] = pending;
             data.strategyStartDate = 0;
             data.balance = 0;
