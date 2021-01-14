@@ -417,7 +417,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
     }
 
     // Withdraws the fees accumulated
-    function withdrawFees() public {
+    /*function withdrawFees() public {
         accrue();
         address _feeTo = masterContract.feeTo();
         AccrueInfo memory _accrueInfo = accrueInfo;
@@ -433,7 +433,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         bentoBox.transfer(asset, address(this), _feeTo, _feeShare);
 
         emit LogWithdrawFees();
-    }
+    }*/
 
     // MasterContract Only Admin functions
     function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
@@ -455,7 +455,8 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         } else if (address(token) != address(asset) && address(token) != address(collateral)) {
             address(token).call(abi.encodeWithSelector(0xa9059cbb, msg.sender, token.balanceOf(address(this))));
         } else {
-            uint256 excessAmount = bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.share : totalCollateralShare);
+            // TODO: Fix for strategy
+            uint256 excessAmount = bentoBox.balanceOf(token, address(this)).sub(token == asset ? totalAsset.elastic : totalCollateralShare);
             bentoBox.transfer(token, address(this), msg.sender, excessAmount);
         }
     }

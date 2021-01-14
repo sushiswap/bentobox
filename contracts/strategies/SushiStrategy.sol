@@ -64,8 +64,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
         uint256 amount = sushi.balanceOf(address(this));
-        console.log("Trying to send %s, balance %s ", balance, amount);
-        amountAdded = int256(amount.sub(balance));
+        amountAdded = int256(amount - balance); // TODO: BoringMath?
         sushi.safeTransfer(owner, amount);
     }
 }

@@ -58,12 +58,12 @@ contract SushiSwapSwapper is ISwapper {
     function swapExact(
         IERC20 from, IERC20 to, uint256 amountFromMax, uint256 exactAmountTo, address recipient, address refundTo
     ) public override returns (uint256) {
-        IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(from), address(to)));
+        /*IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(from), address(to)));
 
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-
+*/
         uint256 amountFrom;
-        if (pair.token0() == address(from)) {
+        /*if (pair.token0() == address(from)) {
             amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
             require(amountFrom <= amountFromMax, "SushiSwapSwapper: not enough");
             bentoBox.withdraw(from, address(pair), amountFrom, 0);
@@ -76,7 +76,7 @@ contract SushiSwapSwapper is ISwapper {
         }
 
         bentoBox.transferFrom(from, address(this), refundTo, amountFromMax.sub(amountFrom));
-
+*/
         return amountFrom;
     }
 }

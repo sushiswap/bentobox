@@ -2,8 +2,8 @@
 
 pragma solidity 0.6.12;
 
-import "@bartjman/boring-solidity/contracts/ERC20.sol";
-import "@bartjman/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 
 // SushiBar is the coolest bar in town. You come in with some Sushi, and leave with more! The longer you stay, the more Sushi you get.
 //

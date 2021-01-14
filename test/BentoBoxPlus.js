@@ -53,11 +53,6 @@ describe("BentoBoxPlus", function () {
 
     await expect(this.bentoBox.deploy(this.lendingPair.address, data))
         .to.emit(this.bentoBox, "LogDeploy")
-        .withArgs(
-           this.lendingPair.address,
-           data,
-           "0x61c36a8d610163660E21a8b7359e1Cac0C9133e1"
-        )
      })
    })
 
@@ -130,7 +125,7 @@ describe("BentoBoxPlus", function () {
 
       expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address), "incorrect amount calculation").to.be.equal(3)
 
-      expect((await this.bentoBox.totals(this.a.address)).amount, "incorrect total amount").to.be.equal(3)
+      expect((await this.bentoBox.totals(this.a.address)).elastic, "incorrect total amount").to.be.equal(3)
     })
 
     it("Emits LogDeposit event with correct arguments", async function () {
@@ -163,7 +158,7 @@ describe("BentoBoxPlus", function () {
 
       expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "incorrect amount calculation").to.be.equal(1)
 
-      expect((await this.bentoBox.totals(this.a.address)).amount, "incorrect total amount").to.be.equal(1)
+      expect((await this.bentoBox.totals(this.a.address)).elastic, "incorrect total amount").to.be.equal(1)
     })
   })
 
@@ -337,7 +332,7 @@ describe("BentoBoxPlus", function () {
 
       await this.bentoBox.connect(this.bob).deposit(this.a.address, this.bentoBox.address, ADDRESS_ZERO, 1, 0)
 
-      expect((await this.bentoBox.totals(this.a.address)).amount, "total amount should increase").to.be.equal(1)
+      expect((await this.bentoBox.totals(this.a.address)).elastic, "total amount should increase").to.be.equal(1)
     })
 
     it("Emits LogDeposit event with expected arguments", async function () {
@@ -373,7 +368,7 @@ describe("BentoBoxPlus", function () {
 
       await this.a.approve(this.bentoBox.address, 1)
 
-      await expect(pair.addAsset(1, this.bob.address)).to.be.revertedWith(
+      await expect(pair.addAsset(1, this.bob.address, false)).to.be.revertedWith(
         "BentoBox: Transfer not approved"
       )
     })
@@ -398,7 +393,7 @@ describe("BentoBoxPlus", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 1)
 
-      await pair.addCollateral(1, this.alice.address)
+      await pair.addCollateral(1, this.alice.address, false)
 
       expect(await this.bentoBox.balanceOf(this.a.address, pair.address)).to.be.equal(1)
     })
@@ -474,6 +469,19 @@ describe("BentoBoxPlus", function () {
         "BentoBoxPlus: Wrong amount")
     })
     
+    it('should return correct flashSupply', async function () {
+      await this.a.approve(this.bentoBox.address, getBigNumber(2))
+      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1));
+  
+      expect(await this.bentoBox.flashSupply(this.a.address)).to.equal("1000000000000000000");
+      await expect(this.bentoBox.flashSupply(ADDRESS_ZERO)).to.be.revertedWith("");
+    }) 
+
+    it('should return correct flashFee', async function () {
+      expect(await this.bentoBox.flashFee(this.a.address, "1000000000000000000")).to.equal("500000000000000");
+      expect(await this.bentoBox.flashFee(ADDRESS_ZERO, "1000000000000000000")).to.equal("500000000000000");
+    }) 
+
     it('should allow flashloan', async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1));

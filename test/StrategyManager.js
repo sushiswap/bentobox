@@ -38,6 +38,12 @@ describe("StrategyManager", function () {
       expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(getBigNumber(8))
     })
 
+    it("allows harvest of 0 when there's nothing to harvest", async function () {
+      expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.equal("10000000000000000000");
+      await this.bentoBox.harvest(this.sushi.address, false)
+      expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.equal("10000000000000000000");
+    })
+
     it("rebalances correctly after SushiBar makes money", async function (){
       await this.sushi.transfer(this.bar.address, getBigNumber(10))
       await this.bentoBox.harvest(this.sushi.address, true)
@@ -50,7 +56,8 @@ describe("StrategyManager", function () {
       await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
       await advanceTime(1209600, ethers)
       await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
-      expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("18888888888888888890")
+      expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("18888888888888888888")
+      expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("18888888888888888888")
     })
     
   })
