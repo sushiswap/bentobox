@@ -126,26 +126,29 @@ describe("Lending Pair", function () {
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
-      /*let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
-      await this.pair.repay(borrowFractionLeft, false, false)
-      let collateralLeft = await this.pair.userCollateralAmount(this.alice.address)
-      await this.pair.removeCollateral(collateralLeft, this.alice.address, false)
+
+      let borrowPartLeft = await this.pair.userBorrowPart(this.alice.address)
+      await (await this.pairHelper.repay(borrowPartLeft, this.alice))
+      let collateralLeft = await this.pair.userCollateralShare(this.alice.address)
+      await this.pair.removeCollateral(collateralLeft, this.alice.address)
+
       // run for a while with 0 utilization
       let rate1 = (await this.pair.accrueInfo()).interestPerBlock
+      
       for (let i = 0; i < 20; i++) {
         await advanceBlock(ethers)
       }
       await this.pair.accrue()
-
+      
       // check results
       let rate2 = (await this.pair.accrueInfo()).interestPerBlock
       assert(rate2.lt(rate1), "rate has not adjusted down with low utilization")
-
+      
       // then increase utilization to 90%
-      await this.pair.addCollateral(getBigNumber(400), false, false)
+      await (await this.pairHelper.addCollateral(this.alice, getBigNumber(400)))
       // 300 * 0.9 = 270
-      await this.pair.borrow(sansBorrowFee(getBigNumber(270)), this.alice.address, false)
-
+      await this.pair.borrow(sansBorrowFee(getBigNumber(270)), this.alice.address)
+      console.log(((await this.pair.totalBorrow()).elastic).toString(), ((await this.pair.totalAsset()).elastic).toString())
       // and run a while again
       rate1 = (await this.pair.accrueInfo()).interestPerBlock
       for (let i = 0; i < 20; i++) {
@@ -155,7 +158,8 @@ describe("Lending Pair", function () {
       // check results
       await this.pair.accrue()
       rate2 = (await this.pair.accrueInfo()).interestPerBlock
-      assert(rate2.gt(rate1), "rate has not adjusted up with high utilization")*/
+      expect(rate2).to.be.gt(rate1)
+      
     })
 
     it("should reset interest rate if no more assets are available", async function () {
@@ -165,7 +169,7 @@ describe("Lending Pair", function () {
       await this.pair.addCollateral(getBigNumber(100), false)
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
       await this.pair.accrue()
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
       await this.pair.repay(borrowFractionLeft, false)
       await this.pair.removeAsset(await this.pair.balanceOf(this.alice.address), this.alice.address, false)
       await this.pair.accrue()
@@ -355,7 +359,7 @@ describe("Lending Pair", function () {
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
       await this.pair.repay(borrowFractionLeft, false)
       await this.pair.removeCollateral(getBigNumber(60), this.alice.address, false)
     })
@@ -369,7 +373,7 @@ describe("Lending Pair", function () {
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
       await this.pair.repay(borrowFractionLeft, false)
       let collateralLeft = await this.pair.userCollateralAmount(this.alice.address)
       await this.pair.removeCollateral(collateralLeft, this.alice.address, false)
@@ -489,7 +493,7 @@ describe("Lending Pair", function () {
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
       await this.pair.updateExchangeRate()
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
       await this.pair.repay(borrowFractionLeft, false)
     })
   })
@@ -702,7 +706,7 @@ describe("Lending Pair", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.pair.addCollateral(getBigNumber(100), false)
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      let borrowFractionLeft = await this.pair.userBorrowFraction(this.alice.address)
+      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
       await this.pair.repay(borrowFractionLeft, false)
       await this.pair.withdrawFees()
       await expect(this.pair.withdrawFees()).to.emit(this.pair, "LogWithdrawFees")

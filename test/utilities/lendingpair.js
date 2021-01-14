@@ -31,6 +31,14 @@ class LendingPair {
         );
     }
 
+    async repay(part, user) {
+        let amount = part.mul((await this.contract.totalBorrow()).elastic).div((await this.contract.totalBorrow()).base)
+        return this.contract.batch(
+            [this.contract.interface.encodeFunctionData("deposit", [this.asset, addr(user), 0, amount]),
+            this.contract.interface.encodeFunctionData("repay", [part, addr(user), false])], false
+        );
+    }
+
     async borrow(amount, to) {
 
     }

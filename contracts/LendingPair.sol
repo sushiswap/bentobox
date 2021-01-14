@@ -187,7 +187,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
             return;
         }
 
-        uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.base);
+        uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.elastic);
         if (_totalBorrow.elastic > 0) {
             // Accrue interest
             extraAmount = uint256(_totalBorrow.elastic).mul(_accrueInfo.interestPerBlock).mul(blocks) / 1e18;
