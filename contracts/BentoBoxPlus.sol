@@ -28,16 +28,6 @@ import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
 import "./StrategyManager.sol";
 
-interface IFlashBorrowerLike {
-    function onFlashLoan(
-        address sender, 
-        address[] calldata tokens, 
-        uint256[] calldata amounts, 
-        uint256[] calldata fees, 
-        bytes calldata
-    ) external;
-}
-
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
 contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, StrategyManager, IERC3156BatchFlashLender {
     using BoringMath for uint256;
