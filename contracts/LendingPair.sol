@@ -34,14 +34,42 @@ import "./interfaces/IWETH.sol";
 // TODO: what to do when the entire pool is underwater?
 // TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
 
-contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
+contract BentoBoxPlusProxy {
+    BentoBoxPlus public immutable bentoBox;
+    address public immutable masterContract;
+
+    constructor(BentoBoxPlus bentoBox_) public {
+        bentoBox = bentoBox_;
+        masterContract = address(this);
+    }
+
+    function setApproval(address user, bool approved, uint8 v, bytes32 r, bytes32 s) external {
+        bentoBox.setMasterContractApproval(user, masterContract, approved, v, r, s);
+    }
+
+    function deposit(IERC20 token, address to, uint256 amount, uint256 share) public payable returns (uint256 amountOut, uint256 shareOut) {
+        return bentoBox.deposit(token, msg.sender, to, amount, share);
+    }
+
+    function withdraw(IERC20 token, address to, uint256 amount, uint256 share) public returns (uint256 amountOut, uint256 shareOut) {
+        return bentoBox.withdraw(token, msg.sender, to, amount, share);
+    }
+
+    function transfer(IERC20 token, address to, uint256 share) public {
+        return bentoBox.transfer(token, msg.sender, to, share);
+    }
+
+    function transferMultiple(IERC20 token, address[] calldata tos, uint256[] calldata shares) public {
+        return bentoBox.transferMultiple(token, msg.sender, tos, shares);
+    }
+}
+
+contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, BoringBatchable, IMasterContract {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using RebaseLibrary for Rebase;
 
     // MasterContract variables
-    BentoBoxPlus public immutable bentoBox;
-    LendingPair public immutable masterContract;
     address public feeTo;
     mapping(ISwapper => bool) public swappers;
 
@@ -115,9 +143,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
     event LogFeeTo(address indexed newFeeTo);
     event LogWithdrawFees();
 
-    constructor(BentoBoxPlus bentoBox_) public {
-        bentoBox = bentoBox_;
-        masterContract = LendingPair(this);
+    constructor(BentoBoxPlus bentoBox_) public BentoBoxPlusProxy(bentoBox_) {
         feeTo = msg.sender;
         emit LogFeeTo(msg.sender);
 
@@ -156,16 +182,6 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         return abi.encode(collateral_, asset_, oracle_, oracleData_);
     }
 
-    function setApproval(address user, bool approved, uint8 v, bytes32 r, bytes32 s) external {
-        bentoBox.setMasterContractApproval(user, address(masterContract), approved, v, r, s);
-    }
-
-    function deposit(IERC20 token, address to, uint256 amount, uint256 share) public payable returns (uint256 amountOut, uint256 shareOut) {
-        return bentoBox.deposit(token, msg.sender, to, amount, share);
-    }
-
-    // TODO: Add more bentobox wrappers
-
     // Accrues the interest on the borrowed tokens and handles the accumulation of fees
     function accrue() public {
         AccrueInfo memory _accrueInfo = accrueInfo;
@@ -200,7 +216,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
         }
 
         // Update interest rate
-        uint256 utilization = uint256(_totalBorrow.elastic).mul(1e18) / totalAssetAmount.add(_totalBorrow.elastic);
+        uint256 utilization = uint256(_totalBorrow.elastic).mul(1e18) / totalAssetAmount;
         uint256 newInterestPerBlock;
         if (utilization < MINIMUM_TARGET_UTILIZATION) {
             uint256 underFactor = MINIMUM_TARGET_UTILIZATION.sub(utilization).mul(1e18) / MINIMUM_TARGET_UTILIZATION;
@@ -390,7 +406,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
 
         if (!open) {
             // Closed liquidation using a pre-approved swapper for the benefit of the LPs
-            require(masterContract.swappers(swapper), "LendingPair: Invalid swapper");
+            require(LendingPair(masterContract).swappers(swapper), "LendingPair: Invalid swapper");
 
             // Swaps the users' collateral for the borrowed asset
             bentoBox.transfer(collateral, address(this), address(swapper), allCollateralShare);
@@ -402,7 +418,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
             
             uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / 1e5; // % of profit goes to fee
             totalAsset.elastic = totalAsset.elastic.add(extraShare.sub(feeShare).to128());
-            bentoBox.transfer(asset, address(this), masterContract.feeTo(), feeShare);
+            bentoBox.transfer(asset, address(this), LendingPair(masterContract).feeTo(), feeShare);
             emit LogAddAsset(address(0), extraShare.sub(feeShare), 0);
         } else {
             // Swap using a swapper freely chosen by the caller
@@ -448,7 +464,7 @@ contract LendingPair is ERC20, BoringOwnable, BoringBatchable, IMasterContract {
 
     // Clone contract Admin functions - no error handling because it's admin
     function swipe(IERC20 token) public {
-        require(msg.sender == masterContract.owner(), "LendingPair: caller is not owner");
+        require(msg.sender == LendingPair(masterContract).owner(), "LendingPair: caller is not owner");
 
         if (address(token) == address(0)) {
             msg.sender.call{value: address(this).balance}(new bytes(0));

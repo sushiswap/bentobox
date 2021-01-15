@@ -5,7 +5,6 @@ import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "hardhat/console.sol";
 // solhint-disable not-rely-on-time
 
 interface ISushiBar is IERC20 {

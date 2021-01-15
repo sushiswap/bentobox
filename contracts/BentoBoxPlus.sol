@@ -23,6 +23,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
+import "./interfaces/IERC3156FlashLoan.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
 import "./StrategyManager.sol";
@@ -38,7 +39,7 @@ interface IFlashBorrowerLike {
 }
 
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
-contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, StrategyManager {
+contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, StrategyManager, IERC3156BatchFlashLender {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using BoringERC20 for IERC20;
@@ -50,7 +51,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     // E1: OK
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
-    event LogFlashLoan(address indexed loaner, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
+    event LogFlashLoan(address indexed borrower, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
 
     // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
@@ -62,11 +63,11 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     }
 
     function toShare(IERC20 token, uint256 amount) external view returns(uint256 share) {
-        return totals[token].toBase(amount);
+        share = totals[token].toBase(amount);
     }
 
     function toAmount(IERC20 token, uint256 share) external view returns(uint256 amount) {
-        return totals[token].toElastic(share);
+        amount = totals[token].toElastic(share);
     }
 
     // M1 - M5: OK
@@ -78,6 +79,10 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             require(masterContractApproved[masterContract][from], "BentoBox: Transfer not approved");
         }
         _;
+    }
+
+    function _tokenBalanceOf(IERC20 token) internal view returns (uint256 amount) {
+        amount = token.balanceOf(address(this)).add(strategyData[token].balance);
     }
 
     // F1 - F10: OK
@@ -100,9 +105,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             // S1 - S4: OK
             // TODO: Fix for strategies
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-            amount = token_ == IERC20(0) 
-                ? address(this).balance 
-                : token.balanceOf(address(this)).add(strategyData[token].balance).sub(total.elastic);
+            amount = token_ == IERC20(0) ? address(this).balance : _tokenBalanceOf(token).sub(total.elastic);
             share = 0;
         }
 
@@ -213,14 +216,24 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
 
     // F1 - F10: OK
     // C1 - C23: OK
-    function flashSupply(address token) public view returns (uint256 amount) {
-        amount = IERC20(token).balanceOf(address(this));
+    function maxFlashAmount(IERC20 token) public view override returns (uint256 amount) {
+        amount = token.balanceOf(address(this));
     }
 
     // F1 - F10: OK
     // C1 - C23: OK
-    function flashFee(address, uint256 amount) public pure returns (uint256 fee) {
+    function flashFee(IERC20, uint256 amount) public view override returns (uint256 fee) {
         fee = amount.mul(5) / 10000;
+    }
+
+    function flashLoan(IERC3156FlashBorrower borrower, IERC20 token, uint256 amount, address receiver, bytes calldata data) public override {
+        uint256 fee = amount.mul(5) / 10000;
+        token.safeTransfer(receiver, amount); // REENT: Exit (only for attack on other tokens)
+
+        borrower.onFlashLoan(msg.sender, token, amount, fee, data); // REENT: Exit
+        
+        require(_tokenBalanceOf(token) == totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
+        emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
     }
 
     // F1 - F10: OK
@@ -228,9 +241,13 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // F6: Slight grieving possible by withdrawing an amount before someone tries to flashloan close to the full amount.
     // C1 - C23: OK
     // REENT: Yes
-    function flashLoan(
-        address loaner, address[] memory tokens, uint256[] memory amounts, address[] memory receivers, bytes memory data
-    ) public {
+    function batchFlashLoan(
+        IERC3156BatchFlashBorrower borrower,
+        IERC20[] calldata tokens,
+        uint256[] calldata amounts,
+        address[] calldata receivers,
+        bytes calldata data
+    ) public override {
         uint256[] memory fees = new uint256[](tokens.length);
         
         uint256 len = tokens.length;
@@ -238,25 +255,16 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
             uint256 amount = amounts[i];
             fees[i] = amount.mul(5) / 10000;
 
-            IERC20(tokens[i]).safeTransfer(receivers[i], amounts[i]); // REENT: Exit (only for attack on other tokens)
+            tokens[i].safeTransfer(receivers[i], amounts[i]); // REENT: Exit (only for attack on other tokens)
         }
 
-        IFlashBorrowerLike(loaner).onFlashLoan(msg.sender, tokens, amounts, fees, data); // REENT: Exit
+        borrower.onBatchFlashLoan(msg.sender, tokens, amounts, fees, data); // REENT: Exit
 
         for (uint256 i = 0; i < len; i++) {
-            IERC20 token = IERC20(tokens[i]);
-            Rebase memory total = totals[token];
-            {
-                uint128 feeAmount = fees[i].to128();
-                // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-                require(
-                    token.balanceOf(address(this)).add(strategyData[token].balance) == total.elastic.add(feeAmount), 
-                    "BentoBoxPlus: Wrong amount"
-                );
-                total.elastic = total.elastic.add(feeAmount);
-            }
-            totals[token] = total;
-            emit LogFlashLoan(loaner, token, amounts[i], fees[i], receivers[i]);
+            IERC20 token = tokens[i];
+            // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
+            require(_tokenBalanceOf(token) == totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
+            emit LogFlashLoan(address(borrower), token, amounts[i], fees[i], receivers[i]);
         }
     }
 
