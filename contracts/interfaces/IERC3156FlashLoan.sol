@@ -16,9 +16,9 @@ interface IERC3156FlashLender {
     
     function flashLoan(
         IERC3156FlashBorrower borrower,
+        address receiver,
         IERC20 token,
         uint256 amount,
-        address receiver,
         bytes calldata data
     ) external;
 }
@@ -26,9 +26,9 @@ interface IERC3156FlashLender {
 interface IERC3156BatchFlashLender is IERC3156FlashLender {
     function batchFlashLoan(
         IERC3156BatchFlashBorrower borrower,
+        address[] calldata receivers,
         IERC20[] calldata tokens,
         uint256[] calldata amounts,
-        address[] calldata receivers,
         bytes calldata data
     ) external;
 }

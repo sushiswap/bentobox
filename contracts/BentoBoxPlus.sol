@@ -216,7 +216,7 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
         fee = amount.mul(5) / 10000;
     }
 
-    function flashLoan(IERC3156FlashBorrower borrower, IERC20 token, uint256 amount, address receiver, bytes calldata data) public override {
+    function flashLoan(IERC3156FlashBorrower borrower, address receiver, IERC20 token, uint256 amount, bytes calldata data) public override {
         uint256 fee = amount.mul(5) / 10000;
         token.safeTransfer(receiver, amount); // REENT: Exit (only for attack on other tokens)
 
@@ -233,9 +233,9 @@ contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, 
     // REENT: Yes
     function batchFlashLoan(
         IERC3156BatchFlashBorrower borrower,
+        address[] calldata receivers,
         IERC20[] calldata tokens,
         uint256[] calldata amounts,
-        address[] calldata receivers,
         bytes calldata data
     ) public override {
         uint256[] memory fees = new uint256[](tokens.length);

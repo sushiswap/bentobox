@@ -6,7 +6,7 @@ describe("SimpleSLPOracle", function () {
   before(async function () {
     await prepare(this, [
       "WETH9Mock",
-      "BentoBox",
+      "BentoBoxPlus",
       "UniswapV2Pair",
       "UniswapV2Factory",
       "ReturnFalseERC20Mock",
@@ -20,7 +20,7 @@ describe("SimpleSLPOracle", function () {
     this.weth9 = await this.WETH9Mock.deploy()
     await this.weth9.deployed()
 
-    this.bentoBox = await this.BentoBox.deploy(this.weth9.address)
+    this.bentoBox = await this.BentoBoxPlus.deploy(this.weth9.address)
     await this.bentoBox.deployed()
 
     this.collateral = await this.ReturnFalseERC20Mock.deploy("Token A", "A", getBigNumber(10000000))

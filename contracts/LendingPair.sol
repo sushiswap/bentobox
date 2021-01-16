@@ -200,7 +200,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, BoringBatchable
                 _accrueInfo.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK);
                 emit LogAccrue(0, 0, STARTING_INTEREST_PER_BLOCK, 0);
             }
-            return;
+            accrueInfo = _accrueInfo; return;
         }
 
         uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.elastic);
