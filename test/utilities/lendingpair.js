@@ -14,7 +14,7 @@ class LendingPair {
     as(from) {
         return new LendingPair(this.contract.connect(from));
     }
-
+    
     async depositCollateral(user, amount) {
         let share = await this.bentoBox.toShare(this.collateral, amount)
         return this.contract.batch(

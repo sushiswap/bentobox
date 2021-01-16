@@ -37,7 +37,7 @@ describe("MasterContractManager", function () {
     })
   })
 
-  describe("Set Master Contract Approval with Permit", function () {
+  describe("Set Master Contract Approval with WhiteList", function () {
     it("Reverts with address zero as masterContract", async function () {
       await expect(setMasterContractApproval(this.mcmanager, this.carol, this.carol, "", ADDRESS_ZERO, true, true)).to.be.revertedWith(
         "MasterCMgr: masterC not set"
