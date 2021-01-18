@@ -374,7 +374,38 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
             _returnData := add(_returnData, 0x04)
         }
         return abi.decode(_returnData, (string)); // All that remains is the revert string
-    }    
+    }   
+
+    function _bentoDeposit(bytes memory data, uint256 value, uint256 value1, uint256 value2) internal returns (uint256, uint256) {
+        (IERC20 token, address to, int256 amount, int256 share) = abi.decode(data, (IERC20, address, int256, int256));
+        amount = int256(_num(amount, value1, value2)); // Done this way to avoid stack to deep errors
+        share = int256(_num(share, value1, value2));
+        return bentoBox.deposit{value: value}
+            (token, msg.sender, to, uint256(amount), uint256(share));
+    }
+
+    function _bentoWithdraw(bytes memory data, uint256 value1, uint256 value2) internal returns (uint256, uint256) {
+        (IERC20 token, address to, int256 amount, int256 share) = abi.decode(data, (IERC20, address, int256, int256));
+        return bentoBox.withdraw(token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
+    }
+
+    function _call(bytes memory data, uint256 value, uint256 value1, uint256 value2) internal returns (uint256, uint256) {
+        (address callee, bytes memory callData, bool useValue1, bool useValue2, uint8 returnValues) 
+            = abi.decode(data, (address, bytes, bool, bool, uint8));
+        if (callee != address(bentoBox)) {
+            // TODO: Does encodePacked do the right thing here? 
+            // TODO: What happens if we call a function with too many params?
+            if (useValue1 && !useValue2) { callData = abi.encodePacked(callData, value1); }
+            else if (!useValue1 && useValue2) { callData = abi.encodePacked(callData, value2); }
+            else if (useValue1 && useValue2) { callData = abi.encodePacked(callData, value1, value2); }
+            (bool success, bytes memory returnData) = callee.call{value: value}(callData);
+            require(success, _getRevertMsg(returnData));
+            // TODO: validate return
+            if (returnValues == 1) { return (abi.decode(returnData, (uint256)), value2); }
+            else if (returnValues == 2) { return abi.decode(returnData, (uint256, uint256)); }
+            return (value1, value2);
+        }        
+    }
 
     function cook(
         uint8[] calldata actions, uint256[] calldata values, bytes[] calldata datas
@@ -415,13 +446,10 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
                 bentoBox.setMasterContractApproval(user, _masterContract, approved, v, r, s);
 
             } else if (action == ACTION_BENTO_DEPOSIT) {
-                (IERC20 token, address to, int256 amount, int256 share) = abi.decode(datas[i], (IERC20, address, int256, int256));
-                (value1, value2) = bentoBox.deposit{value: values[i]}
-                    (token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
+                (value1, value2) = _bentoDeposit(datas[i], values[i], value1, value2);
 
             } else if (action == ACTION_BENTO_WITHDRAW) {
-                (IERC20 token, address to, int256 amount, int256 share) = abi.decode(datas[i], (IERC20, address, int256, int256));
-                (value1, value2) = bentoBox.withdraw(token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
+                (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
 
             } else if (action == ACTION_BENTO_TRANSFER) {
                 (IERC20 token, address to,int256 share) = abi.decode(datas[i], (IERC20, address, int256));
@@ -432,20 +460,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
                 bentoBox.transferMultiple(token, msg.sender, tos, shares);
 
             } else if (action == ACTION_CALL) {
-                (address callee, bytes memory callData, bool useValue1, bool useValue2, uint8 returnValues) 
-                    = abi.decode(datas[i], (address, bytes, bool, bool, uint8));
-                if (callee != address(bentoBox)) {
-                    // TODO: Does encodePacked do the right thing here? 
-                    // TODO: What happens if we call a function with too many params?
-                    if (useValue1 && !useValue2) { callData = abi.encodePacked(callData, value1); }
-                    else if (!useValue1 && useValue2) { callData = abi.encodePacked(callData, value2); }
-                    else if (useValue1 && useValue2) { callData = abi.encodePacked(callData, value1, value2); }
-                    (bool success, bytes memory data) = callee.call{value: values[i]}(callData);
-                    require(success, _getRevertMsg(data));
-                    // TODO: validate return
-                    if (returnValues == 1) { value1 = abi.decode(data, (uint256)); }
-                    else if (returnValues == 2) { (value1, value2) = abi.decode(data, (uint256, uint256)); }
-                }
+                (value1, value2) = _call(datas[i], values[i], value1, value2);
             }
         }
 
