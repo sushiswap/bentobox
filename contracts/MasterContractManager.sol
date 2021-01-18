@@ -4,10 +4,12 @@
 // P1 - P3: OK
 pragma solidity 0.6.12;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
+
 // solhint-disable no-inline-assembly
 
 // T1 - T4: OK
-contract MasterContractManager is BoringOwnable {
+contract MasterContractManager is BoringOwnable, BoringFactory {
     // E1: OK
     event LogWhiteListMasterContract(address indexed masterContract, bool approved);
     // E1: OK
@@ -53,6 +55,7 @@ contract MasterContractManager is BoringOwnable {
         // If no signature is provided, the fallback is executed
         if (r == 0  && s == 0 && v == 0) {
             require(user == msg.sender, "MasterCMgr: user not sender");
+            require(masterContractOf[user] == address(0), "MasterCMgr: user is clone");
             require(whitelistedMasterContracts[masterContract], "MasterCMgr: not whitelisted");
         } else {
             require(user != address(0), "MasterCMgr: User cannot be 0"); // Important for security

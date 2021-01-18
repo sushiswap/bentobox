@@ -9,7 +9,7 @@ describe("BentoBoxPlus", function () {
   })
 
   beforeEach(async function () {
-    await deployments.fixture()
+    await deploymentsFixture()
 
     this.weth9 = await ethers.getContract("WETH9Mock")
 

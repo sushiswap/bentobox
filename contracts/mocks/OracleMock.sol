@@ -10,7 +10,7 @@ contract OracleMock is IOracle {
 
 	uint256 rate;
 
-	function set(uint256 rate_, address) public {
+	function set(uint256 rate_) public {
 		// The rate can be updated.
 		rate = rate_;
 	}

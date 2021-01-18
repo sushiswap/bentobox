@@ -70,51 +70,55 @@ class LendingPair {
         return this.collateral.approve(this.bentoBox.address, amount)
     }
     
-    depositCollateral(user, amount) {
+    depositCollateral(amount) {
         let share = this.info.totalCollateralAmount == 0 ? amount : amount.mul(this.info.totalCollateralShare).div(this.info.totalCollateralAmount);
         return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.collateral.address, addr(user), amount, 0]),
-            this.contract.interface.encodeFunctionData("addCollateral", [share, addr(user), false])], true
+            [this.contract.interface.encodeFunctionData("deposit", [this.collateral.address, addr(this.contract.signer), amount, 0]),
+            this.contract.interface.encodeFunctionData("addCollateral", [share, addr(this.contract.signer), false])], true
         );
     }
 
-    withdrawCollateral(user, share) {
+    withdrawCollateral(share) {
         return this.contract.batch(
             [
-                this.contract.interface.encodeFunctionData("removeCollateral", [share, addr(user)]),
-                this.contract.interface.encodeFunctionData("withdraw", [this.collateral.address, addr(user), 0, share])
+                this.contract.interface.encodeFunctionData("removeCollateral", [share, addr(this.contract.signer)]),
+                this.contract.interface.encodeFunctionData("withdraw", [this.collateral.address, addr(this.contract.signer), 0, share])
             ], true
         );
     }
 
-    depositAsset(user, amount) {
+    depositAsset(amount) {
         let share = this.info.totalAssetAmount == 0 ? amount : amount.mul(this.info.totalAssetShare).div(this.info.totalAssetAmount);
         return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(user), amount, 0]),
-            this.contract.interface.encodeFunctionData("addAsset", [share, addr(user), false])], true
+            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), amount, 0]),
+            this.contract.interface.encodeFunctionData("addAsset", [share, addr(this.contract.signer), false])], true
         );
     }
 
-    withdrawAsset(user, fraction) {
+    withdrawAsset(fraction) {
         let share = this.info.pairAssetFraction == 0 ? fraction : fraction.mul(this.info.pairAssetShare).div(this.info.pairAssetFraction);
         return this.contract.batch(
             [
-                this.contract.interface.encodeFunctionData("removeAsset", [fraction, addr(user)]),
-                this.contract.interface.encodeFunctionData("withdraw", [this.asset.address, addr(user), 0, share])
+                this.contract.interface.encodeFunctionData("removeAsset", [fraction, addr(this.contract.signer)]),
+                this.contract.interface.encodeFunctionData("withdraw", [this.asset.address, addr(this.contract.signer), 0, share])
             ], true
         );
     }
 
-    repay(part, user) {
+    repay(part) {
         let amount = this.info.pairBorrowPart == 0 ? part : part.mul(this.info.pairBorrowAmount).div(this.info.pairBorrowPart)
         return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(user), 0, amount]),
-            this.contract.interface.encodeFunctionData("repay", [part, addr(user), false])], true
+            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), 0, amount]),
+            this.contract.interface.encodeFunctionData("repay", [part, addr(this.contract.signer), false])], true
         );
     }
 
-    borrow(amount, to) {
-
+    borrow(amount) {
+        /*let amount = this.info.pairBorrowPart == 0 ? part : part.mul(this.info.pairBorrowAmount).div(this.info.pairBorrowPart)
+        return this.contract.batch(
+            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), 0, amount]),
+            this.contract.interface.encodeFunctionData("repay", [part, addr(this.contract.signer), false])], true
+        );*/
     }
 }
 
@@ -141,6 +145,18 @@ Object.defineProperty(LendingPair.prototype, "cmd", {
         });
     }
 });
+
+LendingPair.deploy = async function(bentoBox, masterContract, masterContractClass, asset, collateral, oracle) {
+    await oracle.set(getBigNumber(1))
+    const oracleData = await oracle.getDataParameter()
+    const initData = await masterContract.getInitData(addr(asset), addr(collateral), oracle.address, oracleData)
+    const deployTx = await bentoBox.deploy(masterContract.address, initData)
+    const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
+    const pair = await masterContractClass.attach(cloneAddress)
+    const pairHelper = new LendingPair(pair);
+    await pairHelper.init(bentoBox);
+    return pairHelper;
+}
 
 module.exports = {
     LendingPair

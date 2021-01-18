@@ -21,7 +21,6 @@ pragma experimental ABIEncoderV2;
 
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 import "./interfaces/IERC3156FlashLoan.sol";
 import "./interfaces/IWETH.sol";
@@ -29,7 +28,7 @@ import "./MasterContractManager.sol";
 import "./StrategyManager.sol";
 
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
-contract BentoBoxPlus is BoringFactory, MasterContractManager, BoringBatchable, StrategyManager, IERC3156BatchFlashLender {
+contract BentoBoxPlus is MasterContractManager, BoringBatchable, StrategyManager, IERC3156BatchFlashLender {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using BoringERC20 for IERC20;

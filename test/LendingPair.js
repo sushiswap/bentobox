@@ -11,6 +11,8 @@ const {
   prepare,
   setMasterContractApproval,
   setLendingPairContractApproval,
+  deploy,
+  deploymentsFixture
 } = require("./utilities")
 const { LendingPair } = require("./utilities/lendingpair");
 
@@ -28,58 +30,17 @@ describe("Lending Pair", function () {
   })
 
   beforeEach(async function () {
-    await deployments.fixture()
-
-    this.weth9 = await ethers.getContract("WETH9Mock")
-    this.bentoBox = await ethers.getContract("BentoBoxPlus")
-
-    this.a = await this.ReturnFalseERC20Mock.deploy("Token A", "A", getBigNumber(10000000))
-    await this.a.deployed()
-
-    this.b = await this.RevertingERC20Mock.deploy("Token B", "B", getBigNumber(10000000))
-    await this.b.deployed()
-
-    // Alice has all tokens for a and b since creator
-
-    // Bob has 1000 b tokens
-    await this.b.transfer(this.bob.address, getBigNumber(1000))
-    await this.b.transfer(this.carol.address, getBigNumber(1000))
-
-    this.lendingPair = await ethers.getContract("LendingPairMock")
-
-    this.factory = await ethers.getContract("SushiSwapFactoryMock")
-
-    const createPairTx = await this.factory.createPair(this.a.address, this.b.address)
-
-    const pair = (await createPairTx.wait()).events[0].args.pair
-
-    this.sushiSwapPair = await this.SushiSwapPairMock.attach(pair)
-
-    await this.a.transfer(this.sushiSwapPair.address, getBigNumber(5000))
-    await this.b.transfer(this.sushiSwapPair.address, getBigNumber(5000))
-
-    await this.sushiSwapPair.mint(this.alice.address)
-
-    this.swapper = await ethers.getContract("SushiSwapSwapper")
-
-    this.oracle = await ethers.getContract("OracleMock")
-
-    await this.oracle.set(getBigNumber(1), this.alice.address)
+    await deploymentsFixture(this, async cmd => {
+      this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
+      this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
+      this.sushiSwapPair = await cmd.addPair(self.a, self.b, 5000, 5000)
+    })
 
     // Two different ways to approve the lendingPair
     await setMasterContractApproval(this.bentoBox, this.alice, this.alice, this.alicePrivateKey, this.lendingPair.address, true)
     await setLendingPairContractApproval(this.bentoBox, this.bob, this.bobPrivateKey, this.lendingPair, true)
 
-    const oracleData = await this.oracle.getDataParameter()
-
-    this.initData = await this.lendingPair.getInitData(this.a.address, this.b.address, this.oracle.address, oracleData)
-
-    const deployTx = await this.bentoBox.deploy(this.lendingPair.address, this.initData)
-    const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
-    this.pair = await this.LendingPairMock.attach(cloneAddress)
-    this.pairHelper = new LendingPair(this.pair);
-    await this.pairHelper.init(this.bentoBox);
-    await this.pair.updateExchangeRate();
+    this.pairHelper = await LendingPair.deploy(this.bentoBox, this.lendingPair, this.LendingPairMock, this.a, this.b, this.oracle)
   })
 
   describe("Deployment", function () {
@@ -122,7 +83,7 @@ describe("Lending Pair", function () {
         cmd.approveAsset(getBigNumber(700)),
         cmd.depositAsset(this.alice, getBigNumber(290)),
         cmd.approveCollateral(getBigNumber(800)),
-        cmd.depositCollateral(this.alice, getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
         cmd.do(this.pair.borrow, sansBorrowFee(getBigNumber(75)), this.alice.address),
         cmd.do(this.pair.accrue),
         cmd.do(this.oracle.set ,"1100000000000000000", this.pair.address),
@@ -149,7 +110,7 @@ describe("Lending Pair", function () {
       
       // then increase utilization to 90%
       await this.pairHelper.run(cmd => [
-        cmd.depositCollateral(this.alice, getBigNumber(400)),
+        cmd.depositCollateral(getBigNumber(400)),
         cmd.do(this.pair.borrow, sansBorrowFee(getBigNumber(270)), this.alice.address)
       ])
       //await this.pair.borrow(sansBorrowFee(getBigNumber(270)), this.alice.address)
@@ -169,7 +130,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(900))
       await (await this.pairHelper.sync()).depositAsset(this.alice, getBigNumber(290))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pairHelper.depositCollateral(this.alice, getBigNumber(100))
+      await this.pairHelper.depositCollateral(getBigNumber(100))
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await this.pair.accrue()
       let borrowPartLeft = await this.pair.userBorrowPart(this.alice.address)
@@ -185,7 +146,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(900))
       await (await this.pairHelper.depositAsset(this.alice, getBigNumber(100)))
       await this.a.approve(this.bentoBox.address, getBigNumber(300))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(100))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(100))
       await this.pair.borrow(1, this.alice.address)
       await this.pair.accrue()
       for (let i = 0; i < 2000; i++) {
@@ -204,7 +165,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(900))
       await (await this.pairHelper.depositAsset(this.alice, getBigNumber(100)))
       await this.a.approve(this.bentoBox.address, getBigNumber(300))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(300))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(300))
       await this.pair.setInterestPerBlock(4400000000000)
       await this.pair.borrow(
         sansBorrowFee(getBigNumber(100)),
@@ -227,7 +188,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(900))
       await (await this.pairHelper.sync()).depositAsset(this.alice, getBigNumber(100))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(100))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(100))
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await expect(this.pair.accrue()).to.emit(this.pair, "LogAccrue")
     })
@@ -284,7 +245,7 @@ describe("Lending Pair", function () {
   describe("Add Collateral", function () {
     it("should take a deposit of collateral", async function () {
       await this.a.approve(this.bentoBox.address, 300)
-      await expect((await this.pairHelper.sync()).depositCollateral(this.alice, 290))
+      await expect((await this.pairHelper.sync()).depositCollateral(290))
         .to.emit(this.pair, "LogAddCollateral")
         .withArgs(this.alice.address, 290)
     })
@@ -300,7 +261,7 @@ describe("Lending Pair", function () {
       await (await this.pairHelper.depositAsset(this.alice, getBigNumber(290)))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.pairHelper.sync();
-      await this.pairHelper.depositCollateral(this.alice, getBigNumber(100))
+      await this.pairHelper.depositCollateral(getBigNumber(100))
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await this.pair.accrue()
       await expect(this.pairHelper.withdrawCollateral(this.alice, getBigNumber(100))).to.be.revertedWith("LendingPair: user insolvent")
@@ -310,7 +271,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(700))
       await (await this.pairHelper.sync()).depositAsset(this.alice, getBigNumber(290))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(100))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(100))
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await this.pair.accrue() 
       await this.oracle.set("1100000000000000000", this.pair.address)
@@ -324,7 +285,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(700))
       await (await this.pairHelper.sync()).depositAsset(this.alice, getBigNumber(290))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(100))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(100))
       await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address)
       await this.pair.accrue()
       await this.oracle.set("1100000000000000000", this.pair.address)
@@ -351,7 +312,7 @@ describe("Lending Pair", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(300))
       await (await this.pairHelper.depositAsset(this.alice, getBigNumber(290)))
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await (await this.pairHelper.sync()).depositCollateral(this.alice, getBigNumber(100))
+      await (await this.pairHelper.sync()).depositCollateral(getBigNumber(100))
       await expect(this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address))
         .to.emit(this.pair, "LogAddBorrow")
         .withArgs(this.alice.address, "74999999999999999999", "74999999999999999999")

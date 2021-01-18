@@ -3,7 +3,7 @@ const {
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 const { ecsign } = require("ethereumjs-util")
-
+const { deployments, ethers } = require("hardhat")
 const { BN } = require("bn.js")
 
 const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
@@ -154,6 +154,12 @@ async function prepare(thisObject, contracts) {
   for (let i in contracts) {
     let contract = contracts[i]
     thisObject[contract] = await ethers.getContractFactory(contract)
+    thisObject[contract].thisObject = thisObject
+    thisObject[contract].new = async function(...params) {
+      let newContract = await thisObject[contract].deploy(...params)
+      await newContract.deployed()
+      return newContract
+    }
   }
   thisObject.signers = await ethers.getSigners()
   thisObject.alice = thisObject.signers[0]
@@ -162,6 +168,37 @@ async function prepare(thisObject, contracts) {
   thisObject.alicePrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   thisObject.bobPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
   thisObject.carolPrivateKey = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
+}
+
+async function deploymentsFixture(thisObject, stepsFunction) {
+  await deployments.fixture();
+  thisObject.weth9 = await ethers.getContract("WETH9Mock")
+  thisObject.bentoBox = await ethers.getContract("BentoBoxPlus")
+  thisObject.factory = await ethers.getContract("SushiSwapFactoryMock")
+  thisObject.lendingPair = await ethers.getContract("LendingPair")
+  thisObject.peggedOracle = await ethers.getContract("PeggedOracle")  
+  thisObject.swapper = await ethers.getContract("SushiSwapSwapper")
+  thisObject.oracle = await ethers.getContract("OracleMock")  
+  thisObject.helper = await ethers.getContract("BentoHelper")
+  await stepsFunction({
+    addToken: async function(name, symbol, tokenClass) {
+      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(name, symbol, getBigNumber(1000000))
+      await token.transfer(thisObject.bob.address, getBigNumber(1000))
+      await token.transfer(thisObject.carol.address, getBigNumber(1000))
+      return token;
+    },
+    addPair: async function(tokenA, tokenB, amountA, amountB) {
+      const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
+      const pair = (await createPairTx.wait()).events[0].args.pair
+      const sushiSwapPair = await thisObject.SushiSwapPairMock.attach(pair)
+  
+      await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
+      await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
+  
+      await sushiSwapPair.mint(thisObject.alice.address)    
+      return sushiSwapPair;
+    }
+  });
 }
 
 async function deploy(thisObject, contracts) {
@@ -197,5 +234,6 @@ module.exports = {
   advanceTimeAndBlock,
   getBigNumber,
   prepare,
+  deploymentsFixture,
   deploy,
 }

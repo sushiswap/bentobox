@@ -53,6 +53,7 @@ C20 - Is calculation on the fly cheaper than storing the value
 C21 - Are all state variables read from the correct contract: master vs. clone
 C22 - Is > or < or >= or <= correct
 C23 - Are logical operators correct ==, !=, &&, ||, !
+C24 - Always mul before div, unless mul could overflow.
 
 Calls in Functions
 X1 - Is the result checked and errors dealt with? (SWC-104)
