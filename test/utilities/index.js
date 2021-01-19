@@ -120,8 +120,9 @@ async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair,
     user.provider._network.chainId
   )
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
-
+  
   return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
+
 }
 
 function sansBorrowFee(amount) {

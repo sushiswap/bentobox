@@ -428,7 +428,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
 
             } else if (action == ACTION_REMOVE_ASSET) {
                 (int256 fraction, address to) = abi.decode(datas[i], (int256, address));
-                _removeAsset(to, _num(fraction, value1, value2));
+                value1 = _removeAsset(to, _num(fraction, value1, value2));
 
             } else if (action == ACTION_REMOVE_COLLATERAL) {
                 (int256 share, address to) = abi.decode(datas[i], (int256, address));

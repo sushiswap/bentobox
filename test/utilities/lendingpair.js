@@ -1,7 +1,23 @@
 const { ADDRESS_ZERO, addr, getBigNumber } = require(".")
+const {
+    utils: { defaultAbiCoder},
+  } = require("ethers")
 const ethers = require('ethers')
 
 const ERC20abi = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_owner","type":"address"},{"indexed":true,"internalType":"address","name":"_spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner_","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"}]
+
+const ACTION_ADD_COLLATERAL = 1;
+const ACTION_ADD_ASSET = 2;
+const ACTION_REPAY = 3;
+const ACTION_REMOVE_ASSET = 4;
+const ACTION_REMOVE_COLLATERAL = 5;
+const ACTION_BORROW = 6;
+const ACTION_CALL = 10;
+const ACTION_BENTO_DEPOSIT = 20;
+const ACTION_BENTO_WITHDRAW = 21;
+const ACTION_BENTO_TRANSFER = 22;
+const ACTION_BENTO_TRANSFER_MULTIPLE = 23;
+const ACTION_BENTO_SETAPPROVAL = 24;
 
 class LendingPair {
     constructor(contract, helper) {
@@ -71,45 +87,64 @@ class LendingPair {
     }
     
     depositCollateral(amount) {
-        let share = this.info.totalCollateralAmount == 0 ? amount : amount.mul(this.info.totalCollateralShare).div(this.info.totalCollateralAmount);
-        return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.collateral.address, addr(this.contract.signer), amount, 0]),
-            this.contract.interface.encodeFunctionData("addCollateral", [share, addr(this.contract.signer), false])], true
+        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_ADD_COLLATERAL], [0, 0], [defaultAbiCoder.encode(
+            ["address", "address", "int256", "int256"],
+            [this.collateral.address, addr(this.contract.signer), amount, 0]
+          ), defaultAbiCoder.encode(
+            ["int256", "address", "bool"],
+            [-2, addr(this.contract.signer), false]
+          ), ]
         );
     }
 
     withdrawCollateral(share) {
-        return this.contract.batch(
-            [
-                this.contract.interface.encodeFunctionData("removeCollateral", [share, addr(this.contract.signer)]),
-                this.contract.interface.encodeFunctionData("withdraw", [this.collateral.address, addr(this.contract.signer), 0, share])
-            ], true
+        return this.contract.cook(
+            [ACTION_REMOVE_COLLATERAL, ACTION_BENTO_WITHDRAW], [0, 0], [
+                defaultAbiCoder.encode(
+                    ["int256", "address"],
+                    [share, addr(this.contract.signer)]
+                  ),
+                defaultAbiCoder.encode(
+                ["address", "address", "int256", "int256"],
+                [this.collateral.address, addr(this.contract.signer), 0, share]
+              ),  ]
         );
     }
 
     depositAsset(amount) {
-        let share = this.info.totalAssetAmount == 0 ? amount : amount.mul(this.info.totalAssetShare).div(this.info.totalAssetAmount);
-        return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), amount, 0]),
-            this.contract.interface.encodeFunctionData("addAsset", [share, addr(this.contract.signer), false])], true
+        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_ADD_ASSET], [0, 0], [defaultAbiCoder.encode(
+            ["address", "address", "int256", "int256"],
+            [this.asset.address, addr(this.contract.signer), amount, 0]
+          ), defaultAbiCoder.encode(
+            ["int256", "address", "bool"],
+            [-2, addr(this.contract.signer), false]
+          ), ]
         );
     }
 
     withdrawAsset(fraction) {
-        let share = this.info.pairAssetFraction == 0 ? fraction : fraction.mul(this.info.pairAssetShare).div(this.info.pairAssetFraction);
-        return this.contract.batch(
-            [
-                this.contract.interface.encodeFunctionData("removeAsset", [fraction, addr(this.contract.signer)]),
-                this.contract.interface.encodeFunctionData("withdraw", [this.asset.address, addr(this.contract.signer), 0, share])
-            ], true
+        return this.contract.cook(
+            [ACTION_REMOVE_ASSET, ACTION_BENTO_WITHDRAW], [0, 0], [
+                defaultAbiCoder.encode(
+                    ["int256", "address"],
+                    [fraction, addr(this.contract.signer)]
+                  ),
+                defaultAbiCoder.encode(
+                ["address", "address", "int256", "int256"],
+                [this.asset.address, addr(this.contract.signer), 0, -1]
+              ),  ]
         );
     }
 
     repay(part) {
         let amount = this.info.pairBorrowPart == 0 ? part : part.mul(this.info.pairBorrowAmount).div(this.info.pairBorrowPart)
-        return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), 0, amount]),
-            this.contract.interface.encodeFunctionData("repay", [part, addr(this.contract.signer), false])], true
+        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_REPAY], [0, 0], [defaultAbiCoder.encode(
+            ["address", "address", "int256", "int256"],
+            [this.asset.address, addr(this.contract.signer), amount, 0]
+          ), defaultAbiCoder.encode(
+            ["int256", "address", "bool"],
+            [part, addr(this.contract.signer), false]
+          ), ]
         );
     }
 
@@ -154,6 +189,7 @@ LendingPair.deploy = async function(bentoBox, masterContract, masterContractClas
     const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
     const pair = await masterContractClass.attach(cloneAddress)
     const pairHelper = new LendingPair(pair);
+    pairHelper.initData = initData;
     await pairHelper.init(bentoBox);
     return pairHelper;
 }
