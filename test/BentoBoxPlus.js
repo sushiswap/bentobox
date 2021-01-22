@@ -1,6 +1,6 @@
 const { ethers, deployments } = require("hardhat")
 const { expect, assert } = require("chai")
-const { getApprovalDigest, prepare, ADDRESS_ZERO, getBigNumber, sansSafetyAmount, setMasterContractApproval, deploy } = require("./utilities")
+const { getApprovalDigest, prepare, ADDRESS_ZERO, getBigNumber, sansSafetyAmount, setMasterContractApproval, deploy, deploymentsFixture } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBoxPlus", function () {

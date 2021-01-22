@@ -9,7 +9,7 @@ describe("MasterContractManager", function () {
   beforeEach(async function () {
     this.mcmanager = await this.MasterContractManagerMock.deploy()
     await this.mcmanager.deployed()
-    this.lendingPair = await ethers.getContract("LendingPair")
+    this.lendingPair = await ethers.getContract("LendingPairMock")
   })
 
   describe("Master Contract Approved", function () {

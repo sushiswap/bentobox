@@ -16,6 +16,22 @@ const {
 } = require("./utilities")
 const { LendingPair } = require("./utilities/lendingpair");
 
+async function debugInfo(thisObject) {
+  console.log("Alice Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.a.address, thisObject.alice.address)).toString());
+  console.log("Bob Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.a.address, thisObject.bob.address)).toString());
+  console.log("Swapper Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.swapper.address, thisObject.bob.address)).toString());
+  console.log("Bento Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.bentoBox.address, thisObject.bob.address)).toString());
+  console.log();
+  console.log("Alice Asset in Bento", (await thisObject.bentoBox.balanceOf(thisObject.b.address, thisObject.alice.address)).toString());
+  console.log("Bob Asset in Bento", (await thisObject.bentoBox.balanceOf(thisObject.b.address, thisObject.bob.address)).toString());
+  console.log("Swapper Asset in Bento", (await thisObject.bentoBox.balanceOf(thisObject.b.address, thisObject.swapper.address)).toString());
+  console.log("Bento Asset in Bento", (await thisObject.bentoBox.balanceOf(thisObject.b.address, thisObject.bentoBox.address)).toString());
+  console.log();
+  console.log("Alice CollateralShare in Pair", (await thisObject.pairHelper.contract.userCollateralShare(thisObject.alice.address)).toString());
+  console.log("Alice BorrowPart in Pair", (await thisObject.pairHelper.contract.userBorrowPart(thisObject.alice.address)).toString());
+  console.log("Alice Solvent", (await thisObject.pairHelper.contract.isSolvent(thisObject.alice.address, false)).toString());
+}
+
 describe("Lending Pair", function () {
   before(async function () {
     await prepare(this, [
@@ -33,14 +49,14 @@ describe("Lending Pair", function () {
     await deploymentsFixture(this, async cmd => {
       this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
       this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
-      this.sushiSwapPair = await cmd.addPair(this.a, this.b, 5000, 5000)
+      this.sushiSwapPair = await cmd.addPair(this.a, this.b, 50000, 50000)
     })
 
     this.pairHelper = await LendingPair.deploy(this.bentoBox, this.lendingPair, this.LendingPairMock, this.a, this.b, this.oracle)
 
     // Two different ways to approve the lendingPair
     await setMasterContractApproval(this.bentoBox, this.alice, this.alice, this.alicePrivateKey, this.lendingPair.address, true)
-    await setMasterContractApproval(this.bentoBox,  this.bob, this.bob, this.bobPrivateKey, this.lendingPair.address, true)
+    await setMasterContractApproval(this.bentoBox, this.bob, this.bob, this.bobPrivateKey, this.lendingPair.address, true)
 
     //await setLendingPairContractApproval(this.bentoBox, this.bob, this.bobPrivateKey, this.lendingPair, true)
   })
@@ -72,14 +88,14 @@ describe("Lending Pair", function () {
       await expect(this.pairHelper.contract.init(this.pairHelper.initData)).to.be.revertedWith("LendingPair: already initialized")
     })
   })
-  /* TODO: Problem with deploying fixtures
+  
+  // TODO: Problem with deploying fixtures
   describe("Permit", function () {
     it("should allow permit", async function () {
       await lendingPairPermit(this.bentoBox, this.a, this.alice, this.alicePrivateKey, this.lendingPair, 1)
     })
   })
-  */
-  
+
   describe("Accrue", function () {
     it("should update the interest rate according to utilization", async function () {
       await this.pairHelper.run(cmd => [
@@ -172,15 +188,13 @@ describe("Lending Pair", function () {
     })
     
     it("should lock interest rate at maximum", async function () {
-
       await this.pairHelper.run(cmd => [
         cmd.approveAsset(getBigNumber(900)),
         cmd.depositAsset(getBigNumber(100)),
         cmd.approveCollateral(getBigNumber(300)),
         cmd.depositCollateral(getBigNumber(300)),
-        // TODO: setInterest is not defined
-        //cmd.do(this.pairHelper.contract.setInterestPerBlock(4400000000000)),
-        cmd.do(this.pairHelper.contract.borrow, this.alice.address, sansBorrowFee(getBigNumber(100)), ),
+        cmd.do(this.pairHelper.contract.setInterestPerBlock, 4400000000000),
+        cmd.do(this.pairHelper.contract.borrow, this.alice.address, sansBorrowFee(getBigNumber(100))),
         cmd.do(this.pairHelper.contract.accrue),
       ])
       await this.pairHelper.contract.accrue()
@@ -340,8 +354,8 @@ describe("Lending Pair", function () {
 
     it("should allow borrowing with collateral up to 75%", async function () {
       await this.pairHelper.run(cmd => [
-        cmd.approveAsset(getBigNumber(300)),
-        cmd.depositAsset(getBigNumber(290)),
+        cmd.as(this.bob).approveAsset(getBigNumber(300)),
+        cmd.as(this.bob).depositAsset(getBigNumber(290)),
         cmd.approveCollateral(getBigNumber(100)),
         cmd.depositCollateral(getBigNumber(100)),
       ])
@@ -399,76 +413,82 @@ describe("Lending Pair", function () {
       expect(await this.pairHelper.contract.isSolvent(this.alice.address, true)).to.be.false
     })
   })
-/*
+
   describe("Repay", function () {
     it("should allow to repay", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(700))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.oracle.set("1100000000000000000", this.pair.address)
-      await this.pair.updateExchangeRate()
-      await this.pair.repay(getBigNumber(50), false)
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(700)),
+        cmd.depositAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.updateExchangeRate(),
+        cmd.repay(getBigNumber(50))
+      ])
     })
 
     it("should allow to repay from Bento", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(700))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.bentoBox.deposit(this.b.address, this.alice.address, getBigNumber(100))
-      await this.pair.repay(getBigNumber(50), true)
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(700)),
+        cmd.depositAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(75)),
+        cmd.repay(getBigNumber(50))
+      ])
     })
 
     it("should allow full repayment", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(900))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.oracle.set("1100000000000000000", this.pair.address)
-      await this.pair.updateExchangeRate()
-      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
-      await this.pair.repay(borrowFractionLeft, false)
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(900)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositAsset(getBigNumber(290)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.updateExchangeRate()
+      ])
+
+      let part = await this.pairHelper.contract.userBorrowPart(this.alice.address)
+
+      await this.pairHelper.run(cmd => [
+        cmd.repay(part)
+      ])      
     })
   })
-
+  
   describe("Short", function () {
-    it("should not allow invalid swapper", async function () {
-      let invalidSwapper = await this.SushiSwapSwapper.deploy(this.bentoBox.address, this.factory.address)
-      await invalidSwapper.deployed()
-      await expect(this.pair.short(invalidSwapper.address, getBigNumber(20), getBigNumber(20))).to.be.revertedWith(
-        "LendingPair: Invalid swapper"
-      )
-    })
     it("should not allow shorting if it does not return enough", async function () {
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000))
-      await this.pair.connect(this.bob).addAsset(getBigNumber(1000), false)
-      await expect(this.pair.short(this.swapper.address, getBigNumber(200), getBigNumber(200))).to.be.revertedWith(
-        "SushiSwapSwapper: not enough"
-      )
+      await expect(this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(1000)),
+        cmd.as(this.bob).depositAsset(getBigNumber(1000)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.short(this.swapper, getBigNumber(200), getBigNumber(200))
+      ])).to.be.revertedWith("BoringMath: Underflow")
     })
 
     it("should not allow shorting into insolvency", async function () {
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000))
-      await this.pair.connect(this.bob).addAsset(getBigNumber(1000), false)
-      await expect(this.pair.short(this.swapper.address, getBigNumber(300), getBigNumber(200))).to.be.revertedWith("user insolvent")
+      await expect(this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(1000)),
+        cmd.as(this.bob).depositAsset(getBigNumber(1000)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.short(this.swapper, getBigNumber(500), getBigNumber(200))
+      ])).to.be.revertedWith("LendingPair: user insolvent")
     })
 
     it("should allow shorting", async function () {
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000))
-      await this.pair.connect(this.bob).addAsset(getBigNumber(1000), false)
-      await this.pair.short(this.swapper.address, getBigNumber(250), getBigNumber(230))
+      await this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(1000)),
+        cmd.as(this.bob).depositAsset(getBigNumber(1000)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.short(this.swapper, getBigNumber(250), getBigNumber(230))
+      ])
     })
 
     it("should limit asset availability after shorting", async function () {
@@ -488,7 +508,7 @@ describe("Lending Pair", function () {
       await this.pair.connect(this.bob).removeAsset(getBigNumber(499), this.bob.address, false)
     })
   })
-
+  
   describe("Unwind", function () {
     it("should not allow invalid swapper", async function () {
       let invalidSwapper = await this.SushiSwapSwapper.deploy(this.bentoBox.address, this.factory.address)
@@ -509,51 +529,59 @@ describe("Lending Pair", function () {
 
   describe("Liquidate", function () {
     it("should not allow open liquidate yet", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(300))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(25))
+      await this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(310)),
+        cmd.as(this.bob).addAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.bentoBox.deposit, this.asset.address, this.bob.address, this.bob.address, getBigNumber(20), 0)
+      ])
+      
       await expect(
-        this.pair
+        this.pairHelper.contract
           .connect(this.bob)
           .liquidate([this.alice.address], [getBigNumber(20)], this.bob.address, "0x0000000000000000000000000000000000000000", true)
       ).to.be.revertedWith("LendingPair: all are solvent")
     })
 
     it("should allow open liquidate", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(300))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.oracle.set("1100000000000000000", this.pair.address)
-      await this.pair.updateExchangeRate()
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(25))
+      await this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(310)),
+        cmd.as(this.bob).addAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.updateExchangeRate(),
+        cmd.do(this.bentoBox.deposit, this.asset.address, this.bob.address, this.bob.address, getBigNumber(20), 0)
+      ])
       this.pair
         .connect(this.bob)
         .liquidate([this.alice.address], [getBigNumber(20)], this.bob.address, "0x0000000000000000000000000000000000000000", true)
     })
 
     it("should allow open liquidate with swapper", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(300))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.oracle.set("1100000000000000000", this.pair.address)
-      await this.a.transfer(this.sushiSwapPair.address, getBigNumber(500))
-      await this.sushiSwapPair.sync()
-      await this.pair.updateExchangeRate()
+      await this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(310)),
+        cmd.as(this.bob).addAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.do(this.a.transfer, this.sushiSwapPair.address, getBigNumber(500)),
+        cmd.do(this.sushiSwapPair.sync),
+        cmd.updateExchangeRate(),
+        cmd.do(this.bentoBox.deposit, this.asset.address, this.bob.address, this.bob.address, getBigNumber(20), 0)
+      ])
       await expect(
         this.pair.connect(this.bob).liquidate([this.alice.address], [getBigNumber(20)], this.bob.address, this.swapper.address, true)
       ).to.emit(this.pair, "LogAddAsset")
     })
-
+    
     it("should allow open liquidate from Bento", async function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(300))
       await this.pair.addAsset(getBigNumber(290), false)
@@ -569,17 +597,25 @@ describe("Lending Pair", function () {
         .connect(this.bob)
         .liquidate([this.alice.address], [getBigNumber(20)], this.bob.address, "0x0000000000000000000000000000000000000001", true)
     })
+    
 
     it("should allow closed liquidate", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(300))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.accrue()
-      await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(25))
+      await this.pairHelper.run(cmd => [
+        cmd.as(this.bob).approveAsset(getBigNumber(310)),
+        cmd.as(this.bob).addAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.do(this.a.transfer, this.sushiSwapPair.address, getBigNumber(500)),
+        cmd.do(this.sushiSwapPair.sync),
+        cmd.updateExchangeRate(),
+        cmd.as(this.bob).do()
+      ])
+     
       await this.pair.connect(this.bob).liquidate([this.alice.address], [getBigNumber(20)], this.bob.address, this.swapper.address, false)
-    })
+    }) 
 
     it("should not allow closed liquidate with invalid swapper", async function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(300))
@@ -596,103 +632,40 @@ describe("Lending Pair", function () {
       ).to.be.revertedWith("LendingPair: Invalid swapper")
     })
   })
-
-  describe("Swipe", function () {
-    it("Reverts if caller is not the owner", async function () {
-      await expect(this.pair.connect(this.bob).swipe(this.a.address, { from: this.bob.address })).to.be.revertedWith(
-        "LendingPair: caller is not owner"
-      )
-    })
-    it("allows swiping call with zero balance of ETH", async function () {
-      await this.pair.swipe(ADDRESS_ZERO)
-    })
-    it("allows the swiping of ETH", async function () {
-      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-      await this.pair.batch([accrue], false, { value: 200 })
-      await this.pair.swipe(ADDRESS_ZERO)
-    })
-
-    it("allows the swiping of WETH", async function () {
-      await this.weth9.deposit({ value: 200 })
-      await this.weth9.transfer(this.pair.address, 10)
-      await this.pair.swipe(this.weth9.address)
-    })
-
-    it("allows the swiping of zero token balance", async function () {
-      await this.pair.swipe(this.weth9.address)
-    })
-
-    it("allows the swiping of excess asset", async function () {
-      await this.b.transfer(this.pair.address, getBigNumber(1))
-      await this.pair.swipe(this.b.address)
-    })
-  })
+  
 
   describe("Withdraw Fees", function () {
     it("should allow to withdraw fees", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(700))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      await this.pair.repay(getBigNumber(50), false)
-      await expect(this.pair.withdrawFees()).to.emit(this.pair, "LogWithdrawFees")
+      await pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(700)),
+        cmd.depositAsset(getBigNumber(290)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.repay(getBigNumber(50))
+      ])
+      await expect(this.pairHelper.contract.withdrawFees()).to.emit(this.pairHelper.contract, "LogWithdrawFees")
     })
 
     it("should emit events even if dev fees are empty", async function () {
-      await this.b.approve(this.bentoBox.address, getBigNumber(700))
-      await this.pair.addAsset(getBigNumber(290), false)
-      await this.a.approve(this.bentoBox.address, getBigNumber(100))
-      await this.pair.addCollateral(getBigNumber(100), false)
-      await this.pair.borrow(sansBorrowFee(getBigNumber(75)), this.alice.address, false)
-      let borrowFractionLeft = await this.pair.userBorrowPart(this.alice.address)
-      await this.pair.repay(borrowFractionLeft, false)
-      await this.pair.withdrawFees()
-      await expect(this.pair.withdrawFees()).to.emit(this.pair, "LogWithdrawFees")
-    })
-  })
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(900)),
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositAsset(getBigNumber(290)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.borrow(sansBorrowFee(getBigNumber(75))),
+        cmd.accrue(),
+        cmd.do(this.oracle.set, "1100000000000000000"),
+        cmd.updateExchangeRate()
+      ])
 
-  describe("Batch", function () {
-    it("Batches calls with revertOnFail true", async function () {
-      await this.b.approve(this.bentoBox.address, 2)
+      let part = await this.pairHelper.contract.userBorrowPart(this.alice.address)
 
-      const addAsset = this.pair.interface.encodeFunctionData("addAsset", [1, false])
-
-      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-
-      await this.pair.batch([addAsset, accrue, accrue], true)
-
-      expect(await this.pair.balanceOf(this.alice.address)).to.be.equal(1)
-    })
-
-    it("Batches calls with revertOnFail false", async function () {
-      await this.b.approve(this.bentoBox.address, 2)
-
-      const addAsset = this.pair.interface.encodeFunctionData("addAsset", [1, false])
-
-      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-
-      await this.pair.batch([addAsset, accrue, accrue], false)
-
-      expect(await this.pair.balanceOf(this.alice.address)).to.be.equal(1)
-    })
-
-    it("Does not revert on fail if revertOnFail is set to false", async function () {
-      const addAsset = this.pair.interface.encodeFunctionData("addAsset", [1, false])
-
-      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-
-      await this.pair.batch([addAsset, accrue, accrue], false)
-
-      expect(await this.pair.balanceOf(this.alice.address)).to.be.equal(0)
-    })
-
-    it("Reverts on fail if revertOnFail is set to true", async function () {
-      const addAsset = this.pair.interface.encodeFunctionData("addAsset", [1, false])
-
-      const accrue = this.pair.interface.encodeFunctionData("accrue", [])
-
-      await expect(this.pair.batch([addAsset, accrue, accrue], true)).to.be.reverted
+      await this.pairHelper.run(cmd => [
+        cmd.repay(part)
+      ])   
+      await this.pairHelper.contract.withdrawFees()
+      await expect(this.pairHelper.contract.withdrawFees()).to.emit(this.pairHelper.contract, "LogWithdrawFees")
     })
   })
 
@@ -700,7 +673,7 @@ describe("Lending Pair", function () {
     it("Mutates dev", async function () {
       await this.lendingPair.setDev(this.bob.address)
       expect(await this.lendingPair.dev()).to.be.equal(this.bob.address)
-      expect(await this.pair.dev()).to.be.equal(ADDRESS_ZERO)
+      expect(await this.pairHelper.contract.dev()).to.be.equal(ADDRESS_ZERO)
     })
 
     it("Emit LogDev event if dev attempts to set dev", async function () {
@@ -708,7 +681,7 @@ describe("Lending Pair", function () {
     })
     it("Reverts if non-dev attempts to set dev", async function () {
       await expect(this.lendingPair.connect(this.bob).setDev(this.bob.address)).to.be.revertedWith("LendingPair: Not dev")
-      await expect(this.pair.connect(this.bob).setDev(this.bob.address)).to.be.revertedWith("LendingPair: Not dev")
+      await expect(this.pairHelper.contract.connect(this.bob).setDev(this.bob.address)).to.be.revertedWith("LendingPair: Not dev")
     })
   })
 
@@ -716,7 +689,7 @@ describe("Lending Pair", function () {
     it("Mutates fee to", async function () {
       await this.lendingPair.setFeeTo(this.bob.address)
       expect(await this.lendingPair.feeTo()).to.be.equal(this.bob.address)
-      expect(await this.pair.feeTo()).to.be.equal(ADDRESS_ZERO)
+      expect(await this.pairHelper.contract.feeTo()).to.be.equal(ADDRESS_ZERO)
     })
 
     it("Emit LogFeeTo event if dev attempts to set fee to", async function () {
@@ -725,8 +698,8 @@ describe("Lending Pair", function () {
 
     it("Reverts if non-owner attempts to set fee to", async function () {
       await expect(this.lendingPair.connect(this.bob).setFeeTo(this.bob.address)).to.be.revertedWith("caller is not the owner")
-      await expect(this.pair.connect(this.bob).setFeeTo(this.bob.address)).to.be.revertedWith("caller is not the owner")
+      await expect(this.pairHelper.contract.connect(this.bob).setFeeTo(this.bob.address)).to.be.revertedWith("caller is not the owner")
     })
   })
-  */
+  
 })

@@ -18,6 +18,7 @@ const ACTION_BENTO_WITHDRAW = 21;
 const ACTION_BENTO_TRANSFER = 22;
 const ACTION_BENTO_TRANSFER_MULTIPLE = 23;
 const ACTION_BENTO_SETAPPROVAL = 24;
+const ACTION_GET_REPAY_SHARE = 30;
 
 class LendingPair {
     constructor(contract, helper) {
@@ -65,14 +66,20 @@ class LendingPair {
         const commands = commandsFunction(this.cmd);
         for (let i=0; i < commands.length; i++) {
             if (typeof(commands[i]) == "object" && commands[i].type == "LendingPairCmd") {
-                console.log("RUN CMD: ", commands[i].method, commands[i].params)
-                await this.sync();
-                await commands[i].pair[commands[i].method](...commands[i].params);
+                //console.log("RUN CMD: ", commands[i].method, commands[i].params, commands[i].as ? commands[i].as.address : "")
+                let pair = commands[i].pair;
+                if (commands[i].as) {
+                    pair = await pair.as(commands[i].as);
+                }
+                await pair.sync();
+                let tx = await pair[commands[i].method](...commands[i].params);
+                let receipt = await tx.wait();
+                console.log("Gas used: ", receipt.gasUsed.toString());
             } else if (typeof(commands[i]) == "object" && commands[i].type == "LendingPairDo") {
-                console.log("RUN DO: ", commands[i].method, commands[i].params)
+                //console.log("RUN DO: ", commands[i].method, commands[i].params)
                 await commands[i].method(...commands[i].params);
             } else {
-                console.log("RUN: ", commands[i])
+                //console.log("RUN: ", commands[i])
                 await commands[i];
             }
         }
@@ -98,16 +105,10 @@ class LendingPair {
     }
 
     withdrawCollateral(share) {
-        return this.contract.cook(
-            [ACTION_REMOVE_COLLATERAL, ACTION_BENTO_WITHDRAW], [0, 0], [
-                defaultAbiCoder.encode(
-                    ["int256", "address"],
-                    [share, addr(this.contract.signer)]
-                  ),
-                defaultAbiCoder.encode(
-                ["address", "address", "int256", "int256"],
-                [this.collateral.address, addr(this.contract.signer), 0, share]
-              ),  ]
+        return this.contract.cook([ACTION_REMOVE_COLLATERAL, ACTION_BENTO_WITHDRAW], [0, 0], [
+                defaultAbiCoder.encode(["int256", "address"], [share, addr(this.contract.signer)]),
+                defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.collateral.address, addr(this.contract.signer), 0, share])
+            ]
         );
     }
 
@@ -137,47 +138,85 @@ class LendingPair {
     }
 
     repay(part) {
-        let amount = this.info.pairBorrowPart == 0 ? part : part.mul(this.info.pairBorrowAmount).div(this.info.pairBorrowPart)
-        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_REPAY], [0, 0], [defaultAbiCoder.encode(
-            ["address", "address", "int256", "int256"],
-            [this.asset.address, addr(this.contract.signer), amount, 0]
-          ), defaultAbiCoder.encode(
-            ["int256", "address", "bool"],
-            [part, addr(this.contract.signer), false]
-          ), ]
-        );
+        return this.contract.cook( [ACTION_GET_REPAY_SHARE, ACTION_BENTO_DEPOSIT, ACTION_REPAY], [0, 0], [
+            defaultAbiCoder.encode(["uint256"], [part]),
+            defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), -1, 0]),
+            defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false])
+        ]);
+    }
+
+    repayFromBento(part) {
+        return this.contract.repay(addr(this.contract.signer), false, part)
     }
 
     borrow(amount) {
-        /*let amount = this.info.pairBorrowPart == 0 ? part : part.mul(this.info.pairBorrowAmount).div(this.info.pairBorrowPart)
-        return this.contract.batch(
-            [this.contract.interface.encodeFunctionData("deposit", [this.asset.address, addr(this.contract.signer), 0, amount]),
-            this.contract.interface.encodeFunctionData("repay", [part, addr(this.contract.signer), false])], true
-        );*/
+        return this.contract.cook( [ACTION_BORROW, ACTION_BENTO_WITHDRAW], [0, 0], [
+            defaultAbiCoder.encode(["uint256", "address"], [amount, addr(this.contract.signer)]),
+            defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), 0, -2])
+        ])
+    }
+
+    short(swapper, part, minimumAmount) {
+        let data = swapper.interface.encodeFunctionData("swap", [this.asset.address, this.collateral.address, addr(this.contract.signer), minimumAmount, "115792089237316195423570985008687907853269984665640564039457584007913129639935"]);
+        console.log(data.slice(0, -64));
+        return this.contract.cook( [ACTION_GET_REPAY_SHARE, ACTION_BORROW, ACTION_BENTO_TRANSFER, ACTION_CALL, ACTION_ADD_COLLATERAL], [0, 0], [
+            defaultAbiCoder.encode(["uint256"], [part]),
+            defaultAbiCoder.encode(["int256", "address"], [-1, addr(this.contract.signer)]),
+            defaultAbiCoder.encode(["address", "address", "int256"], [this.asset.address, swapper.address, -2]),
+            defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [swapper.address, data.slice(0, -64), false, true, 2]),
+            defaultAbiCoder.encode(["int256", "address", "bool"], [-2, addr(this.contract.signer), false]),
+        ])
+    }
+
+    unwind(swapper, fraction, minimumAmount) {
+        let data = swapper.interface.encodeFunctionData("swap", [this.collateral.address, this.asset.address, addr(this.contract.signer), minimumAmount, "115792089237316195423570985008687907853269984665640564039457584007913129639935"]);
+        console.log(data.slice(0, -64));
+        return this.contract.cook( [ACTION_REMOVE_COLLATERAL, ACTION_BENTO_TRANSFER, ACTION_CALL, ACTION_REPAY], [0, 0], [
+            defaultAbiCoder.encode(["int256", "address"], [share, addr(this.contract.signer)]),
+            defaultAbiCoder.encode(["address", "address", "int256"], [this.asset.address, swapper.address, -2]),
+            defaultAbiCoder.encode(["int256", "address"], [-1, addr(this.contract.signer)]),
+            defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false])
+        ])
+    }
+
+    accrue() {
+        return this.contract.accrue();
+    }
+
+    updateExchangeRate() {
+        return this.contract.updateExchangeRate();
     }
 }
 
 Object.defineProperty(LendingPair.prototype, "cmd", {
     get: function () {
-        return new Proxy(this, {
-            get: function (target, method) {
-                return function(...params) {
-                    if (method == "do") {
+        function proxy(pair, as) {
+            return new Proxy(pair, {
+                get: function (target, method) {
+                    return function(...params) {
+                        if (method == "do") {
+                            return {
+                                type: "LendingPairDo",
+                                method: params[0],
+                                params: params.slice(1)
+                            }
+                        }
+                        if (method == "as") {
+                            return proxy(pair, params[0]);
+                        }
                         return {
-                            type: "LendingPairDo",
-                            method: params[0],
-                            params: params.slice(1)         
+                            type: "LendingPairCmd",
+                            pair: target,
+                            method: method,
+                            params: params,
+                            as: as
                         }
                     }
-                    return {
-                        type: "LendingPairCmd",
-                        pair: target,
-                        method: method,
-                        params: params
-                    }
                 }
-            }
-        });
+            });
+        }
+
+        return proxy(this);
     }
 });
 

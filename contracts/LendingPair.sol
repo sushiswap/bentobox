@@ -25,6 +25,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol";
+import "hardhat/console.sol";
 import "./interfaces/IOracle.sol";
 import "./BentoBoxPlus.sol";
 import "./interfaces/ISwapper.sol";
@@ -87,7 +88,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
     AccrueInfo public accrueInfo;
 
     // ERC20 'variables'
-    function symbol() public view returns(string memory) {
+    function symbol() external view returns(string memory) {
         (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x95d89b41));
         string memory assetSymbol = success && data.length > 0 ? abi.decode(data, (string)) : "???";
 
@@ -97,7 +98,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         return string(abi.encodePacked("bm", collateralSymbol, ">", assetSymbol, "-", oracle.symbol(oracleData)));
     }
 
-    function name() public view returns(string memory) {
+    function name() external view returns(string memory) {
         (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x06fdde03));
         string memory assetName = success && data.length > 0 ? abi.decode(data, (string)) : "???";
 
@@ -107,19 +108,19 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         return string(abi.encodePacked("Bento Med Risk ", collateralName, ">", assetName, "-", oracle.symbol(oracleData)));
     }
 
-    function decimals() public view returns (uint8) {
+    function decimals() external view returns (uint8) {
         (bool success, bytes memory data) = address(asset).staticcall(abi.encodeWithSelector(0x313ce567));
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
     event LogExchangeRate(uint256 rate);
     event LogAccrue(uint256 accruedAmount, uint256 feeFraction, uint256 rate, uint256 utilization);
-    event LogAddCollateral(address indexed user, uint256 share);
-    event LogAddAsset(address indexed user, uint256 share, uint256 fraction);
-    event LogAddBorrow(address indexed user, uint256 amount, uint256 part);
-    event LogRemoveCollateral(address indexed user, uint256 share);
-    event LogRemoveAsset(address indexed user, uint256 share, uint256 fraction);
-    event LogRemoveBorrow(address indexed user, uint256 amount, uint256 part);
+    event LogAddCollateral(address indexed from, address indexed to, uint256 share);
+    event LogAddAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
+    event LogRemoveCollateral(address indexed from, address indexed to, uint256 share);
+    event LogRemoveAsset(address indexed from, address indexed to, uint256 share, uint256 fraction);
+    event LogBorrow(address indexed from, address indexed to, uint256 amount, uint256 part);
+    event LogRepay(address indexed from, address indexed to, uint256 amount, uint256 part);
     event LogFeeTo(address indexed newFeeTo);
     event LogWithdrawFees(address indexed feeTo, uint256 feesEarnedFraction);
 
@@ -251,15 +252,15 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
     }
 
     // Gets the exchange rate. How much collateral to buy 1e18 asset.
-    function updateExchangeRate() public returns (uint256) {
-        (bool success, uint256 rate) = oracle.get(oracleData);
+    function updateExchangeRate() public returns (bool success) {
+        uint256 rate;
+        (success, rate) = oracle.get(oracleData);
 
         // TODO: How to deal with unsuccessful fetch
         if (success) {
             exchangeRate = rate;
             emit LogExchangeRate(rate);
         }
-        return exchangeRate;
     }
 
     function _addTokens(IERC20 token, uint256 share, uint256 total, bool skim) internal {
@@ -274,13 +275,13 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         userCollateralShare[to] = userCollateralShare[to].add(share);
         totalCollateralShare = totalCollateralShare.add(share);
         _addTokens(collateral, share, totalCollateralShare, skim);
-        emit LogAddCollateral(to, share);
+        emit LogAddCollateral(skim ? address(bentoBox) : msg.sender, to, share);
     }
 
     function _removeCollateral(address to, uint256 share) internal {
         userCollateralShare[msg.sender] = userCollateralShare[msg.sender].sub(share);
         totalCollateralShare = totalCollateralShare.sub(share);
-        emit LogRemoveCollateral(msg.sender, share);
+        emit LogRemoveCollateral(msg.sender, to, share);
         bentoBox.transfer(collateral, address(this), to, share);
     }
 
@@ -293,7 +294,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         (totalAsset, fraction) = totalAsset.add(share);
         balanceOf[to] = balanceOf[to].add(fraction);
         _addTokens(asset, share, totalAsset.elastic, skim);
-        emit LogAddAsset(to, share, fraction);
+        emit LogAddAsset(skim ? address(bentoBox) : msg.sender, to, share, fraction);
     }
 
     function addAsset(address to, bool skim, uint256 share) public returns (uint256 fraction) {
@@ -304,7 +305,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
         (totalAsset, share) = totalAsset.sub(fraction);
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
-        emit LogRemoveAsset(msg.sender, share, fraction);
+        emit LogRemoveAsset(msg.sender, to, share, fraction);
         bentoBox.transfer(asset, address(this), to, share);
     }
 
@@ -313,28 +314,28 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         share = _removeAsset(to, fraction);
     }
 
-    function _borrow(address to, uint256 amount) internal returns (uint256 part, uint256 actualAmount) {
+    function _borrow(address to, uint256 amount) internal returns (uint256 part, uint256 share) {
         uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / 1e5; // A flat % fee is charged for any borrow
         totalAsset.elastic = totalAsset.elastic.add(bentoBox.toShare(asset, feeAmount).to128());
         
         (totalBorrow, part) = totalBorrow.add(amount.add(feeAmount));
         userBorrowPart[to] = userBorrowPart[to].add(part);
-        emit LogAddBorrow(msg.sender, amount.add(feeAmount), part);
+        emit LogBorrow(msg.sender, to, amount.add(feeAmount), part);
 
-        actualAmount = bentoBox.toShare(asset, amount);
-        bentoBox.transfer(asset, address(this), to, actualAmount);
+        share = bentoBox.toShare(asset, amount);
+        bentoBox.transfer(asset, address(this), to, share);
     }
 
-    function borrow(address to, uint256 amount) public solvent returns (uint256 part, uint256 actualAmount) {
+    function borrow(address to, uint256 amount) public solvent returns (uint256 part, uint256 share) {
         accrue();
-        (part, actualAmount) = _borrow(to, amount);
+        (part, share) = _borrow(to, amount);
     }
 
     function _repay(address to, bool skim, uint256 part) internal returns (uint256 amount) {
         (totalBorrow, amount) = totalBorrow.sub(part);
         userBorrowPart[to] = userBorrowPart[to].sub(part);
         _addTokens(asset, bentoBox.toShare(asset, amount), totalAsset.elastic, skim);
-        emit LogRemoveBorrow(msg.sender, amount, part);    
+        emit LogRepay(skim ? address(bentoBox) : msg.sender, to, amount, part);    
     }
 
     function repay(address to, bool skim, uint256 part) public returns (uint256 amount) {
@@ -354,6 +355,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
     uint8 constant internal ACTION_BENTO_TRANSFER = 22;
     uint8 constant internal ACTION_BENTO_TRANSFER_MULTIPLE = 23;
     uint8 constant internal ACTION_BENTO_SETAPPROVAL = 24;
+    uint8 constant internal ACTION_GET_REPAY_SHARE = 30;
 
     function _num(int256 inNum, uint256 value1, uint256 value2) internal pure returns (uint256 outNum) {
         if (inNum >= 0) {
@@ -389,22 +391,21 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         return bentoBox.withdraw(token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
     }
 
-    function _call(bytes memory data, uint256 value, uint256 value1, uint256 value2) internal returns (uint256, uint256) {
-        (address callee, bytes memory callData, bool useValue1, bool useValue2, uint8 returnValues) 
-            = abi.decode(data, (address, bytes, bool, bool, uint8));
-        if (callee != address(bentoBox)) {
-            // TODO: Does encodePacked do the right thing here? 
-            // TODO: What happens if we call a function with too many params?
-            if (useValue1 && !useValue2) { callData = abi.encodePacked(callData, value1); }
-            else if (!useValue1 && useValue2) { callData = abi.encodePacked(callData, value2); }
-            else if (useValue1 && useValue2) { callData = abi.encodePacked(callData, value1, value2); }
-            (bool success, bytes memory returnData) = callee.call{value: value}(callData);
-            require(success, _getRevertMsg(returnData));
-            // TODO: validate return
-            if (returnValues == 1) { return (abi.decode(returnData, (uint256)), value2); }
-            else if (returnValues == 2) { return abi.decode(returnData, (uint256, uint256)); }
-            return (value1, value2);
-        }        
+    function _callData(bytes memory callData, bool useValue1, bool useValue2, uint256 value1, uint256 value2) internal pure returns (bytes memory callDataOut) {
+        if (useValue1 && !useValue2) { callDataOut = abi.encodePacked(callData, value1); }
+        else if (!useValue1 && useValue2) { callDataOut = abi.encodePacked(callData, value2); }
+        else if (useValue1 && useValue2) { callDataOut = abi.encodePacked(callData, value1, value2); }
+        else { callDataOut = callData; }
+    }
+
+    function _call(uint256 value, address callee, bytes memory callData) internal returns (bytes memory) {
+        require(callee != address(bentoBox), "LendingPair: can't call BentoBox");
+
+        // TODO: Does encodePacked do the right thing here? 
+        // TODO: What happens if we call a function with too many params?
+        (bool success, bytes memory returnData) = callee.call{value: value}(callData);
+        require(success, _getRevertMsg(returnData));
+        return returnData;
     }
 
     function cook(
@@ -414,6 +415,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
         bool needsSolvencyCheck;
         for(uint256 i = 0; i < actions.length; i++) {
             uint8 action = actions[i];
+            console.log("Action:", actions[i], value1, value2);
             if (action == ACTION_ADD_COLLATERAL) {
                 (int256 share, address to, bool skim) = abi.decode(datas[i], (int256, address, bool));
                 addCollateral(to, skim, _num(share, value1, value2));
@@ -437,7 +439,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
 
             } else if (action == ACTION_BORROW) {
                 (int256 amount, address to) = abi.decode(datas[i], (int256, address));
-                _borrow(to, _num(amount, value1, value2));
+                (value1, value2) = _borrow(to, _num(amount, value1, value2));
                 needsSolvencyCheck = true;
 
             } else if (action == ACTION_BENTO_SETAPPROVAL) {
@@ -452,7 +454,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
                 (value1, value2) = _bentoWithdraw(datas[i], value1, value2);
 
             } else if (action == ACTION_BENTO_TRANSFER) {
-                (IERC20 token, address to,int256 share) = abi.decode(datas[i], (IERC20, address, int256));
+                (IERC20 token, address to, int256 share) = abi.decode(datas[i], (IERC20, address, int256));
                 bentoBox.transfer(token, msg.sender, to, _num(share, value1, value2));
 
             } else if (action == ACTION_BENTO_TRANSFER_MULTIPLE) {
@@ -460,7 +462,19 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
                 bentoBox.transferMultiple(token, msg.sender, tos, shares);
 
             } else if (action == ACTION_CALL) {
-                (value1, value2) = _call(datas[i], values[i], value1, value2);
+                (address callee, bytes memory callData, bool useValue1, bool useValue2, uint8 returnValues)
+                    = abi.decode(datas[i], (address, bytes, bool, bool, uint8));
+                callData = _callData(callData, useValue1, useValue2, value1, value2);
+                bytes memory returnData = _call(values[1], callee, callData);
+
+                console.log("ReturnValues:", returnValues);
+                console.logBytes(returnData);
+                if (returnValues == 1) { (value1) = abi.decode(returnData, (uint256)); }
+                else if (returnValues == 2) { (value1, value2) = abi.decode(returnData, (uint256, uint256)); }
+
+            } else if (action == ACTION_GET_REPAY_SHARE) {
+                (uint256 part) = abi.decode(datas[i], (uint256));
+                value1 = totalBorrow.toElastic(part);
             }
         }
 
@@ -472,7 +486,6 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
     // Handles the liquidation of users' balances, once the users' amount of collateral is too low
     function liquidate(address[] calldata users, uint256[] calldata borrowParts, address to, ISwapper swapper, bool open) public {
         accrue();
-        updateExchangeRate();
 
         uint256 allCollateralShare = 0;
         uint256 allBorrowAmount = 0;
@@ -488,8 +501,8 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
 
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
                 userBorrowPart[user] = userBorrowPart[user].sub(borrowPart);
-                emit LogRemoveCollateral(user, collateralShare);
-                emit LogRemoveBorrow(user, borrowAmount, borrowPart);
+                emit LogRemoveCollateral(user, open ? to : address(swapper), collateralShare);
+                emit LogRepay(open ? to : msg.sender, user, borrowAmount, borrowPart);
 
                 // Keep totals
                 allCollateralShare = allCollateralShare.add(collateralShare);
@@ -509,7 +522,7 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
 
             // Swaps the users' collateral for the borrowed asset
             bentoBox.transfer(collateral, address(this), address(swapper), allCollateralShare);
-            swapper.swap(collateral, asset, allCollateralShare, allBorrowAmount, address(this));
+            swapper.swap(collateral, asset, address(this), allBorrowAmount, allCollateralShare);
             
             uint256 extraShare = bentoBox.balanceOf(asset, address(this))
                 .sub(totalAsset.elastic)
@@ -518,13 +531,13 @@ contract LendingPair is BentoBoxPlusProxy, ERC20, BoringOwnable, IMasterContract
             uint256 feeShare = extraShare.mul(PROTOCOL_FEE) / 1e5; // % of profit goes to fee
             totalAsset.elastic = totalAsset.elastic.add(extraShare.sub(feeShare).to128());
             bentoBox.transfer(asset, address(this), LendingPair(masterContract).feeTo(), feeShare);
-            emit LogAddAsset(address(0), extraShare.sub(feeShare), 0);
+            emit LogAddAsset(address(swapper), address(this), extraShare.sub(feeShare), 0);
         } else {
             // Swap using a swapper freely chosen by the caller
             // Open (flash) liquidation: get proceeds first and provide the borrow after
             bentoBox.transfer(collateral, address(this), to, allCollateralShare);
             if (swapper != ISwapper(0)) {
-                swapper.swap(collateral, asset, allCollateralShare, allBorrowAmount, msg.sender);
+                swapper.swap(collateral, asset, msg.sender, allBorrowAmount, allCollateralShare);
             }
 
             bentoBox.transfer(asset, msg.sender, address(this), allBorrowAmount);

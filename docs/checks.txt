@@ -54,6 +54,7 @@ C21 - Are all state variables read from the correct contract: master vs. clone
 C22 - Is > or < or >= or <= correct
 C23 - Are logical operators correct ==, !=, &&, ||, !
 C24 - Always mul before div, unless mul could overflow.
+C25 - Magic numbers > define as constant with useful name.
 
 Calls in Functions
 X1 - Is the result checked and errors dealt with? (SWC-104)

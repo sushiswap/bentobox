@@ -11,9 +11,8 @@ interface ISwapper {
     // (The BentoBox skim function will be used by the caller to get the swapped funds)
     function swap(
         IERC20 fromToken, IERC20 toToken, 
-        uint256 shareFrom, uint256 amountToMin, 
-        address recipient
-    ) external returns (uint256 extraAmount);
+        address recipient, uint256 amountToMin, uint256 shareFrom
+    ) external returns (uint256 extraAmount, uint256 shareTo);
 
     // Calculates the amount of token 'from' needed to complete the swap (amountFrom), this should be less than or equal to amountFromMax
     // Withdraws 'amountFrom' of token 'from' from the BentoBox account for this swapper

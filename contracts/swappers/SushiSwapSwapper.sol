@@ -6,6 +6,7 @@ import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 import "../interfaces/ISwapper.sol";
 import "../BentoBoxPlus.sol";
+import "hardhat/console.sol";
 
 contract SushiSwapSwapper is ISwapper {
     using BoringMath for uint256;
@@ -35,8 +36,12 @@ contract SushiSwapSwapper is ISwapper {
 
     // Swaps to a flexible amount, from an exact input amount
     function swap(
-        IERC20 fromToken, IERC20 toToken, uint256 shareFrom, uint256 amountToMin, address recipient
-    ) public override returns (uint256 extraAmount) {
+        IERC20 fromToken, IERC20 toToken, address recipient, uint256 amountToMin, uint256 shareFrom
+    ) public override returns (uint256 extraAmount, uint256 shareTo) {
+        console.log("Swap");
+        console.log(address(fromToken), address(toToken), recipient);
+        console.log("AmountToMin:", amountToMin);
+        console.log("ShareFrom:", shareFrom);
         IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(fromToken), address(toToken)));
 
         (uint256 amountFrom, ) = bentoBox.withdraw(fromToken, address(this), address(pair), 0, shareFrom);
@@ -50,8 +55,11 @@ contract SushiSwapSwapper is ISwapper {
             amountTo = getAmountOut(amountFrom, reserve1, reserve0);
             pair.swap(amountTo, 0, address(bentoBox), new bytes(0));
         }
+        console.log("AmountTo:", amountTo);
         extraAmount = amountTo.sub(amountToMin);
-        bentoBox.deposit(toToken, address(bentoBox), recipient, 0, 0);
+        console.log("ExtraAmount:", extraAmount);
+        (, shareTo) = bentoBox.deposit(toToken, address(bentoBox), recipient, amountTo, 0);
+        console.log("shareTo:", shareTo);
     }
 
     // Swaps to an exact amount, from a flexible input amount

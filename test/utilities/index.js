@@ -176,7 +176,7 @@ async function deploymentsFixture(thisObject, stepsFunction) {
   thisObject.weth9 = await ethers.getContract("WETH9Mock")
   thisObject.bentoBox = await ethers.getContract("BentoBoxPlus")
   thisObject.factory = await ethers.getContract("SushiSwapFactoryMock")
-  thisObject.lendingPair = await ethers.getContract("LendingPair")
+  thisObject.lendingPair = await ethers.getContract("LendingPairMock")
   thisObject.peggedOracle = await ethers.getContract("PeggedOracle")  
   thisObject.swapper = await ethers.getContract("SushiSwapSwapper")
   thisObject.oracle = await ethers.getContract("OracleMock")  
