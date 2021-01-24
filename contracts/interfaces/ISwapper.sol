@@ -22,9 +22,11 @@ interface ISwapper {
     // Returns the amount of 'from' tokens withdrawn from BentoBox (amountFrom)
     // (The BentoBox skim function will be used by the caller to get the swapped funds)
     function swapExact(
-        IERC20 fromToken, IERC20 toToken,
-        uint256 amountFromMax, uint256 exactAmountTo,
-        address recipient,
-        address refundTo
-    ) external returns (uint256 amountFrom);
+        IERC20 fromToken, 
+        IERC20 toToken, 
+        address recipient, 
+        address refundTo, 
+        uint256 shareFromSupplied, 
+        uint256 shareToExact
+    ) external returns (uint256 shareUsed, uint256 shareReturned);
 }

@@ -38,10 +38,6 @@ contract SushiSwapSwapper is ISwapper {
     function swap(
         IERC20 fromToken, IERC20 toToken, address recipient, uint256 amountToMin, uint256 shareFrom
     ) public override returns (uint256 extraAmount, uint256 shareTo) {
-        console.log("Swap");
-        console.log(address(fromToken), address(toToken), recipient);
-        console.log("AmountToMin:", amountToMin);
-        console.log("ShareFrom:", shareFrom);
         IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(fromToken), address(toToken)));
 
         (uint256 amountFrom, ) = bentoBox.withdraw(fromToken, address(this), address(pair), 0, shareFrom);
@@ -55,36 +51,31 @@ contract SushiSwapSwapper is ISwapper {
             amountTo = getAmountOut(amountFrom, reserve1, reserve0);
             pair.swap(amountTo, 0, address(bentoBox), new bytes(0));
         }
-        console.log("AmountTo:", amountTo);
         extraAmount = amountTo.sub(amountToMin);
-        console.log("ExtraAmount:", extraAmount);
         (, shareTo) = bentoBox.deposit(toToken, address(bentoBox), recipient, amountTo, 0);
-        console.log("shareTo:", shareTo);
     }
 
     // Swaps to an exact amount, from a flexible input amount
     function swapExact(
-        IERC20 from, IERC20 to, uint256 amountFromMax, uint256 exactAmountTo, address recipient, address refundTo
-    ) public override returns (uint256) {
-        /*IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(from), address(to)));
-
+        IERC20 fromToken, IERC20 toToken, address recipient, address refundTo, uint256 shareFromSupplied, uint256 shareToExact
+    ) public override returns (uint256 shareUsed, uint256 shareReturned) {
+        IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(fromToken), address(toToken)));
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
-*/
-        uint256 amountFrom;
-        /*if (pair.token0() == address(from)) {
-            amountFrom = getAmountIn(exactAmountTo, reserve0, reserve1);
-            require(amountFrom <= amountFromMax, "SushiSwapSwapper: not enough");
-            bentoBox.withdraw(from, address(pair), amountFrom, 0);
-            pair.swap(0, exactAmountTo, address(bentoBox), new bytes(0));
-        } else {
-            amountFrom = getAmountIn(exactAmountTo, reserve1, reserve0);
-            require(amountFrom <= amountFromMax, "SushiSwapSwapper: not enough");
-            bentoBox.withdraw(from, address(pair), amountFrom, 0);
-            pair.swap(exactAmountTo, 0, address(bentoBox), new bytes(0));
-        }
 
-        bentoBox.transferFrom(from, address(this), refundTo, amountFromMax.sub(amountFrom));
-*/
-        return amountFrom;
+        uint256 amountToExact = bentoBox.toAmount(toToken, shareToExact);
+
+        uint256 amountFrom;
+        if (pair.token0() == address(fromToken)) {
+            amountFrom = getAmountIn(amountToExact, reserve0, reserve1);
+            (, shareUsed) = bentoBox.withdraw(fromToken, address(this), address(pair), amountFrom, 0);
+            pair.swap(0, amountToExact, address(bentoBox), "");
+        } else {
+            amountFrom = getAmountIn(amountToExact, reserve1, reserve0);
+            (, shareUsed) = bentoBox.withdraw(fromToken, address(this), address(pair), amountFrom, 0);
+            pair.swap(amountToExact, 0, address(bentoBox), "");
+        }
+        bentoBox.deposit(toToken, address(bentoBox), recipient, 0, shareToExact);
+        shareReturned = shareFromSupplied.sub(shareUsed);
+        bentoBox.transfer(fromToken, address(this), refundTo, shareReturned);
     }
 }

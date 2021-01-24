@@ -9,37 +9,20 @@ describe("BentoBoxPlus", function () {
   })
 
   beforeEach(async function () {
-    await deploymentsFixture()
+    await deploymentsFixture(this, async cmd => {
+      this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
+      this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
+    })
 
-    this.weth9 = await ethers.getContract("WETH9Mock")
-
-    this.bentoBox = await ethers.getContract("BentoBoxPlus")
-
-    await deploy(this, [['flashLoaner', this.FlashLoanerMock], 
-                  ["sneakyFlashLoaner", this.SneakyFlashLoanerMock]])
+    await deploy(this, [
+      ['flashLoaner', this.FlashLoanerMock], 
+      ["sneakyFlashLoaner", this.SneakyFlashLoanerMock]
+    ])
 
     this.erc20 = await this.ERC20Mock.deploy(10000000)
     await this.erc20.deployed()
 
-    this.a = await this.ReturnFalseERC20Mock.deploy("Token A", "A", getBigNumber(10))
-
-    await this.a.deployed()
-
-    this.b = await this.RevertingERC20Mock.deploy("Token B", "B", getBigNumber(10))
-
-    await this.b.deployed()
-
-    // Alice has all tokens for a and b since creator
-
-    // await this.a.transfer(this.alice.address, parseUnits("1000"));
-
-    // Bob has 1000 b tokens
     await this.b.transfer(this.bob.address, getBigNumber(1))
-
-    this.lendingPair = await ethers.getContract("LendingPair")
-
-    this.peggedOracle = await ethers.getContract("PeggedOracle")
-
   })
 
   describe("Deploy", function () {
@@ -191,15 +174,18 @@ describe("BentoBoxPlus", function () {
     })
 
     it("Mutates balanceOf of Token and BentoBox correctly", async function () {
+      const startBal = await this.a.balanceOf(this.alice.address);
       await this.a.approve(this.bentoBox.address, getBigNumber(1))
+      await this.a.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1))
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+      await this.bentoBox.connect(this.bob).deposit(this.a.address, this.bob.address, this.bob.address, getBigNumber(1), 0)
       
-      await this.bentoBox.withdraw(this.a.address, this.alice.address, this.alice.address, sansSafetyAmount(getBigNumber(1)), 0)
+      await this.bentoBox.withdraw(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
 
-      expect(await this.a.balanceOf(this.alice.address), "alice should have all of their tokens back").to.equal(sansSafetyAmount(getBigNumber(10)))
+      expect(await this.a.balanceOf(this.alice.address), "alice should have all of their tokens back").to.equal(startBal)
 
-      expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address), "token should be withdrawn").to.equal(100000)
+      expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address), "token should be withdrawn").to.equal(0)
     })
 
     it("Mutates balanceOf on BentoBox for WETH correctly", async function () {
@@ -246,13 +232,14 @@ describe("BentoBoxPlus", function () {
 
   describe("Withdraw From", function () {
     it("Mutates bentoBox balanceOf and token balanceOf for from and to correctly", async function () {
+      const bobStartBalance = await this.a.balanceOf(this.bob.address);
       await this.a.approve(this.bentoBox.address, getBigNumber(1))
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
 
       await this.bentoBox.withdraw(this.a.address, this.alice.address, this.bob.address, 1, 0)
 
-      expect(await this.a.balanceOf(this.bob.address), "bob should have received their tokens").to.be.equal(1)
+      expect(await this.a.balanceOf(this.bob.address), "bob should have received their tokens").to.be.equal(bobStartBalance.add(1))
 
     })
   })
@@ -368,7 +355,7 @@ describe("BentoBoxPlus", function () {
 
       await this.a.approve(this.bentoBox.address, 1)
 
-      await expect(pair.addAsset(1, this.bob.address, false)).to.be.revertedWith(
+      await expect(pair.addAsset(this.bob.address, false, 1)).to.be.revertedWith(
         "BentoBox: Transfer not approved"
       )
     })
@@ -393,7 +380,7 @@ describe("BentoBoxPlus", function () {
 
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 1)
 
-      await pair.addCollateral(1, this.alice.address, false)
+      await pair.addCollateral(this.alice.address, false, 1)
 
       expect(await this.bentoBox.balanceOf(this.a.address, pair.address)).to.be.equal(1)
     })

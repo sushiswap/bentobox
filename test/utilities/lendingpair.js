@@ -1,8 +1,9 @@
-const { ADDRESS_ZERO, addr, getBigNumber } = require(".")
 const {
-    utils: { defaultAbiCoder},
+    utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
   } = require("ethers")
+const { ADDRESS_ZERO, addr, getBigNumber } = require(".")
 const ethers = require('ethers')
+const { ecsign } = require("ethereumjs-util")
 
 const ERC20abi = [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_owner","type":"address"},{"indexed":true,"internalType":"address","name":"_spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"DOMAIN_SEPARATOR","outputs":[{"internalType":"bytes32","name":"","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"nonces","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner_","type":"address"},{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"uint256","name":"deadline","type":"uint256"},{"internalType":"uint8","name":"v","type":"uint8"},{"internalType":"bytes32","name":"r","type":"bytes32"},{"internalType":"bytes32","name":"s","type":"bytes32"}],"name":"permit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"}]
 
@@ -18,7 +19,9 @@ const ACTION_BENTO_WITHDRAW = 21;
 const ACTION_BENTO_TRANSFER = 22;
 const ACTION_BENTO_TRANSFER_MULTIPLE = 23;
 const ACTION_BENTO_SETAPPROVAL = 24;
-const ACTION_GET_REPAY_SHARE = 30;
+const ACTION_PERMIT = 30;
+const ACTION_GET_REPAY_SHARE = 40;
+const ACTION_GET_REPAY_PART = 41;
 
 class LendingPair {
     constructor(contract, helper) {
@@ -45,7 +48,7 @@ class LendingPair {
     }
 
     async sync() {
-        this.info = {
+        /*this.info = {
             totalAssetAmount: (await this.bentoBox.totals(this.asset.address)).elastic,
             totalAssetShare: (await this.bentoBox.totals(this.asset.address)).base,
             totalCollateralAmount: (await this.bentoBox.totals(this.collateral.address)).elastic,
@@ -54,7 +57,7 @@ class LendingPair {
             pairAssetFraction: (await this.contract.totalAsset()).base,
             pairBorrowAmount: (await this.contract.totalBorrow()).elastic,
             pairBorrowPart: (await this.contract.totalBorrow()).base
-        }
+        }*/
         return this;
     }
 
@@ -74,7 +77,7 @@ class LendingPair {
                 await pair.sync();
                 let tx = await pair[commands[i].method](...commands[i].params);
                 let receipt = await tx.wait();
-                console.log("Gas used: ", receipt.gasUsed.toString());
+                //console.log("Gas used: ", receipt.gasUsed.toString());
             } else if (typeof(commands[i]) == "object" && commands[i].type == "LendingPairDo") {
                 //console.log("RUN DO: ", commands[i].method, commands[i].params)
                 await commands[i].method(...commands[i].params);
@@ -83,6 +86,47 @@ class LendingPair {
                 await commands[i];
             }
         }
+    }
+
+    getDomainSeparator(tokenAddress, chainId) {
+        return keccak256(
+            defaultAbiCoder.encode(
+                ["bytes32", "uint256", "address"],
+                [keccak256(toUtf8Bytes("EIP712Domain(uint256 chainId,address verifyingContract)")), chainId, tokenAddress]
+            )
+        )
+    }    
+
+    getApprovalDigest(token, approve, nonce, deadline, chainId = 1) {
+        const PERMIT_TYPEHASH = keccak256(toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
+        const DOMAIN_SEPARATOR = this.getDomainSeparator(token.address, chainId)
+        const msg = defaultAbiCoder.encode(
+          ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
+          [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]
+        )
+        const pack = solidityPack(["bytes1", "bytes1", "bytes32", "bytes32"], ["0x19", "0x01", DOMAIN_SEPARATOR, keccak256(msg)])
+        return keccak256(pack)
+    }
+
+    tokenPermit(token, owner, owner_key, amount, nonce, deadline) {
+        const digest = this.getApprovalDigest(
+          token,
+          {
+            owner: addr(owner),
+            spender: addr(this.bentoBox),
+            value: amount,
+          },
+          nonce,
+          deadline,
+          owner.provider._network.chainId
+        )
+        const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(owner_key.replace("0x", ""), "hex"))
+
+        //return token.permit(addr(owner), addr(this.bentoBox), amount, deadline, v, r, s);
+        let data = token.interface.encodeFunctionData("permit", [addr(owner), addr(this.bentoBox), amount, deadline, v, r, s]);
+        return this.contract.cook([ACTION_CALL], [0], [
+            defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [addr(token), data, false, false, 0])
+        ]);
     }
 
     approveAsset(amount) {
@@ -94,14 +138,10 @@ class LendingPair {
     }
     
     depositCollateral(amount) {
-        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_ADD_COLLATERAL], [0, 0], [defaultAbiCoder.encode(
-            ["address", "address", "int256", "int256"],
-            [this.collateral.address, addr(this.contract.signer), amount, 0]
-          ), defaultAbiCoder.encode(
-            ["int256", "address", "bool"],
-            [-2, addr(this.contract.signer), false]
-          ), ]
-        );
+        return this.contract.cook( [ACTION_BENTO_DEPOSIT, ACTION_ADD_COLLATERAL], [0, 0], [
+            defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.collateral.address, addr(this.contract.signer), amount, 0]), 
+            defaultAbiCoder.encode(["int256", "address", "bool"], [-2, addr(this.contract.signer), false])
+        ]);
     }
 
     withdrawCollateral(share) {
@@ -126,20 +166,15 @@ class LendingPair {
     withdrawAsset(fraction) {
         return this.contract.cook(
             [ACTION_REMOVE_ASSET, ACTION_BENTO_WITHDRAW], [0, 0], [
-                defaultAbiCoder.encode(
-                    ["int256", "address"],
-                    [fraction, addr(this.contract.signer)]
-                  ),
-                defaultAbiCoder.encode(
-                ["address", "address", "int256", "int256"],
-                [this.asset.address, addr(this.contract.signer), 0, -1]
-              ),  ]
+                defaultAbiCoder.encode(["int256", "address"], [fraction, addr(this.contract.signer)]),
+                defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), 0, -1])
+            ]
         );
     }
 
     repay(part) {
-        return this.contract.cook( [ACTION_GET_REPAY_SHARE, ACTION_BENTO_DEPOSIT, ACTION_REPAY], [0, 0], [
-            defaultAbiCoder.encode(["uint256"], [part]),
+        return this.contract.cook( [ACTION_GET_REPAY_SHARE, ACTION_BENTO_DEPOSIT, ACTION_REPAY], [0, 0, 0], [
+            defaultAbiCoder.encode(["int256"], [part]),
             defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), -1, 0]),
             defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false])
         ]);
@@ -156,26 +191,29 @@ class LendingPair {
         ])
     }
 
-    short(swapper, part, minimumAmount) {
-        let data = swapper.interface.encodeFunctionData("swap", [this.asset.address, this.collateral.address, addr(this.contract.signer), minimumAmount, "115792089237316195423570985008687907853269984665640564039457584007913129639935"]);
-        console.log(data.slice(0, -64));
-        return this.contract.cook( [ACTION_GET_REPAY_SHARE, ACTION_BORROW, ACTION_BENTO_TRANSFER, ACTION_CALL, ACTION_ADD_COLLATERAL], [0, 0], [
-            defaultAbiCoder.encode(["uint256"], [part]),
-            defaultAbiCoder.encode(["int256", "address"], [-1, addr(this.contract.signer)]),
+    short(swapper, share, minAmount) {
+        let data = swapper.interface.encodeFunctionData("swap", [this.asset.address, this.collateral.address, addr(this.contract.signer), minAmount, "0"]);
+        return this.contract.cook( [ACTION_BORROW, ACTION_BENTO_TRANSFER, ACTION_CALL, ACTION_ADD_COLLATERAL], [0, 0, 0, 0, 0], [
+            defaultAbiCoder.encode(["int256", "address"], [share, addr(this.contract.signer)]),
             defaultAbiCoder.encode(["address", "address", "int256"], [this.asset.address, swapper.address, -2]),
             defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [swapper.address, data.slice(0, -64), false, true, 2]),
             defaultAbiCoder.encode(["int256", "address", "bool"], [-2, addr(this.contract.signer), false]),
         ])
     }
 
-    unwind(swapper, fraction, minimumAmount) {
-        let data = swapper.interface.encodeFunctionData("swap", [this.collateral.address, this.asset.address, addr(this.contract.signer), minimumAmount, "115792089237316195423570985008687907853269984665640564039457584007913129639935"]);
-        console.log(data.slice(0, -64));
-        return this.contract.cook( [ACTION_REMOVE_COLLATERAL, ACTION_BENTO_TRANSFER, ACTION_CALL, ACTION_REPAY], [0, 0], [
-            defaultAbiCoder.encode(["int256", "address"], [share, addr(this.contract.signer)]),
-            defaultAbiCoder.encode(["address", "address", "int256"], [this.asset.address, swapper.address, -2]),
-            defaultAbiCoder.encode(["int256", "address"], [-1, addr(this.contract.signer)]),
-            defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false])
+    unwind(swapper, part, maxShare) {
+        let data = swapper.interface.encodeFunctionData("swapExact", [this.collateral.address, this.asset.address, addr(this.contract.signer), addr(this.contract.signer), maxShare, 0]);
+        return this.contract.cook( [ACTION_REMOVE_COLLATERAL, ACTION_GET_REPAY_SHARE, ACTION_CALL, ACTION_REPAY, ACTION_ADD_COLLATERAL], [0, 0, 0, 0, 0], [
+            // Remove collateral for user to Swapper contract (maxShare)
+            defaultAbiCoder.encode(["int256", "address"], [maxShare, addr(swapper)]),
+            // Convert part to share
+            defaultAbiCoder.encode(["int256"], [part]),
+            // Swap collateral less than maxShare to exactly part (converted to share) asset, deliver asset to user and deliver unused collateral back to user
+            defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [swapper.address, data.slice(0, -64), true, false, 2]),
+            // Repay part
+            defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false]),
+            // Add unused collateral back
+            defaultAbiCoder.encode(["int256", "address", "bool"], [-2, addr(this.contract.signer), false])
         ])
     }
 

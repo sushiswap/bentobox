@@ -26,6 +26,7 @@ import "./interfaces/IERC3156FlashLoan.sol";
 import "./interfaces/IWETH.sol";
 import "./MasterContractManager.sol";
 import "./StrategyManager.sol";
+import "hardhat/console.sol";
 
 // Note: Rebasing tokens ARE NOT supported and WILL cause loss of funds
 contract BentoBoxPlus is MasterContractManager, BoringBatchable, StrategyManager, IERC3156BatchFlashLender {
