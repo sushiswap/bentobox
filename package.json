@@ -26,6 +26,11 @@
     "prettier": "prettier --write test/**/*.js",
     "lint": "yarn prettier && solhint -c .solhint.json 'contracts/**/*.sol'"
   },
+  "husky": {
+    "hooks": {
+      "pre-push": "yarn lint && yarn test"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sushiswap/bentobox.git"
