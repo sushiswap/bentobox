@@ -82,6 +82,13 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
   return keccak256(pack)
 }
 
+async function getSignedMasterContractApprovalData(bentoBox, user, privateKey, masterContractAddress, approved) {
+  const nonce = await bentoBox.nonces(user.address)
+  const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
+  const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+  return {v, r, s}
+}
+
 async function setMasterContractApproval(bentoBox, from, user, privateKey, masterContractAddress, approved, fallback) {
   if (!fallback) {
     const nonce = await bentoBox.nonces(user.address)
@@ -234,6 +241,7 @@ module.exports = {
   getBentoBoxDomainSeparator,
   getBentoBoxApprovalDigest,
   lendingPairPermit,
+  getSignedMasterContractApprovalData,
   setMasterContractApproval,
   setLendingPairContractApproval,
   sansBorrowFee,

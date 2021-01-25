@@ -10,6 +10,11 @@ contract LendingPairMock is LendingPair {
     
     constructor(BentoBoxPlus bentoBox) public LendingPair(bentoBox) {}
 
+    function accrueTwice() public {
+        accrue();
+        accrue();
+    }
+
     function setInterestPerBlock(uint64 interestPerBlock) public {
         accrueInfo.interestPerBlock = interestPerBlock;
     }
