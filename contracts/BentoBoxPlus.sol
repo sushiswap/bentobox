@@ -45,8 +45,8 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, StrategyManager
 
     // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
-    mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract
-    mapping(IERC20 => Rebase) public totals;
+    mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract in shares
+    mapping(IERC20 => Rebase) public totals; // Rebase from amount to share
 
     constructor(IERC20 wethToken_) public {
         wethToken = wethToken_;
@@ -63,7 +63,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, StrategyManager
     // M1 - M5: OK
     // C1 - C23: OK
     modifier allowed(address from) {
-        if (from != msg.sender && from != address(this)) {
+        if (from != msg.sender && from != address(this)) { // From is sender or you are skimming
             address masterContract = masterContractOf[msg.sender];
             require(masterContract != address(0), "BentoBox: no masterContract");
             require(masterContractApproved[masterContract][from], "BentoBox: Transfer not approved");

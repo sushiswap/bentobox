@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-import "./interfaces/ILendingPair.sol";
+import "./LendingPair.sol";
 import "./interfaces/IOracle.sol";
 
 contract BentoHelper {
+    using BoringMath for uint256;
+
     struct PairInfo {
-        ILendingPair pair;
+        LendingPair pair;
         IOracle oracle;
-        IBentoBox bentoBox;
+        BentoBoxPlus bentoBox;
         address masterContract;
         bool masterContractApproved;
         IERC20 tokenAsset;
@@ -17,7 +19,7 @@ contract BentoHelper {
         uint256 latestExchangeRate;
         uint256 lastBlockAccrued;
         uint256 interestRate;
-        uint256 totalCollateralAmount;
+        uint256 totalCollateralShare;
         uint256 totalAssetAmount;
         uint256 totalBorrowAmount;
 
@@ -28,25 +30,27 @@ contract BentoHelper {
 
         uint256 feesPendingAmount;
 
-        uint256 userCollateralAmount;
+        uint256 userCollateralShare;
         uint256 userAssetFraction;
         uint256 userAssetAmount;
-        uint256 userBorrowFraction;
+        uint256 userBorrowPart;
         uint256 userBorrowAmount;
 
         uint256 userAssetBalance;
         uint256 userCollateralBalance;
         uint256 userAssetAllowance;
         uint256 userCollateralAllowance;
+
+        uint256 utilization;
     }
 
-    function getPairs(address user, ILendingPair[] calldata pairs) public view returns (PairInfo[] memory info) {
+    function getPairs(address user, LendingPair[] calldata pairs) public view returns (PairInfo[] memory info) {
         info = new PairInfo[](pairs.length);
         for(uint256 i = 0; i < pairs.length; i++) {
-            ILendingPair pair = pairs[i];
+            LendingPair pair = pairs[i];
             info[i].pair = pair;
             info[i].oracle = pair.oracle();
-            IBentoBox bentoBox = pair.bentoBox();
+            BentoBoxPlus bentoBox = pair.bentoBox();
             info[i].bentoBox = bentoBox;
             info[i].masterContract = address(pair.masterContract());
             info[i].masterContractApproved = bentoBox.masterContractApproved(info[i].masterContract, user);
@@ -57,22 +61,24 @@ contract BentoHelper {
 
             (, info[i].latestExchangeRate) = pair.peekExchangeRate();
             (info[i].interestPerBlock, info[i].lastBlockAccrued, info[i].feesPendingAmount) = pair.accrueInfo();
-            info[i].totalCollateralAmount = pair.totalCollateralAmount();
+            info[i].totalCollateralShare = pair.totalCollateralShare();
             (info[i].totalAssetAmount, info[i].totalAssetFraction ) = pair.totalAsset();
             (info[i].totalBorrowAmount, info[i].totalBorrowFraction) = pair.totalBorrow();
 
-            info[i].userCollateralAmount = pair.userCollateralAmount(user);
+            info[i].userCollateralShare = pair.userCollateralShare(user);
             info[i].userAssetFraction = pair.balanceOf(user);
             info[i].userAssetAmount = info[i].totalAssetFraction == 0 ? 0 :
                  info[i].userAssetFraction * info[i].totalAssetAmount / info[i].totalAssetFraction;
-            info[i].userBorrowFraction = pair.userBorrowFraction(user);
+            info[i].userBorrowPart = pair.userBorrowPart(user);
             info[i].userBorrowAmount = info[i].totalBorrowFraction == 0 ? 0 :
-                info[i].userBorrowFraction * info[i].totalBorrowAmount / info[i].totalBorrowFraction;
+                info[i].userBorrowPart * info[i].totalBorrowAmount / info[i].totalBorrowFraction;
 
             info[i].userAssetBalance = info[i].tokenAsset.balanceOf(user);
             info[i].userCollateralBalance = info[i].tokenCollateral.balanceOf(user);
             info[i].userAssetAllowance = info[i].tokenAsset.allowance(user, address(bentoBox));
             info[i].userCollateralAllowance = info[i].tokenCollateral.allowance(user, address(bentoBox));
+
+            info[i].utilization = info[i].totalBorrowAmount.mul(1e18) / info[i].totalAssetAmount.add(info[i].totalBorrowAmount);
         }
     }
 }

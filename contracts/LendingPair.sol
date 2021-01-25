@@ -193,7 +193,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
 
         // Update interest rate
-        uint256 utilization = uint256(_totalBorrow.elastic).mul(1e18) / totalAssetAmount;
+        uint256 utilization = uint256(_totalBorrow.elastic).mul(1e18) / totalAssetAmount.add(_totalBorrow.elastic);
         uint256 newInterestPerBlock;
         if (utilization < MINIMUM_TARGET_UTILIZATION) {
             uint256 underFactor = MINIMUM_TARGET_UTILIZATION.sub(utilization).mul(1e18) / MINIMUM_TARGET_UTILIZATION;
@@ -305,16 +305,6 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
-/*
-        let share = fraction * this.totalAssetShare / this.totalAssetFraction;
-        let borrowAmount = fraction * this.totalBorrowAmount / this.totalAssetFraction;
-
-        let actualShare = share + this.bento.toShare("SUSHI", borrowAmount);
-        this.bento.withdraw(this.asset, "PAIR", user, actualShare);
-        this.userAssetFraction[this.asset + "-" + user] -= fraction;
-        this.totalAssetFraction -= fraction;
-        this.totalAssetShare -= actualShare;
-*/
         Rebase memory _totalAsset = totalAsset;
         uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic);
         share = fraction.mul(allShare) / _totalAsset.base;
@@ -421,7 +411,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     function _call(uint256 value, address callee, bytes memory callData) internal returns (bytes memory) {
-        require(callee != address(bentoBox), "LendingPair: can't call BentoBox");
+        require(callee != address(bentoBox) && callee != address(this), "LendingPair: can't call");
 
         (bool success, bytes memory returnData) = callee.call{value: value}(callData);
         require(success, _getRevertMsg(returnData));
