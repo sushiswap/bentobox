@@ -83,15 +83,24 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
 }
 
 async function setMasterContractApproval(bentoBox, from, user, privateKey, masterContractAddress, approved, fallback) {
-  if(!fallback){
-  const nonce = await bentoBox.nonces(user.address)
+  if (!fallback) {
+    const nonce = await bentoBox.nonces(user.address)
 
-  const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
-  const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+    const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
+    const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, v, r, s)
+    return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, v, r, s)
   }
-  return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, 0, "0x0000000000000000000000000000000000000000000000000000000000000000", "0x0000000000000000000000000000000000000000000000000000000000000000")
+  return await bentoBox
+    .connect(user)
+    .setMasterContractApproval(
+      from.address,
+      masterContractAddress,
+      approved,
+      0,
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    )
 }
 
 async function setLendingPairContractApproval(bentoBox, user, privateKey, lendingPair, approved) {
@@ -120,9 +129,8 @@ async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair,
     user.provider._network.chainId
   )
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
-  
-  return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
 
+  return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
 }
 
 function sansBorrowFee(amount) {
@@ -156,7 +164,7 @@ async function prepare(thisObject, contracts) {
     let contract = contracts[i]
     thisObject[contract] = await ethers.getContractFactory(contract)
     thisObject[contract].thisObject = thisObject
-    thisObject[contract].new = async function(...params) {
+    thisObject[contract].new = async function (...params) {
       let newContract = await thisObject[contract].deploy(...params)
       await newContract.deployed()
       return newContract
@@ -172,34 +180,34 @@ async function prepare(thisObject, contracts) {
 }
 
 async function deploymentsFixture(thisObject, stepsFunction) {
-  await deployments.fixture();
+  await deployments.fixture()
   thisObject.weth9 = await ethers.getContract("WETH9Mock")
   thisObject.bentoBox = await ethers.getContract("BentoBoxPlus")
   thisObject.factory = await ethers.getContract("SushiSwapFactoryMock")
   thisObject.lendingPair = await ethers.getContract("LendingPairMock")
-  thisObject.peggedOracle = await ethers.getContract("PeggedOracle")  
+  thisObject.peggedOracle = await ethers.getContract("PeggedOracle")
   thisObject.swapper = await ethers.getContract("SushiSwapSwapper")
-  thisObject.oracle = await ethers.getContract("OracleMock")  
+  thisObject.oracle = await ethers.getContract("OracleMock")
   thisObject.helper = await ethers.getContract("BentoHelper")
   await stepsFunction({
-    addToken: async function(name, symbol, tokenClass) {
+    addToken: async function (name, symbol, tokenClass) {
       const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(name, symbol, getBigNumber(1000000))
       await token.transfer(thisObject.bob.address, getBigNumber(1000))
       await token.transfer(thisObject.carol.address, getBigNumber(1000))
-      return token;
+      return token
     },
-    addPair: async function(tokenA, tokenB, amountA, amountB) {
+    addPair: async function (tokenA, tokenB, amountA, amountB) {
       const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
       const pair = (await createPairTx.wait()).events[0].args.pair
       const sushiSwapPair = await thisObject.SushiSwapPairMock.attach(pair)
-  
+
       await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
       await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
-  
-      await sushiSwapPair.mint(thisObject.alice.address)    
-      return sushiSwapPair;
-    }
-  });
+
+      await sushiSwapPair.mint(thisObject.alice.address)
+      return sushiSwapPair
+    },
+  })
 }
 
 async function deploy(thisObject, contracts) {
@@ -211,8 +219,10 @@ async function deploy(thisObject, contracts) {
 }
 
 function addr(address) {
-  if (typeof(address) == "object" && address.address) { address = address.address; };
-  return address;
+  if (typeof address == "object" && address.address) {
+    address = address.address
+  }
+  return address
 }
 
 module.exports = {
