@@ -30,6 +30,10 @@ describe("StrategyManager", function () {
       expect((await this.bentoBox.strategyData(this.sushi.address)).targetPercentage).to.be.equal(80)
     })
 
+    it("reverts if target is too high", async function () {
+      await expect(this.bentoBox.setStrategyTargetPercentage(this.sushi.address, 96)).to.be.revertedWith("StrategyManager: Target too high")
+    })
+
     it("should rebalance the token", async function (){
       await this.sushi.approve(this.bentoBox.address, getBigNumber(10))
       await this.bentoBox.deposit(this.sushi.address, this.alice.address, this.alice.address, getBigNumber(10), 0)
@@ -59,7 +63,19 @@ describe("StrategyManager", function () {
       expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("18888888888888888888")
       expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("18888888888888888888")
     })
+
+    it("SushiStrategy does not allow to draw a too high share", async function () {
+      await this.sushiStrategy2.withdraw(getBigNumber(1), 0)
+    })
     
+    it("rebalances correctly after a withdraw from BentoBox", async function () {
+      await this.sushiStrategy2.transferOwnership(this.bentoBox.address, true, false)
+      await this.bentoBox.harvest(this.sushi.address, true)
+      await this.bentoBox.withdraw(this.sushi.address, this.alice.address, this.alice.address, "3677777777777777778", 0)
+      await this.bentoBox.harvest(this.sushi.address, true)
+      expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3042222222222222220")
+      expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("15211111111111111110")
+    })
   })
 
 })

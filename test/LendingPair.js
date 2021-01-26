@@ -15,6 +15,7 @@ const {
   deploymentsFixture
 } = require("./utilities")
 const { LendingPair } = require("./utilities/lendingpair");
+const { defaultAbiCoder } = require("ethers/lib/utils");
 
 async function debugInfo(thisObject) {
   console.log("Alice Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.a.address, thisObject.alice.address)).toString());
@@ -43,7 +44,7 @@ describe("Lending Pair", function () {
       "SushiSwapPairMock",
       "ReturnFalseERC20Mock",
       "RevertingERC20Mock",
-      "OracleMock"
+      "ExternalFunctionMock"
     ])
   })
 
@@ -101,6 +102,10 @@ describe("Lending Pair", function () {
   })
 
   describe("Accrue", function () {
+    it("should take else path if accrue is called within same block", async function () {
+      await this.pairHelper.contract.accrueTwice()
+    })
+
     it("should update the interest rate according to utilization", async function () {
       await this.pairHelper.run(cmd => [
         cmd.approveAsset(getBigNumber(700)),
@@ -241,6 +246,25 @@ describe("Lending Pair", function () {
   })
 
   describe("Add Asset", function () {
+    it("should add asset with skim", async function (){
+      await this.b.approve(this.bentoBox.address, getBigNumber(2))
+      await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, 0, getBigNumber(1));
+      await this.bentoBox.transfer(this.b.address, this.alice.address, this.pairHelper.contract.address, getBigNumber(1));
+      await this.pairHelper.run(cmd => [
+        cmd.do(this.pairHelper.contract.addAsset, this.alice.address, true, getBigNumber(1)),
+      ])
+      expect(await this.pairHelper.contract.balanceOf(this.alice.address)).to.be.equal(getBigNumber(1))
+    })
+
+    it("should revert when trying to skim too much", async function (){
+      await this.b.approve(this.bentoBox.address, getBigNumber(2))
+      await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, 0, getBigNumber(1));
+      await this.bentoBox.transfer(this.b.address, this.alice.address, this.pairHelper.contract.address, getBigNumber(1));
+      await expect(this.pairHelper.run(cmd => [
+        cmd.do(this.pairHelper.contract.addAsset, this.alice.address, true, getBigNumber(2)),
+      ])).to.be.revertedWith("LendingPair: Skim too much")
+    })
+    
     it("should revert if MasterContract is not approved", async function () {
       await this.b.connect(this.carol).approve(this.bentoBox.address, 300)
       await expect((await this.pairHelper.syncAs(this.carol)).depositAsset(290)).to.be.revertedWith("BentoBox: Transfer not approved")
@@ -291,8 +315,18 @@ describe("Lending Pair", function () {
   })
 
   describe("Remove Collateral", function () {
+
     it("should not allow a remove without collateral", async function () {
       await expect((await this.pairHelper.sync()).withdrawCollateral(this.alice.address, 1)).to.be.revertedWith("BoringMath: Underflow")
+    })
+
+    it("should allow a direct removal of collateral", async function () {
+      await this.pairHelper.run(cmd => [
+        cmd.approveCollateral(getBigNumber(100)),
+        cmd.depositCollateral(getBigNumber(100)),
+        cmd.do(this.pairHelper.contract.removeCollateral, this.alice.address, getBigNumber(100))
+      ])
+      expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address)).to.be.equal(getBigNumber(100))
     })
 
     it("should not allow a remove of collateral if user is insolvent", async function () {
@@ -433,14 +467,15 @@ describe("Lending Pair", function () {
       ])
     })
 
-    it("should allow to repay from Bento", async function () {
+    it("should allow to repay from BentoBox", async function () {
       await this.pairHelper.run(cmd => [
         cmd.approveAsset(getBigNumber(700)),
         cmd.depositAsset(getBigNumber(290)),
         cmd.approveCollateral(getBigNumber(100)),
         cmd.depositCollateral(getBigNumber(100)),
         cmd.borrow(sansBorrowFee(getBigNumber(75))),
-        cmd.repay(getBigNumber(50))
+        cmd.do(this.bentoBox.deposit, this.b.address, this.alice.address, this.alice.address, getBigNumber(70), 0),
+        cmd.do(this.pairHelper.contract.repay, this.alice.address, false, getBigNumber(50))
       ])
     })
 
@@ -537,7 +572,104 @@ describe("Lending Pair", function () {
       ]);
     })
   })
+  
+  describe("Cook", function () {
+    it("can add 2 values to a call and receive 1 value back", async function () {
+      const ACTION_CALL = 10
+      const ACTION_BENTO_DEPOSIT = 20
+      
+      await deploy(this, [
+        ["externalFunctionMock", this.ExternalFunctionMock]
+      ])
 
+      let data = this.externalFunctionMock.interface.encodeFunctionData("sum", [10, 10]);
+
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(100)),
+      ]);
+  
+      await expect(this.pairHelper.contract.cook(
+        [ACTION_BENTO_DEPOSIT, ACTION_CALL, ACTION_BENTO_DEPOSIT],
+        [0, 0, 0],
+        [
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, getBigNumber(25), 0]),
+          defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [this.externalFunctionMock.address, data.slice(0, -128), true, true, 1]),
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, -1, 0]),
+        ]
+      )).to.emit(this.externalFunctionMock, "Result").withArgs(getBigNumber(50));
+
+      expect(await this.bentoBox.balanceOf(this.b.address, this.alice.address)).to.be.equal(getBigNumber(75))
+    })
+
+    it("reverts on a call to the BentoBox", async function () {
+      const ACTION_CALL = 10
+      await expect(this.pairHelper.contract.cook(
+        [ACTION_CALL],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [this.bentoBox.address, "0x", false, false, 0]),
+        ]
+      )).to.be.revertedWith("LendingPair: can't call");
+    })
+    
+
+    it("takes else path", async function () {
+      await expect(this.pairHelper.contract.cook(
+        [99],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, getBigNumber(25), 0]),
+        ]
+      ))
+    })
+    
+    it("reverts on value out of bounds", async function () {
+      const ACTION_BENTO_WITHDRAW = 21
+      await expect(this.pairHelper.contract.cook(
+        [ACTION_BENTO_WITHDRAW],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, 0, -3]),
+        ]
+      )).to.be.revertedWith("LendingPair: Num out of bounds")
+    })
+    
+    it("get repays part", async function () {
+      const ACTION_GET_REPAY_PART = 41;
+      await this.pairHelper.contract.cook(
+        [ACTION_GET_REPAY_PART],
+        [0],
+        [
+          defaultAbiCoder.encode(["int256"], [1]),
+        ]
+      )
+    })
+    
+    it("executed Bento transfer multiple", async function () {
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(100)),
+        cmd.do(this.bentoBox.deposit, this.b.address, this.alice.address, this.alice.address, getBigNumber(70), 0),
+      ]);
+      const ACTION_BENTO_TRANSFER_MULTIPLE = 23;
+      await this.pairHelper.contract.cook(
+        [ACTION_BENTO_TRANSFER_MULTIPLE],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "address[]", "uint256[]"], [this.b.address, [this.carol.address], [getBigNumber(10)]]),
+        ]
+      )
+    }) 
+    
+    it("allows to addAsset with approval", async function () {
+      const nonce = await this.bentoBox.nonces(this.alice.address)
+      await expect(await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(100)),
+        cmd.depositAssetWithApproval(getBigNumber(100), this.lendingPair, this.alicePrivateKey, nonce)
+      ]))
+    })
+  })
+  
+  
   describe("Liquidate", function () {
     it("should not allow open liquidate yet", async function () {
       await this.pairHelper.run(cmd => [

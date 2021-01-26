@@ -1,15 +1,20 @@
-const { ADDRESS_ZERO, setMasterContractApproval, prepare } = require("./utilities")
+const { ADDRESS_ZERO, setMasterContractApproval, prepare, deploymentsFixture, deploy } = require("./utilities")
 const { expect } = require("chai")
+const { LendingPair } = require("./utilities/lendingpair");
 
 describe("MasterContractManager", function () {
   before(async function () {
-    await prepare(this, ["MasterContractManagerMock"])
+    await prepare(this, [
+    "MasterContractManagerMock",
+    "MaliciousMasterContractMock",
+  ])
   })
 
   beforeEach(async function () {
+    await deploymentsFixture(this, cmd => {})
     this.mcmanager = await this.MasterContractManagerMock.deploy()
     await this.mcmanager.deployed()
-    this.lendingPair = await ethers.getContract("LendingPairMock")
+    
   })
 
   describe("Master Contract Approved", function () {
@@ -57,6 +62,17 @@ describe("MasterContractManager", function () {
       )
     })
 
+    it("Reverts with contract being a clone", async function () {
+      await deploy(this, [["badMaster", this.MaliciousMasterContractMock]])
+      const deployTx = await this.bentoBox.deploy(this.badMaster.address, "0x")
+      const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
+      const badMasterClone = await this.badMaster.attach(cloneAddress)
+      
+      await expect(badMasterClone.attack(this.bentoBox.address)).to.be.revertedWith(
+        "MasterCMgr: user is clone"
+      )
+    })
+
     it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
       await this.mcmanager.whitelistMasterContract(this.lendingPair.address, true)
       await expect(setMasterContractApproval(this.mcmanager, this.alice, this.alice, "", this.lendingPair.address, true, true))
@@ -95,4 +111,6 @@ describe("MasterContractManager", function () {
       )
     })
   })
+
+
 })

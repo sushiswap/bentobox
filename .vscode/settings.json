@@ -29,5 +29,6 @@
   "solidity-va.codelens.enable": true,
   "solidity-va.mode.active": false,
   "slither.solcPath": "",
-  "slither.hiddenDetectors": []
+  "slither.hiddenDetectors": [],
+  "liveServer.settings.port": 5501
 }

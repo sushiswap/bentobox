@@ -67,11 +67,13 @@ contract StrategyManager is BoringOwnable {
         }
     }
 
+    uint256 private constant MAX_TARGET_PERCENTAGE = 95;
+
     // F1 - F10: OK
     // C1 - C23: OK
     function setStrategyTargetPercentage(IERC20 token, uint128 targetPercentage_) public onlyOwner {
         // Checks
-        require(targetPercentage_ <= 95, "StrategyManager: Target too high");
+        require(targetPercentage_ <= MAX_TARGET_PERCENTAGE, "StrategyManager: Target too high");
 
         // Effects
         strategyData[token].targetPercentage = targetPercentage_;
