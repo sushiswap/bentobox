@@ -22,6 +22,8 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     // V1 - V5: OK
     mapping(address => uint256) public nonces;
 
+    bytes32 private constant DOMAIN_SEPERATOR_SIGNATURE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    
     // F1 - F8: OK
     // C1 - C19: OK
     // C20: Recalculating the domainSeparator is cheaper than reading it from storage
@@ -29,7 +31,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         uint256 chainId;
         assembly {chainId := chainid()}
         return keccak256(abi.encode(
-            keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)"), 
+            DOMAIN_SEPERATOR_SIGNATURE_HASH, 
             "BentoBox V2",
             chainId, 
             address(this)

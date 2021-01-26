@@ -82,8 +82,7 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
   return keccak256(pack)
 }
 
-async function getSignedMasterContractApprovalData(bentoBox, user, privateKey, masterContractAddress, approved) {
-  const nonce = await bentoBox.nonces(user.address)
+function getSignedMasterContractApprovalData(bentoBox, user, privateKey, masterContractAddress, approved, nonce) {
   const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
   return {v, r, s}

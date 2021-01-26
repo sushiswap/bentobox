@@ -44,7 +44,7 @@ describe("Lending Pair", function () {
       "SushiSwapPairMock",
       "ReturnFalseERC20Mock",
       "RevertingERC20Mock",
-      "OracleMock"
+      "ExternalFunctionMock"
     ])
   })
 
@@ -255,6 +255,16 @@ describe("Lending Pair", function () {
       ])
       expect(await this.pairHelper.contract.balanceOf(this.alice.address)).to.be.equal(getBigNumber(1))
     })
+
+    it("should revert when trying to skim too much", async function (){
+      await this.b.approve(this.bentoBox.address, getBigNumber(2))
+      await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, 0, getBigNumber(1));
+      await this.bentoBox.transfer(this.b.address, this.alice.address, this.pairHelper.contract.address, getBigNumber(1));
+      await expect(this.pairHelper.run(cmd => [
+        cmd.do(this.pairHelper.contract.addAsset, this.alice.address, true, getBigNumber(2)),
+      ])).to.be.revertedWith("LendingPair: Skim too much")
+    })
+    
     it("should revert if MasterContract is not approved", async function () {
       await this.b.connect(this.carol).approve(this.bentoBox.address, 300)
       await expect((await this.pairHelper.syncAs(this.carol)).depositAsset(290)).to.be.revertedWith("BentoBox: Transfer not approved")
@@ -564,6 +574,55 @@ describe("Lending Pair", function () {
   })
   
   describe("Cook", function () {
+    it("can add 2 values to a call and receive 1 value back", async function () {
+      const ACTION_CALL = 10
+      const ACTION_BENTO_DEPOSIT = 20
+      
+      await deploy(this, [
+        ["externalFunctionMock", this.ExternalFunctionMock]
+      ])
+
+      let data = this.externalFunctionMock.interface.encodeFunctionData("sum", [10, 10]);
+
+      await this.pairHelper.run(cmd => [
+        cmd.approveAsset(getBigNumber(100)),
+      ]);
+  
+      await expect(this.pairHelper.contract.cook(
+        [ACTION_BENTO_DEPOSIT, ACTION_CALL, ACTION_BENTO_DEPOSIT],
+        [0, 0, 0],
+        [
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, getBigNumber(25), 0]),
+          defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [this.externalFunctionMock.address, data.slice(0, -128), true, true, 1]),
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, -1, 0]),
+        ]
+      )).to.emit(this.externalFunctionMock, "Result").withArgs(getBigNumber(50));
+
+      expect(await this.bentoBox.balanceOf(this.b.address, this.alice.address)).to.be.equal(getBigNumber(75))
+    })
+
+    it("reverts on a call to the BentoBox", async function () {
+      const ACTION_CALL = 10
+      await expect(this.pairHelper.contract.cook(
+        [ACTION_CALL],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [this.bentoBox.address, "0x", false, false, 0]),
+        ]
+      )).to.be.revertedWith("LendingPair: can't call");
+    })
+    
+
+    it("takes else path", async function () {
+      await expect(this.pairHelper.contract.cook(
+        [99],
+        [0],
+        [
+          defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.b.address, this.alice.address, getBigNumber(25), 0]),
+        ]
+      ))
+    })
+    
     it("reverts on value out of bounds", async function () {
       const ACTION_BENTO_WITHDRAW = 21
       await expect(this.pairHelper.contract.cook(
@@ -575,7 +634,6 @@ describe("Lending Pair", function () {
       )).to.be.revertedWith("LendingPair: Num out of bounds")
     })
     
-    
     it("get repays part", async function () {
       const ACTION_GET_REPAY_PART = 41;
       await this.pairHelper.contract.cook(
@@ -586,7 +644,7 @@ describe("Lending Pair", function () {
         ]
       )
     })
-    /*
+    
     it("executed Bento transfer multiple", async function () {
       await this.pairHelper.run(cmd => [
         cmd.approveAsset(getBigNumber(100)),
@@ -597,18 +655,18 @@ describe("Lending Pair", function () {
         [ACTION_BENTO_TRANSFER_MULTIPLE],
         [0],
         [
-          defaultAbiCoder.encode(["address", "address[]", "uint256[]"], [this.b.address, [this.charlie.address], [getBigNumber(10)]]),
+          defaultAbiCoder.encode(["address", "address[]", "uint256[]"], [this.b.address, [this.carol.address], [getBigNumber(10)]]),
         ]
       )
     }) 
     
     it("allows to addAsset with approval", async function () {
+      const nonce = await this.bentoBox.nonces(this.alice.address)
       await expect(await this.pairHelper.run(cmd => [
         cmd.approveAsset(getBigNumber(100)),
-        cmd.depositAssetWithApproval(getBigNumber(100), this.lendingPair, this.alicePrivateKey)
+        cmd.depositAssetWithApproval(getBigNumber(100), this.lendingPair, this.alicePrivateKey, nonce)
       ]))
     })
-    */
   })
   
   

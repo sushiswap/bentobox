@@ -259,8 +259,8 @@ class LendingPair {
     )
   }
 
-  depositAssetWithApproval(amount, masterContract, privateKey) {
-    const {v, r, s} = getSignedMasterContractApprovalData(this.bentoBox, this.contract.signer, privateKey, addr(masterContract), true)
+  depositAssetWithApproval(amount, masterContract, privateKey, nonce) {
+    const {v, r, s} = getSignedMasterContractApprovalData(this.bentoBox, this.contract.signer, privateKey, addr(masterContract), true, nonce)
     return this.contract.cook(
       [ACTION_BENTO_SETAPPROVAL, ACTION_BENTO_DEPOSIT, ACTION_ADD_ASSET],
       [0, 0, 0],
