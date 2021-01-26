@@ -260,12 +260,15 @@ class LendingPair {
   }
 
   depositAssetWithApproval(amount, masterContract, privateKey, nonce) {
-    const {v, r, s} = getSignedMasterContractApprovalData(this.bentoBox, this.contract.signer, privateKey, addr(masterContract), true, nonce)
+    const { v, r, s } = getSignedMasterContractApprovalData(this.bentoBox, this.contract.signer, privateKey, addr(masterContract), true, nonce)
     return this.contract.cook(
       [ACTION_BENTO_SETAPPROVAL, ACTION_BENTO_DEPOSIT, ACTION_ADD_ASSET],
       [0, 0, 0],
-      [ 
-        defaultAbiCoder.encode(["address", "address", "bool", "uint8", "bytes32", "bytes32"], [addr(this.contract.signer), addr(masterContract), true, v, r, s,]),
+      [
+        defaultAbiCoder.encode(
+          ["address", "address", "bool", "uint8", "bytes32", "bytes32"],
+          [addr(this.contract.signer), addr(masterContract), true, v, r, s]
+        ),
         defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), amount, 0]),
         defaultAbiCoder.encode(["int256", "address", "bool"], [-2, addr(this.contract.signer), false]),
       ]
