@@ -19,6 +19,7 @@ We solve these issues by having a platform with:
 [Deployment](docs/DEPLOYMENT.md)
 
 ## Security
+
 Audits are being performed by Quantstamp and Peckshield
 
 We use [Slither](https://github.com/crytic/slither) for static analysis. Reports and comments are here:
