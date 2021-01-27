@@ -25,7 +25,9 @@ describe("Ownable", function () {
     })
 
     it("Assigns owner to address zero", async function () {
-      await expect(this.ownable.transferOwnership(ADDRESS_ZERO, true, true)).to.emit(this.ownable, "OwnershipTransferred").withArgs(this.alice.address, ADDRESS_ZERO)
+      await expect(this.ownable.transferOwnership(ADDRESS_ZERO, true, true))
+        .to.emit(this.ownable, "OwnershipTransferred")
+        .withArgs(this.alice.address, ADDRESS_ZERO)
 
       expect(await this.ownable.owner()).to.equal(ADDRESS_ZERO)
     })
@@ -33,9 +35,9 @@ describe("Ownable", function () {
 
   describe("Transfer Ownership", function () {
     it("Prevents non-owners from transferring", async function () {
-      await expect(this.ownable.connect(this.bob).transferOwnership(this.bob.address, false, false, { from: this.bob.address })).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      )
+      await expect(
+        this.ownable.connect(this.bob).transferOwnership(this.bob.address, false, false, { from: this.bob.address })
+      ).to.be.revertedWith("Ownable: caller is not the owner")
     })
 
     it("Changes pending owner after transfer", async function () {
