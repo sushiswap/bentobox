@@ -8,8 +8,8 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 // solhint-disable not-rely-on-time
 
 struct StrategyData {
-    uint128 strategyStartDate; // TODO: Change to uint64
-    uint128 targetPercentage; // TODO: Change to uint64
+    uint64 strategyStartDate;
+    uint64 targetPercentage;
     uint128 balance;
 }
 
@@ -32,7 +32,7 @@ contract StrategyManager is BoringOwnable {
         IStrategy pending = pendingStrategy[token];
         if (pending != newStrategy) {
             pendingStrategy[token] = newStrategy;
-            strategyData[token].strategyStartDate = (block.timestamp + STRATEGY_DELAY).to128();
+            strategyData[token].strategyStartDate = (block.timestamp + STRATEGY_DELAY).to64();
             amountAdded = 0;
         } else {
             StrategyData memory data = strategyData[token];
@@ -71,7 +71,7 @@ contract StrategyManager is BoringOwnable {
 
     // F1 - F10: OK
     // C1 - C23: OK
-    function setStrategyTargetPercentage(IERC20 token, uint128 targetPercentage_) public onlyOwner {
+    function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_) public onlyOwner {
         // Checks
         require(targetPercentage_ <= MAX_TARGET_PERCENTAGE, "StrategyManager: Target too high");
 

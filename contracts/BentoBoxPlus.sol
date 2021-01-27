@@ -93,7 +93,6 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, StrategyManager
         // Skim
         if (from == address(this)) {
             // S1 - S4: OK
-            // TODO: Fix for strategies
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
             amount = token_ == IERC20(0) ? address(this).balance : _tokenBalanceOf(token).sub(total.elastic);
             share = 0;

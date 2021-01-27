@@ -71,7 +71,7 @@ describe("SimpleSLPOracle", function () {
         expect(info).to.be.equal(this.expectedPrice[1].toString())
 
         await advanceTimeAndBlock(301, ethers)
-        
+
         expect((await this.oracleF.peek(this.oracleData))[1]).to.be.equal(getBigNumber(1).mul(5).div(10))
         await this.oracleB.peek(this.oracleData)
       })
