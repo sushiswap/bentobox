@@ -205,7 +205,8 @@ async function deploymentsFixture(thisObject, stepsFunction) {
     addPair: async function (tokenA, tokenB, amountA, amountB) {
       const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
       const pair = (await createPairTx.wait()).events[0].args.pair
-      const sushiSwapPair = await thisObject.SushiSwapPairMock.attach(pair)
+      const SushiSwapPairMock = await ethers.getContractFactory("SushiSwapPairMock")
+      const sushiSwapPair = await SushiSwapPairMock.attach(pair)
 
       await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
       await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
