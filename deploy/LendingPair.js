@@ -5,13 +5,9 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   const sushiSwapSwapper = await deployments.get("SushiSwapSwapper")
 
-  const bentoBox = await deployments.get("BentoBox")
+  const bentoBox = await deployments.get("BentoBoxPlus")
 
-  const chainId = await getChainId()
-
-  const lendingPairContract = chainId !== 31337 ? "LendingPair" : "LendingPairMock"
-
-  const response = await deploy(lendingPairContract, {
+  /*let response = await deploy("LendingPair", {
     from: deployer,
     args: [bentoBox.address],
     log: true,
@@ -20,9 +16,21 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
   })
 
   if (response.newlyDeployed) {
-    const lendingPair = await ethers.getContract(lendingPairContract)
-
+    const lendingPair = await ethers.getContract("LendingPair")
     lendingPair.setSwapper(sushiSwapSwapper.address, true)
+  }*/
+
+  response = await deploy("LendingPairMock", {
+    from: deployer,
+    args: [bentoBox.address],
+    log: true,
+    // TODO: Had to disable this for the account to match, investigate...
+    deterministicDeployment: false,
+  })
+
+  if (response.newlyDeployed) {
+    const lendingPairMock = await ethers.getContract("LendingPairMock")
+    lendingPairMock.setSwapper(sushiSwapSwapper.address, true)
   }
 }
 

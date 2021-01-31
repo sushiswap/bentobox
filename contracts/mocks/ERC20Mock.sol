@@ -2,7 +2,7 @@
 
 pragma solidity 0.6.12;
 
-import "../ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 
 contract ERC20Mock is ERC20 {
 	uint256 public totalSupply;

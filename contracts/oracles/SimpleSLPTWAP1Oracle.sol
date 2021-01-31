@@ -6,7 +6,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "../interfaces/IOracle.sol";
-import "../libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "../libraries/FixedPoint.sol";
@@ -32,9 +32,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
 
         // if time has elapsed since the last update on the pair, mock the accumulated price values
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) = IUniswapV2Pair(pair).getReserves();
-        if (blockTimestampLast != blockTimestamp) {
-            priceCumulative += uint256(FixedPoint.fraction(reserve0, reserve1)._x) * (blockTimestamp - blockTimestampLast); // overflows ok
-        }
+        priceCumulative += uint256(FixedPoint.fraction(reserve0, reserve1)._x) * (blockTimestamp - blockTimestampLast); // overflows ok
 
         // overflow is desired, casting never truncates
         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
@@ -46,7 +44,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 blockTimestamp = uint32(block.timestamp);
         if (pairs[pair].blockTimestampLast == 0) {
             pairs[pair].blockTimestampLast = blockTimestamp;
             pairs[pair].priceCumulativeLast = _get(pair, blockTimestamp);
@@ -68,7 +66,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     // Check the last exchange rate without any state changes
     function peek(bytes calldata data) public override view returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
-        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 blockTimestamp = uint32(block.timestamp);
         if (pairs[pair].blockTimestampLast == 0) {
             return (false, 0);
         }

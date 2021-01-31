@@ -23,6 +23,10 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
+"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#e06e943":
+  version "1.0.4"
+  resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/e06e943e7e8a168ed0395ef663a17fd71a6949a2"
+
 "@codechecks/client@^0.1.10":
   version "0.1.10"
   resolved "https://registry.yarnpkg.com/@codechecks/client/-/client-0.1.10.tgz#41fe736c424976d9feb8116b131fb9c1f099d105"
@@ -8407,6 +8411,20 @@ snapdragon@^0.8.1:
     source-map-resolve "^0.5.0"
     use "^3.1.0"
 
+solc@0.6.12, solc@^0.6.3:
+  version "0.6.12"
+  resolved "https://registry.yarnpkg.com/solc/-/solc-0.6.12.tgz#48ac854e0c729361b22a7483645077f58cba080e"
+  integrity sha512-Lm0Ql2G9Qc7yPP2Ba+WNmzw2jwsrd3u4PobHYlSOxaut3TtUbj9+5ZrT6f4DUpNPEoBaFUOEg9Op9C0mk7ge9g==
+  dependencies:
+    command-exists "^1.2.8"
+    commander "3.0.2"
+    fs-extra "^0.30.0"
+    js-sha3 "0.8.0"
+    memorystream "^0.3.1"
+    require-from-string "^2.0.0"
+    semver "^5.5.0"
+    tmp "0.0.33"
+
 solc@0.7.3:
   version "0.7.3"
   resolved "https://registry.yarnpkg.com/solc/-/solc-0.7.3.tgz#04646961bd867a744f63d2b4e3c0701ffdc7d78a"
@@ -8432,20 +8450,6 @@ solc@^0.4.20:
     require-from-string "^1.1.0"
     semver "^5.3.0"
     yargs "^4.7.1"
-
-solc@^0.6.3:
-  version "0.6.12"
-  resolved "https://registry.yarnpkg.com/solc/-/solc-0.6.12.tgz#48ac854e0c729361b22a7483645077f58cba080e"
-  integrity sha512-Lm0Ql2G9Qc7yPP2Ba+WNmzw2jwsrd3u4PobHYlSOxaut3TtUbj9+5ZrT6f4DUpNPEoBaFUOEg9Op9C0mk7ge9g==
-  dependencies:
-    command-exists "^1.2.8"
-    commander "3.0.2"
-    fs-extra "^0.30.0"
-    js-sha3 "0.8.0"
-    memorystream "^0.3.1"
-    require-from-string "^2.0.0"
-    semver "^5.5.0"
-    tmp "0.0.33"
 
 solhint-plugin-prettier@^0.0.5:
   version "0.0.5"

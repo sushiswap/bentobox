@@ -9,7 +9,7 @@ contract RevertingERC20Mock {
 	uint8 public constant decimals = 18;
 	uint256 public totalSupply;
 	mapping(address => uint256) public balanceOf;
-	mapping(address => mapping(address => uint256)) allowance;
+	mapping(address => mapping(address => uint256)) public allowance;
 
 	event Transfer(address indexed _from, address indexed _to, uint256 _value);
 	event Approval(address indexed _owner, address indexed _spender, uint256 _value);

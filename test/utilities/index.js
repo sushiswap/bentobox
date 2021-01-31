@@ -3,7 +3,7 @@ const {
   utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
 } = require("ethers")
 const { ecsign } = require("ethereumjs-util")
-
+const { deployments, ethers } = require("hardhat")
 const { BN } = require("bn.js")
 
 const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
@@ -60,7 +60,7 @@ function getBentoBoxDomainSeparator(address, chainId) {
   return keccak256(
     defaultAbiCoder.encode(
       ["bytes32", "string", "uint256", "address"],
-      [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V1", chainId, address]
+      [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V2", chainId, address]
     )
   )
 }
@@ -82,13 +82,31 @@ function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approv
   return keccak256(pack)
 }
 
-async function setMasterContractApproval(bentoBox, user, privateKey, masterContractAddress, approved) {
-  const nonce = await bentoBox.nonces(user.address)
-
+function getSignedMasterContractApprovalData(bentoBox, user, privateKey, masterContractAddress, approved, nonce) {
   const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+  return { v, r, s }
+}
 
-  return await bentoBox.connect(user).setMasterContractApproval(user.address, masterContractAddress, approved, v, r, s)
+async function setMasterContractApproval(bentoBox, from, user, privateKey, masterContractAddress, approved, fallback) {
+  if (!fallback) {
+    const nonce = await bentoBox.nonces(user.address)
+
+    const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
+    const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+
+    return await bentoBox.connect(user).setMasterContractApproval(from.address, masterContractAddress, approved, v, r, s)
+  }
+  return await bentoBox
+    .connect(user)
+    .setMasterContractApproval(
+      from.address,
+      masterContractAddress,
+      approved,
+      0,
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "0x0000000000000000000000000000000000000000000000000000000000000000"
+    )
 }
 
 async function setLendingPairContractApproval(bentoBox, user, privateKey, lendingPair, approved) {
@@ -118,11 +136,15 @@ async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair,
   )
   const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
 
-  return await lendingPair.connect(user).permitToken(token.address, user.address, amount, deadline, v, r, s)
+  return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
 }
 
 function sansBorrowFee(amount) {
   return amount.mul(BigNumber.from(2000)).div(BigNumber.from(2001))
+}
+
+function sansSafetyAmount(amount) {
+  return amount.sub(BigNumber.from(100000))
 }
 
 async function advanceTimeAndBlock(time, ethers) {
@@ -147,6 +169,12 @@ async function prepare(thisObject, contracts) {
   for (let i in contracts) {
     let contract = contracts[i]
     thisObject[contract] = await ethers.getContractFactory(contract)
+    thisObject[contract].thisObject = thisObject
+    thisObject[contract].new = async function (...params) {
+      let newContract = await thisObject[contract].deploy(...params)
+      await newContract.deployed()
+      return newContract
+    }
   }
   thisObject.signers = await ethers.getSigners()
   thisObject.alice = thisObject.signers[0]
@@ -157,6 +185,38 @@ async function prepare(thisObject, contracts) {
   thisObject.carolPrivateKey = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
 }
 
+async function deploymentsFixture(thisObject, stepsFunction) {
+  await deployments.fixture()
+  thisObject.weth9 = await ethers.getContract("WETH9Mock")
+  thisObject.bentoBox = await ethers.getContract("BentoBoxPlus")
+  thisObject.factory = await ethers.getContract("SushiSwapFactoryMock")
+  thisObject.lendingPair = await ethers.getContract("LendingPairMock")
+  thisObject.peggedOracle = await ethers.getContract("PeggedOracle")
+  thisObject.swapper = await ethers.getContract("SushiSwapSwapper")
+  thisObject.oracle = await ethers.getContract("OracleMock")
+  thisObject.helper = await ethers.getContract("BentoHelper")
+  await stepsFunction({
+    addToken: async function (name, symbol, tokenClass) {
+      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(name, symbol, getBigNumber(1000000))
+      await token.transfer(thisObject.bob.address, getBigNumber(1000))
+      await token.transfer(thisObject.carol.address, getBigNumber(1000))
+      return token
+    },
+    addPair: async function (tokenA, tokenB, amountA, amountB) {
+      const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
+      const pair = (await createPairTx.wait()).events[0].args.pair
+      const SushiSwapPairMock = await ethers.getContractFactory("SushiSwapPairMock")
+      const sushiSwapPair = await SushiSwapPairMock.attach(pair)
+
+      await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
+      await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
+
+      await sushiSwapPair.mint(thisObject.alice.address)
+      return sushiSwapPair
+    },
+  })
+}
+
 async function deploy(thisObject, contracts) {
   for (let i in contracts) {
     let contract = contracts[i]
@@ -165,17 +225,27 @@ async function deploy(thisObject, contracts) {
   }
 }
 
+function addr(address) {
+  if (typeof address == "object" && address.address) {
+    address = address.address
+  }
+  return address
+}
+
 module.exports = {
   ADDRESS_ZERO,
+  addr,
   getDomainSeparator,
   getApprovalDigest,
   getApprovalMsg,
   getBentoBoxDomainSeparator,
   getBentoBoxApprovalDigest,
   lendingPairPermit,
+  getSignedMasterContractApprovalData,
   setMasterContractApproval,
   setLendingPairContractApproval,
   sansBorrowFee,
+  sansSafetyAmount,
   encodePrice,
   roundBN,
   advanceTime,
@@ -183,5 +253,6 @@ module.exports = {
   advanceTimeAndBlock,
   getBigNumber,
   prepare,
+  deploymentsFixture,
   deploy,
 }

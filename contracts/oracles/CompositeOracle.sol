@@ -2,7 +2,7 @@
 
 // Using the same Copyleft License as in the original Repository
 pragma solidity 0.6.12;
-import "../libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 contract CompositeOracle is IOracle {

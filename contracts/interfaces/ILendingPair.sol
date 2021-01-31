@@ -5,7 +5,6 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 import "./IOracle.sol";
 import "./ISwapper.sol";
-import "./IERC20.sol";
 import "./IBentoBox.sol";
 
 interface ILendingPair {

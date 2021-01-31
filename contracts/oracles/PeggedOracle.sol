@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.6.12;
-import "../libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
+/// @title PeggedOracle
+/// @author BoringCrypto
+/// @notice Oracle used for pegged prices that don't change
+/// @dev
 contract PeggedOracle is IOracle {
-    using BoringMath for uint256;
-
+    /// @notice 
+    /// @dev
+    /// @param rate (uint256) The fixed exchange rate
+    /// @return  (bytes)
     function getDataParameter(uint256 rate) public pure returns (bytes memory) { return abi.encode(rate); }
 
     // Get the exchange rate
@@ -20,6 +25,10 @@ contract PeggedOracle is IOracle {
         return (rate != 0, rate);
     }
 
+    /// @notice
+    /// @dev
+    /// @param  (bytes)
+    /// @return  (string)
     function name(bytes calldata) public override view returns (string memory) {
         return "Pegged";
     }

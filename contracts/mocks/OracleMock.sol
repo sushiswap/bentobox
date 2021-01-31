@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity 0.6.12;
-import "../libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
 
 // WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle
@@ -10,7 +10,7 @@ contract OracleMock is IOracle {
 
 	uint256 rate;
 
-	function set(uint256 rate_, address) public {
+	function set(uint256 rate_) public {
 		// The rate can be updated.
 		rate = rate_;
 	}

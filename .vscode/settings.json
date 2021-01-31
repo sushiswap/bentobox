@@ -13,5 +13,22 @@
   "solidity.packageDefaultDependenciesContractsDirectory": "",
   "solidity.enabledAsYouTypeCompilationErrorCheck": true,
   "solidity.validationDelay": 1500,
-  "solidity.packageDefaultDependenciesDirectory": "node_modules"
+  "solidity.packageDefaultDependenciesDirectory": "node_modules",
+  "solidity-va.hover": false,
+  "solidity-va.deco.statevars": true,
+  "solidity-va.deco.arguments": false,
+  "solidity-va.deco.warn.reserved": false,
+  "solidity-va.outline.enable": false,
+  "solidity-va.outline.decorations": false,
+  "solidity-va.outline.extras": false,
+  "solidity-va.outline.var.storage_annotations": false,
+  "solidity-va.outline.pragmas.show": false,
+  "solidity-va.outline.imports.show": false,
+  "solidity-va.parser.parseImports": false,
+  "solidity-va.preview.dot": false,
+  "solidity-va.codelens.enable": true,
+  "solidity-va.mode.active": false,
+  "slither.solcPath": "",
+  "slither.hiddenDetectors": [],
+  "liveServer.settings.port": 5501
 }
