@@ -11,6 +11,7 @@ We solve these issues by having a platform with:
   Liquid interest rates based on a specific target utilization range, such as 70-80%.
 - Contracts optimized for low gas.
 - The supplied assets can be used for flash loans, providing extra revenue for suppliers.
+- Strategies can provide additional revenue
 
 ## Docs
 
@@ -20,12 +21,12 @@ We solve these issues by having a platform with:
 
 ## Security
 
-Audits are being performed by Quantstamp and Peckshield
+An early version was audited by PeckShield and partially by Quantstamp. The thoroughness wasn't overwhelming,
+which led to the creation of an internal audit checklist (see checks.txt in the docs folder).
 
-We use [Slither](https://github.com/crytic/slither) for static analysis. Reports and comments are here:
+Contracts are covered 100% by tests.
 
-[BentoBox.sol](docs/Slither_BentoBox.md)
-
+Formal verification is done using Certora.
 
 ## Licence
 

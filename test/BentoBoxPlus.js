@@ -167,10 +167,10 @@ describe("BentoBoxPlus", function () {
       ).to.be.revertedWith("BentoBox: to not set")
     })
 
-    it("Reverts when attempting to withdraw below 10000 shares", async function () {
-      await this.a.approve(this.bentoBox.address, 10000)
+    it("Reverts when attempting to withdraw below 1000 shares", async function () {
+      await this.a.approve(this.bentoBox.address, 1000)
 
-      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 10000)
+      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 1000)
 
       await expect(this.bentoBox.withdraw(this.a.address, this.alice.address, this.alice.address, 0, 2)).to.be.revertedWith(
         "BentoBox: cannot empty"

@@ -4,7 +4,7 @@ const { ethers } = require("hardhat")
 
 describe("StrategyManager", function () {
   before(async function () {
-    await prepare(this, ["StrategyManagerMock", "RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxPlus"])
+    await prepare(this, ["RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxPlus"])
     await deploy(this, [["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", getBigNumber("10000000")]]])
     await deploy(this, [
       ["bentoBox", this.BentoBoxPlus, [this.sushi.address]],
@@ -38,19 +38,19 @@ describe("StrategyManager", function () {
       await this.sushi.approve(this.bentoBox.address, getBigNumber(10))
       await this.bentoBox.deposit(this.sushi.address, this.alice.address, this.alice.address, getBigNumber(10), 0)
       expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(0)
-      await this.bentoBox.harvest(this.sushi.address, true)
+      await this.bentoBox.harvest(this.sushi.address, true, 0)
       expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(getBigNumber(8))
     })
 
     it("allows harvest of 0 when there's nothing to harvest", async function () {
       expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.equal("10000000000000000000")
-      await this.bentoBox.harvest(this.sushi.address, false)
+      await this.bentoBox.harvest(this.sushi.address, false, 0)
       expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.equal("10000000000000000000")
     })
 
     it("rebalances correctly after SushiBar makes money", async function () {
       await this.sushi.transfer(this.bar.address, getBigNumber(10))
-      await this.bentoBox.harvest(this.sushi.address, true)
+      await this.bentoBox.harvest(this.sushi.address, true, 0)
       expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal("15111111111111111112")
       expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3777777777777777778")
     })
@@ -70,9 +70,9 @@ describe("StrategyManager", function () {
 
     it("rebalances correctly after a withdraw from BentoBox", async function () {
       await this.sushiStrategy2.transferOwnership(this.bentoBox.address, true, false)
-      await this.bentoBox.harvest(this.sushi.address, true)
+      await this.bentoBox.harvest(this.sushi.address, true, 0)
       await this.bentoBox.withdraw(this.sushi.address, this.alice.address, this.alice.address, "3677777777777777778", 0)
-      await this.bentoBox.harvest(this.sushi.address, true)
+      await this.bentoBox.harvest(this.sushi.address, true, 0)
       expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3042222222222222220")
       expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("15211111111111111110")
     })
