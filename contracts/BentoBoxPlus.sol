@@ -60,12 +60,12 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         wethToken = wethToken_;
     }
 
-    function toShare(IERC20 token, uint256 amount) external view returns(uint256 share) {
-        share = totals[token].toBase(amount);
+    function toShare(IERC20 token, uint256 amount, bool roundUp) external view returns(uint256 share) {
+        share = totals[token].toBase(amount, roundUp);
     }
 
-    function toAmount(IERC20 token, uint256 share) external view returns(uint256 amount) {
-        amount = totals[token].toElastic(share);
+    function toAmount(IERC20 token, uint256 share, bool roundUp) external view returns(uint256 amount) {
+        amount = totals[token].toElastic(share, roundUp);
     }
 
     // M1 - M5: OK
@@ -105,16 +105,14 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         Rebase memory total = totals[token];
 
         // S1 - S4: OK
+        // If a new token gets added, the tokenSupply call checks that this is a deployed contract. Needed for security.
         require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
         if (share == 0) {
             // value of the share may be lower than the amount due to rounding, that's ok
-            share = total.toBase(amount);
+            share = total.toBase(amount, false);
         } else {
-            amount = total.toElastic(share);
             // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)
-            if (total.toBase(amount) < share) {
-                amount = amount.add(1);
-            }
+            amount = total.toElastic(share, true);
         }
 
         // In case of skimming, check that only the skimmable amount is taken. For ETH, the full balance is available, so no need to check.
@@ -155,14 +153,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
         if (share == 0) { 
-            share = total.toBase(amount);
             // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)
-            if (total.toElastic(share) < amount) {
-                share = share.add(1);
-            }
+            share = total.toBase(amount, true);
         } else {
             // amount may be lower than the value of share due to rounding, that's ok
-            amount = total.toElastic(share); 
+            amount = total.toElastic(share, false); 
         }
 
         balanceOf[token][from] = balanceOf[token][from].sub(share);
@@ -312,11 +307,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         // Effects
         if (amount > 0) {
             uint256 add = uint256(amount);
-            totals[token].elastic = totals[token].elastic.add(add.to128());
+            totals[token].addElastic(add);
             emit LogDeposit(token, address(from), address(this), add, 0);
         } else if (amount < 0) {
             uint256 sub = uint256(-amount);
-            totals[token].elastic = totals[token].elastic.sub(sub.to128());
+            totals[token].subElastic(sub);
             emit LogWithdraw(token, address(this), address(from), sub, 0);
         }
     }

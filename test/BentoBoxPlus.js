@@ -49,10 +49,10 @@ describe("BentoBoxPlus", function () {
 
   describe("Conversion", function () {
     it("Should convert Shares to Amounts", async function () {
-      expect(await this.bentoBox.toShare(this.a.address, 1)).to.be.equal(1)
+      expect(await this.bentoBox.toShare(this.a.address, 1, false)).to.be.equal(1)
     })
     it("Should convert amount to shares", async function () {
-      expect(await this.bentoBox.toAmount(this.a.address, 1)).to.be.equal(1)
+      expect(await this.bentoBox.toAmount(this.a.address, 1, false)).to.be.equal(1)
     })
   })
   describe("Deposit", function () {
@@ -437,7 +437,7 @@ describe("BentoBoxPlus", function () {
   })
   describe("FlashLoan", function () {
     it("should revert on batch flashloan if not enough funds are available", async function () {
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await expect(
         this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [getBigNumber(1)], param)
       ).to.be.revertedWith("BoringERC20: Transfer failed")
@@ -447,7 +447,7 @@ describe("BentoBoxPlus", function () {
       await this.a.transfer(this.bentoBox.address, getBigNumber(2))
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await expect(
         this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [getBigNumber(1)], param)
       ).to.be.revertedWith("BoringERC20: Transfer")
@@ -456,7 +456,7 @@ describe("BentoBoxPlus", function () {
     it("should revert on flashloan if amount is not paid back", async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await expect(
         this.bentoBox.flashLoan(this.sneakyFlashLoaner.address, this.sneakyFlashLoaner.address, this.a.address, getBigNumber(1), param)
       ).to.be.revertedWith("BentoBoxPlus: Wrong amount")
@@ -465,7 +465,7 @@ describe("BentoBoxPlus", function () {
     it("should revert on batch flashloan if amount is not paid back", async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await expect(
         this.bentoBox.batchFlashLoan(
           this.sneakyFlashLoaner.address,
@@ -494,20 +494,20 @@ describe("BentoBoxPlus", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1))
 
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
       await this.bentoBox.flashLoan(this.flashLoaner.address, this.flashLoaner.address, this.a.address, getBigNumber(1), param)
-      expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1))).to.be.equal(getBigNumber(1).mul(10005).div(10000))
+      expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1), false)).to.be.equal(getBigNumber(1).mul(10005).div(10000))
     })
 
     it("should allow batch flashloan", async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(2))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1))
 
-      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1])
+      const param = this.bentoBox.interface.encodeFunctionData("toShare", [this.a.address, 1, false])
       await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
       await this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [getBigNumber(1)], param)
-      expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1))).to.be.equal(getBigNumber(1).mul(10005).div(10000))
+      expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(1), false)).to.be.equal(getBigNumber(1).mul(10005).div(10000))
     })
   })
 

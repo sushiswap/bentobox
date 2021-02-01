@@ -208,8 +208,7 @@ describe("ERC20", function () {
       })
 
       const allowance01 = await this.token.allowance(this.alice.address, this.bob.address)
-      const maxMinus20 = "115792089237316195423570985008687907853269984665640564039457584007913129639915"
-      expect(allowance01).to.equal(maxMinus20)
+      expect(allowance01).to.equal(max)
 
       const balance22 = await this.token.balanceOf(this.carol.address)
       expect(balance22).to.equal(20)

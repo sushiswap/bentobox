@@ -77,6 +77,6 @@
     "solidity-coverage": "^0.7.12"
   },
   "dependencies": {
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#e06e943"
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#011d109"
   }
 }
