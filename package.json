@@ -4,6 +4,10 @@
   "private": true,
   "description": "BentoBox",
   "main": "index.js",
+  "files": [
+    "contracts",
+    "deployments"
+  ],  
   "directories": {
     "test": "test"
   },
