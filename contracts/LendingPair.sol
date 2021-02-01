@@ -372,7 +372,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     uint8 constant internal ACTION_BENTO_TRANSFER = 22;
     uint8 constant internal ACTION_BENTO_TRANSFER_MULTIPLE = 23;
     uint8 constant internal ACTION_BENTO_SETAPPROVAL = 24;
-    uint8 constant internal ACTION_GET_REPAY_SHARE = 40;
+    uint8 constant internal ACTION_GET_REPAY_AMOUNT = 40;
     uint8 constant internal ACTION_GET_REPAY_PART = 41;
 
     int256 constant internal USE_VALUE1 = -1;
@@ -490,7 +490,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                 if (returnValues == 1) { (value1) = abi.decode(returnData, (uint256)); }
                 else if (returnValues == 2) { (value1, value2) = abi.decode(returnData, (uint256, uint256)); }
 
-            } else if (action == ACTION_GET_REPAY_SHARE) {
+            } else if (action == ACTION_GET_REPAY_AMOUNT) {
                 (int256 part) = abi.decode(datas[i], (int256));
                 value1 = totalBorrow.toElastic(_num(part, value1, value2));
                 

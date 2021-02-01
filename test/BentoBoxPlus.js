@@ -330,16 +330,6 @@ describe("BentoBoxPlus", function () {
       expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have tokens").to.be.equal(1)
     })
 
-    it("Be benevolent", async function () {
-      await this.a.transfer(this.bentoBox.address, 1)
-
-      expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
-
-      await this.bentoBox.connect(this.bob).deposit(this.a.address, this.bentoBox.address, ADDRESS_ZERO, 1, 0)
-
-      expect((await this.bentoBox.totals(this.a.address)).elastic, "total amount should increase").to.be.equal(1)
-    })
-
     it("Emits LogDeposit event with expected arguments", async function () {
       await this.a.transfer(this.bentoBox.address, 1)
 

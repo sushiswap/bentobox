@@ -98,19 +98,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         IERC20 token_, address from, address to, uint256 amount, uint256 share
     ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0) || from == address(this), "BentoBox: to not set"); // To avoid a bad UI from burning funds
+        require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
 
         // Effects
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
-
-        // Skim
-        if (from == address(this)) {
-            // S1 - S4: OK
-            // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-            amount = token_ == IERC20(0) ? address(this).balance : _tokenBalanceOf(token).sub(total.elastic);
-            share = 0;
-        }
 
         // S1 - S4: OK
         require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
@@ -125,11 +117,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
             }
         }
 
-        // If to is not address(0) add the share, otherwise skip this to take profit
-        if (to != address(0)) {
-            balanceOf[token][to] = balanceOf[token][to].add(share);
-            total.base = total.base.add(share.to128());
-        }
+        // In case of skimming, check that only the skimmable amount is taken. For ETH, the full balance is available, so no need to check.
+        require(from != address(this) || token_ == IERC20(0) || amount <= _tokenBalanceOf(token).sub(total.elastic), "BentoBox: Skim too much");
+
+        balanceOf[token][to] = balanceOf[token][to].add(share);
+        total.base = total.base.add(share.to128());
         total.elastic = total.elastic.add(amount.to128());
         totals[token] = total;
 

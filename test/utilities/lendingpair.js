@@ -118,7 +118,7 @@ const ACTION_BENTO_TRANSFER = 22
 const ACTION_BENTO_TRANSFER_MULTIPLE = 23
 const ACTION_BENTO_SETAPPROVAL = 24
 const ACTION_PERMIT = 30
-const ACTION_GET_REPAY_SHARE = 40
+const ACTION_GET_REPAY_AMOUNT = 40
 const ACTION_GET_REPAY_PART = 41
 
 class LendingPair {
@@ -299,7 +299,7 @@ class LendingPair {
 
   repay(part) {
     return this.contract.cook(
-      [ACTION_GET_REPAY_SHARE, ACTION_BENTO_DEPOSIT, ACTION_REPAY],
+      [ACTION_GET_REPAY_AMOUNT, ACTION_BENTO_DEPOSIT, ACTION_REPAY],
       [0, 0, 0],
       [
         defaultAbiCoder.encode(["int256"], [part]),
@@ -354,14 +354,14 @@ class LendingPair {
       0,
     ])
     return this.contract.cook(
-      [ACTION_REMOVE_COLLATERAL, ACTION_GET_REPAY_SHARE, ACTION_CALL, ACTION_REPAY, ACTION_ADD_COLLATERAL],
+      [ACTION_REMOVE_COLLATERAL, ACTION_GET_REPAY_AMOUNT, ACTION_CALL, ACTION_REPAY, ACTION_ADD_COLLATERAL],
       [0, 0, 0, 0, 0],
       [
         // Remove collateral for user to Swapper contract (maxShare)
         defaultAbiCoder.encode(["int256", "address"], [maxShare, addr(swapper)]),
-        // Convert part to share
+        // Convert part to amount
         defaultAbiCoder.encode(["int256"], [part]),
-        // Swap collateral less than maxShare to exactly part (converted to share) asset, deliver asset to user and deliver unused collateral back to user
+        // Swap collateral less than maxShare to exactly part (converted to amount) asset, deliver asset to user and deliver unused collateral back to user
         defaultAbiCoder.encode(["address", "bytes", "bool", "bool", "uint8"], [swapper.address, data.slice(0, -64), true, false, 2]),
         // Repay part
         defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false]),
