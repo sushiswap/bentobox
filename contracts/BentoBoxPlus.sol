@@ -60,12 +60,12 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         wethToken = wethToken_;
     }
 
-    function toShare(IERC20 token, uint256 amount) external view returns(uint256 share) {
-        share = totals[token].toBase(amount);
+    function toShare(IERC20 token, uint256 amount, bool roundUp) external view returns(uint256 share) {
+        share = totals[token].toBase(amount, roundUp);
     }
 
-    function toAmount(IERC20 token, uint256 share) external view returns(uint256 amount) {
-        amount = totals[token].toElastic(share);
+    function toAmount(IERC20 token, uint256 share, bool roundUp) external view returns(uint256 amount) {
+        amount = totals[token].toElastic(share, roundUp);
     }
 
     // M1 - M5: OK
@@ -98,33 +98,28 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         IERC20 token_, address from, address to, uint256 amount, uint256 share
     ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {
         // Checks
-        require(to != address(0) || from == address(this), "BentoBox: to not set"); // To avoid a bad UI from burning funds
+        require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
 
         // Effects
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
 
-        // Skim
-        if (from == address(this)) {
-            // S1 - S4: OK
-            // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-            amount = token_ == IERC20(0) ? address(this).balance : _tokenBalanceOf(token).sub(total.elastic);
-            share = 0;
-        }
-
         // S1 - S4: OK
+        // If a new token gets added, the tokenSupply call checks that this is a deployed contract. Needed for security.
         require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
         if (share == 0) {
-            share = total.toBase(amount);
+            // value of the share may be lower than the amount due to rounding, that's ok
+            share = total.toBase(amount, false);
         } else {
-            amount = total.toElastic(share);
+            // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)
+            amount = total.toElastic(share, true);
         }
 
-        // If to is not address(0) add the share, otherwise skip this to take profit
-        if (to != address(0)) {
-            balanceOf[token][to] = balanceOf[token][to].add(share);
-            total.base = total.base.add(share.to128());
-        }
+        // In case of skimming, check that only the skimmable amount is taken. For ETH, the full balance is available, so no need to check.
+        require(from != address(this) || token_ == IERC20(0) || amount <= _tokenBalanceOf(token).sub(total.elastic), "BentoBox: Skim too much");
+
+        balanceOf[token][to] = balanceOf[token][to].add(share);
+        total.base = total.base.add(share.to128());
         total.elastic = total.elastic.add(amount.to128());
         totals[token] = total;
 
@@ -158,9 +153,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
         if (share == 0) { 
-            share = total.toBase(amount); 
+            // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)
+            share = total.toBase(amount, true);
         } else {
-            amount = total.toElastic(share); 
+            // amount may be lower than the value of share due to rounding, that's ok
+            amount = total.toElastic(share, false); 
         }
 
         balanceOf[token][from] = balanceOf[token][from].sub(share);
@@ -243,7 +240,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
 
         borrower.onFlashLoan(msg.sender, token, amount, fee, data); // REENT: Exit
         
-        require(_tokenBalanceOf(token) == totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
+        require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
         emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
     }
 
@@ -274,7 +271,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         for (uint256 i = 0; i < len; i++) {
             IERC20 token = tokens[i];
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-            require(_tokenBalanceOf(token) == totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
+            require(_tokenBalanceOf(token) >= totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
             emit LogFlashLoan(address(borrower), token, amounts[i], fees[i], receivers[i]);
         }
     }
@@ -310,11 +307,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         // Effects
         if (amount > 0) {
             uint256 add = uint256(amount);
-            totals[token].elastic = totals[token].elastic.add(add.to128());
+            totals[token].addElastic(add);
             emit LogDeposit(token, address(from), address(this), add, 0);
         } else if (amount < 0) {
             uint256 sub = uint256(-amount);
-            totals[token].elastic = totals[token].elastic.sub(sub.to128());
+            totals[token].subElastic(sub);
             emit LogWithdraw(token, address(this), address(from), sub, 0);
         }
     }

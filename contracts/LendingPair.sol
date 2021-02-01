@@ -180,7 +180,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             accrueInfo = _accrueInfo; return;
         }
 
-        uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.elastic);
+        uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.elastic, false);
         if (_totalBorrow.elastic > 0) {
             // Accrue interest
             extraAmount = uint256(_totalBorrow.elastic).mul(_accrueInfo.interestPerBlock).mul(blocks) / 1e18;
@@ -236,7 +236,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                     open 
                     ? OPEN_COLLATERIZATION_RATE 
                     : CLOSED_COLLATERIZATION_RATE
-                )
+                ),
+                false
             ) >= 
             userBorrowPart[user]
                 .mul(_totalBorrow.elastic)
@@ -295,12 +296,10 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     function _addAsset(address to, bool skim, uint256 share) internal returns (uint256 fraction) {
         Rebase memory _totalAsset = totalAsset;
         uint256 totalAssetShare = _totalAsset.elastic;
-        uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic);
+        uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic, true);
         fraction = allShare == 0 ? share : share.mul(_totalAsset.base) / allShare;
-        _totalAsset.elastic = _totalAsset.elastic.add(share.to128());
-        _totalAsset.base = _totalAsset.base.add(fraction.to128());
+        totalAsset = _totalAsset.add(share, fraction);
         balanceOf[to] = balanceOf[to].add(fraction);
-        totalAsset = _totalAsset;
         _addTokens(asset, share, totalAssetShare, skim);
         emit LogAddAsset(skim ? address(bentoBox) : msg.sender, to, share, fraction);
     }
@@ -312,7 +311,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
 
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
         Rebase memory _totalAsset = totalAsset;
-        uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic);
+        uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic, true);
         share = fraction.mul(allShare) / _totalAsset.base;
         balanceOf[msg.sender] = balanceOf[msg.sender].sub(fraction);
         _totalAsset.elastic = _totalAsset.elastic.sub(share.to128());
@@ -330,11 +329,11 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     function _borrow(address to, uint256 amount) internal returns (uint256 part, uint256 share) {
         uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
         
-        (totalBorrow, part) = totalBorrow.add(amount.add(feeAmount));
+        (totalBorrow, part) = totalBorrow.add(amount.add(feeAmount), true);
         userBorrowPart[to] = userBorrowPart[to].add(part);
         emit LogBorrow(msg.sender, to, amount.add(feeAmount), part);
 
-        share = bentoBox.toShare(asset, amount);
+        share = bentoBox.toShare(asset, amount, false);
         totalAsset.elastic = totalAsset.elastic.sub(share.to128());
         bentoBox.transfer(asset, address(this), to, share);
     }
@@ -345,10 +344,10 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     function _repay(address to, bool skim, uint256 part) internal returns (uint256 amount) {
-        (totalBorrow, amount) = totalBorrow.sub(part);
+        (totalBorrow, amount) = totalBorrow.sub(part, true);
         userBorrowPart[to] = userBorrowPart[to].sub(part);
 
-        uint256 share = bentoBox.toShare(asset, amount);
+        uint256 share = bentoBox.toShare(asset, amount, true);
         uint128 totalShare = totalAsset.elastic;
         _addTokens(asset, share, uint256(totalShare), skim);
         totalAsset.elastic = totalShare.add(share.to128());
@@ -372,7 +371,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     uint8 constant internal ACTION_BENTO_TRANSFER = 22;
     uint8 constant internal ACTION_BENTO_TRANSFER_MULTIPLE = 23;
     uint8 constant internal ACTION_BENTO_SETAPPROVAL = 24;
-    uint8 constant internal ACTION_GET_REPAY_SHARE = 40;
+    uint8 constant internal ACTION_GET_REPAY_AMOUNT = 40;
     uint8 constant internal ACTION_GET_REPAY_PART = 41;
 
     int256 constant internal USE_VALUE1 = -1;
@@ -490,13 +489,13 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                 if (returnValues == 1) { (value1) = abi.decode(returnData, (uint256)); }
                 else if (returnValues == 2) { (value1, value2) = abi.decode(returnData, (uint256, uint256)); }
 
-            } else if (action == ACTION_GET_REPAY_SHARE) {
+            } else if (action == ACTION_GET_REPAY_AMOUNT) {
                 (int256 part) = abi.decode(datas[i], (int256));
-                value1 = totalBorrow.toElastic(_num(part, value1, value2));
+                value1 = totalBorrow.toElastic(_num(part, value1, value2), true);
                 
             } else if (action == ACTION_GET_REPAY_PART) {
-                (int256 share) = abi.decode(datas[i], (int256));
-                value1 = totalBorrow.toBase(_num(share, value1, value2));
+                (int256 amount) = abi.decode(datas[i], (int256));
+                value1 = totalBorrow.toBase(_num(amount, value1, value2), false);
             }
         }
 
@@ -518,9 +517,10 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             address user = users[i];
             if (!isSolvent(user, open)) {
                 uint256 borrowPart = borrowParts[i];
-                uint256 borrowAmount = _totalBorrow.toElastic(borrowPart);
+                uint256 borrowAmount = _totalBorrow.toElastic(borrowPart, false);
                 uint256 collateralShare = bentoBox.toShare(collateral, borrowAmount
-                    .mul(LIQUIDATION_MULTIPLIER).mul(exchangeRate) / (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION));
+                    .mul(LIQUIDATION_MULTIPLIER).mul(exchangeRate) / (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
+                    false);
 
                 userCollateralShare[user] = userCollateralShare[user].sub(collateralShare);
                 userBorrowPart[user] = userBorrowPart[user].sub(borrowPart);

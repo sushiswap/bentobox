@@ -1,12 +1,13 @@
 {
   "name": "@sushiswap/bentobox",
-  "version": "0.3.0",
+  "version": "1.0.0",
+  "private": true,
   "description": "BentoBox",
   "main": "index.js",
   "files": [
     "contracts",
     "deployments"
-  ],
+  ],  
   "directories": {
     "test": "test"
   },
@@ -80,6 +81,6 @@
     "solidity-coverage": "^0.7.12"
   },
   "dependencies": {
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#e06e943"
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#011d109"
   }
 }

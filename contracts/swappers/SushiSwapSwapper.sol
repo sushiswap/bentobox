@@ -62,7 +62,7 @@ contract SushiSwapSwapper is ISwapper {
         IUniswapV2Pair pair = IUniswapV2Pair(factory.getPair(address(fromToken), address(toToken)));
         (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
 
-        uint256 amountToExact = bentoBox.toAmount(toToken, shareToExact);
+        uint256 amountToExact = bentoBox.toAmount(toToken, shareToExact, true);
 
         uint256 amountFrom;
         if (pair.token0() == address(fromToken)) {

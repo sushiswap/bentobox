@@ -116,7 +116,7 @@ describe("Scenario 1", function () {
     await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(800), 0)
   })
 
-  it("should allow adding profit to the BentoBox", async function () {
+  /*  it("should allow adding profit to the BentoBox", async function () {
     await this.a.transfer(this.bentoBox.address, getBigNumber(328))
     await this.bentoBox.deposit(this.a.address, this.bentoBox.address, ADDRESS_ZERO, getBigNumber(328), 0)
     await this.b.transfer(this.bentoBox.address, getBigNumber(450))
@@ -151,5 +151,5 @@ describe("Scenario 1", function () {
     let info = await this.helper.getPairs(this.bob.address, [this.pairAB.contract.address])
     console.log(rpcToObj(info[0]))
     await debugInfo(this)
-  })
+  })*/
 })
