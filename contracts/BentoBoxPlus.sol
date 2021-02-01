@@ -115,9 +115,14 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         // S1 - S4: OK
         require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
         if (share == 0) {
+            // value of the share may be lower than the amount due to rounding, that's ok
             share = total.toBase(amount);
         } else {
             amount = total.toElastic(share);
+            // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)
+            if (total.toBase(amount) < share) {
+                amount = amount.add(1);
+            }
         }
 
         // If to is not address(0) add the share, otherwise skip this to take profit
@@ -158,8 +163,13 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         IERC20 token = token_ == IERC20(0) ? wethToken : token_;
         Rebase memory total = totals[token];
         if (share == 0) { 
-            share = total.toBase(amount); 
+            share = total.toBase(amount);
+            // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)
+            if (total.toElastic(share) < amount) {
+                share = share.add(1);
+            }
         } else {
+            // amount may be lower than the value of share due to rounding, that's ok
             amount = total.toElastic(share); 
         }
 
@@ -243,7 +253,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
 
         borrower.onFlashLoan(msg.sender, token, amount, fee, data); // REENT: Exit
         
-        require(_tokenBalanceOf(token) == totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
+        require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
         emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
     }
 
@@ -274,7 +284,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         for (uint256 i = 0; i < len; i++) {
             IERC20 token = tokens[i];
             // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
-            require(_tokenBalanceOf(token) == totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
+            require(_tokenBalanceOf(token) >= totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
             emit LogFlashLoan(address(borrower), token, amounts[i], fees[i], receivers[i]);
         }
     }
