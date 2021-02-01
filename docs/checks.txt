@@ -1,6 +1,6 @@
 Variables
 V1 - Is visibility set (SWC-108)
-V2 - Can they be private
+V2 - Can they be private?
 V3 - Can it be constant?
 V4 - Can it be immutable?
 V5 - No unused variables (SWC-131)

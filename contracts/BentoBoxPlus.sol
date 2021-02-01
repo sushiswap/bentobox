@@ -8,12 +8,10 @@
 //  ██▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▌.▐▌██▄▪▐█▐█▌.▐▌▪▐█·█▌ Plus!!
 //  ·▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀█▄▀▪·▀▀▀▀  ▀█▄▀▪•▀▀ ▀▀
 
-// This contract stores funds, handles their transfers.
+// This contract stores funds, handles their transfers, supports flash loans and strategies.
 
 // Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
-
-// WARNING!!! DO NOT USE!!! UNDER DEVELOPMENT!!!
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -27,20 +25,22 @@ import "./interfaces/IERC3156FlashLoan.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IStrategy.sol";
 import "./MasterContractManager.sol";
-import "hardhat/console.sol";
 
 /// @title BentoBoxPlus
 /// @author BoringCrypto, Keno
 /// @notice The BentoBox is a vault for tokens. The stored tokens can be flash loaned. Fees for this will go to the token depositors.
 /// Rebasing tokens ARE NOT supported and WILL cause loss of funds.
 /// Any funds transfered directly onto the BentoBox will be lost, use the deposit function instead.
-/// @dev ERC3156 wasn't final at release of the BentoBox and the BentoBox is not ERC3156 compliant at this time. The BentoBox uses push
-/// instead of pull to get the returned funds. This is for flexibility and security reasons.
+// T1 - T4: OK
 contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFlashLender {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using BoringERC20 for IERC20;
     using RebaseLibrary for Rebase;
+
+    // ************** //
+    // *** EVENTS *** //
+    // ************** //
 
     // E1: OK
     event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
@@ -48,25 +48,77 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
     // E1: OK
     event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
+
+    // E1: OK
     event LogFlashLoan(address indexed borrower, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
 
+    // E1: OK
+    event LogStrategyTargetPercentage(IERC20 indexed token, uint256 targetPercentage);
+    // E1: OK
+    event LogStrategyQueued(IERC20 indexed token, IStrategy indexed strategy);
+    // E1: OK
+    event LogStrategySet(IERC20 indexed token, IStrategy indexed strategy);
+    // E1: OK
+    event LogStrategyInvest(IERC20 indexed token, uint256 amount);
+    // E1: OK
+    event LogStrategyDivest(IERC20 indexed token, uint256 amount);
+    // E1: OK
+    event LogStrategyProfit(IERC20 indexed token, uint256 amount);
+    // E1: OK
+    event LogStrategyLoss(IERC20 indexed token, uint256 amount);
+
+    // *************** //
+    // *** STRUCTS *** //
+    // *************** //
+
+    struct StrategyData {
+        uint64 strategyStartDate;
+        uint64 targetPercentage;
+        uint128 balance;
+    }
+
+    // ******************************** //
+    // *** CONSTANTS AND IMMUTABLES *** //
+    // ******************************** //
+
+    // V1 - V5: OK
+    // V2 - Can they be private?
     // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
 
-    mapping(IERC20 => mapping(address => uint256)) public balanceOf; // Balance per token per address/contract in shares
-    mapping(IERC20 => Rebase) public totals; // Rebase from amount to share
+    uint256 private constant STRATEGY_DELAY = 2 weeks;
+    uint256 private constant MAX_TARGET_PERCENTAGE = 95;
+
+    // ***************** //
+    // *** VARIABLES *** //
+    // ***************** //
+
+    // V1 - V5: OK
+    // Balance per token per address/contract in shares
+    mapping(IERC20 => mapping(address => uint256)) public balanceOf;
+
+    // V1 - V5: OK
+    // Rebase from amount to share
+    mapping(IERC20 => Rebase) public totals;
+
+    // V1 - V5: OK
+    mapping(IERC20 => IStrategy) public strategy;
+    // V1 - V5: OK
+    mapping(IERC20 => IStrategy) public pendingStrategy;
+    // V1 - V5: OK
+    mapping(IERC20 => StrategyData) public strategyData;
+
+    // ******************* //
+    // *** CONSTRUCTOR *** //
+    // ******************* //
 
     constructor(IERC20 wethToken_) public {
         wethToken = wethToken_;
     }
 
-    function toShare(IERC20 token, uint256 amount, bool roundUp) external view returns(uint256 share) {
-        share = totals[token].toBase(amount, roundUp);
-    }
-
-    function toAmount(IERC20 token, uint256 share, bool roundUp) external view returns(uint256 amount) {
-        amount = totals[token].toElastic(share, roundUp);
-    }
+    // ***************** //
+    // *** MODIFIERS *** //
+    // ***************** //
 
     // M1 - M5: OK
     // C1 - C23: OK
@@ -85,13 +137,47 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         _;
     }
 
+    // ************************** //
+    // *** INTERNAL FUNCTIONS *** //
+    // ************************** //
+
     function _tokenBalanceOf(IERC20 token) internal view returns (uint256 amount) {
         amount = token.balanceOf(address(this)).add(strategyData[token].balance);
     }
 
     // F1 - F10: OK
+    // C1 - C23: OK
+    // TODO: Reentrancy 
+    function _assetAdded(IERC20 token, int256 amount) internal {
+        // Effects
+        if (amount > 0) {
+            uint256 add = uint256(amount);
+            totals[token].addElastic(add);
+            emit LogStrategyProfit(token, add);
+        } else if (amount < 0) {
+            uint256 sub = uint256(-amount);
+            totals[token].subElastic(sub);
+            emit LogStrategyLoss(token, sub);
+        }
+    }
+
+    // ************************ //
+    // *** PUBLIC FUNCTIONS *** //
+    // ************************ //
+
+    function toShare(IERC20 token, uint256 amount, bool roundUp) external view returns(uint256 share) {
+        share = totals[token].toBase(amount, roundUp);
+    }
+
+    function toAmount(IERC20 token, uint256 share, bool roundUp) external view returns(uint256 amount) {
+        amount = totals[token].toElastic(share, roundUp);
+    }
+
+    // F1 - F10: OK
+    // F3 - Can it be combined with another similar function?
     // F3: Combined deposit(s) and skim functions into one
     // C1 - C21: OK
+    // C2 - Are any storage slots read multiple times?
     // C2: wethToken is used multiple times, but this is an immutable, so after construction it's hardcoded in the contract
     // REENT: Only for attack on other tokens + if WETH9 used, safe
     function deposit(
@@ -141,6 +227,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
 
     // F1 - F10: OK
     // C1 - C22: OK
+    // C2 - Are any storage slots read multiple times?
     // C2: wethToken is used multiple times, but this is an immutable, so after construction it's hardcoded in the contract
     // REENT: Yes
     function withdraw(
@@ -187,9 +274,9 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         shareOut = share;
     }
 
-    // *** Approved contract actions *** //
     // Clones of master contracts can transfer from any account that has approved them
     // F1 - F10: OK
+    // F3 - Can it be combined with another similar function?
     // F3: This isn't combined with transferMultiple for gas optimization
     // C1 - C23: OK
     function transfer(IERC20 token, address from, address to, uint256 share) public allowed(from) {
@@ -204,6 +291,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     }
 
     // F1 - F10: OK
+    // F3 - Can it be combined with another similar function?
     // F3: This isn't combined with transfer for gas optimization
     // C1 - C23: OK
     function transferMultiple(IERC20 token, address from, address[] calldata tos, uint256[] calldata shares) public allowed(from) {
@@ -245,7 +333,9 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     }
 
     // F1 - F10: OK
+    // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Not possible to follow this here, reentrancy needs a careful review
+    // F6 - Check for front-running possibilities, such as the approve function (SWC-114)
     // F6: Slight grieving possible by withdrawing an amount before someone tries to flashloan close to the full amount.
     // C1 - C23: OK
     // REENT: Yes
@@ -276,20 +366,6 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         }
     }
 
-    uint256 private constant STRATEGY_DELAY = 2 weeks;
-
-    struct StrategyData {
-        uint64 strategyStartDate;
-        uint64 targetPercentage;
-        uint128 balance;
-    }
-
-    mapping(IERC20 => StrategyData) public strategyData;
-    mapping(IERC20 => IStrategy) public strategy;
-    mapping(IERC20 => IStrategy) public pendingStrategy;
-
-    uint256 private constant MAX_TARGET_PERCENTAGE = 95;
-
     // F1 - F10: OK
     // C1 - C23: OK
     function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_) public onlyOwner {
@@ -298,27 +374,14 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
 
         // Effects
         strategyData[token].targetPercentage = targetPercentage_;
+        emit LogStrategyTargetPercentage(token, targetPercentage_);
     }
 
     // F1 - F10: OK
-    // C1 - C23: OK
-    // TODO: Reentrancy 
-    function _assetAdded(IERC20 token, IStrategy from, int256 amount) internal {
-        // Effects
-        if (amount > 0) {
-            uint256 add = uint256(amount);
-            totals[token].addElastic(add);
-            emit LogDeposit(token, address(from), address(this), add, 0);
-        } else if (amount < 0) {
-            uint256 sub = uint256(-amount);
-            totals[token].subElastic(sub);
-            emit LogWithdraw(token, address(this), address(from), sub, 0);
-        }
-    }
-
-    // F1 - F10: OK
+    // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // C1 - C23: OK
+    // C4 - Use block.timestamp only for long intervals (SWC-116)
     // C4: block.timestamp is used for a period of 2 weeks, which is long enough
     // F1 - F10: OK
     function setStrategy(IERC20 token, IStrategy newStrategy) public onlyOwner {
@@ -326,26 +389,30 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         if (pending != newStrategy) {
             pendingStrategy[token] = newStrategy;
             strategyData[token].strategyStartDate = (block.timestamp + STRATEGY_DELAY).to64();
+            emit LogStrategyQueued(token, newStrategy);
         } else {
             StrategyData memory data = strategyData[token];
             require(data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate, "StrategyManager: Too early");
             if (address(strategy[token]) != address(0)) {
-                _assetAdded(token, strategy[token], strategy[token].exit(data.balance)); // REENT: Exit (under our control, safe)
+                _assetAdded(token, strategy[token].exit(data.balance)); // REENT: Exit (under our control, safe)
+                emit LogStrategyDivest(token, data.balance);
             }
             strategy[token] = pending;
             data.strategyStartDate = 0;
             data.balance = 0;
             strategyData[token] = data;
+            emit LogStrategySet(token, newStrategy);
         }
     }
 
     // F1 - F10: OK
+    // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // F5: Not followed to prevent reentrancy issues with flashloans and BentoBox skims?
     // C1 - C23: OK
     // REENT: Can be used to increase (and maybe decrease) totals[token].amount
     function harvest(IERC20 token, bool balance, uint256 maxChangeAmount) public {
-        _assetAdded(token, strategy[token], strategy[token].harvest(strategyData[token].balance));
+        _assetAdded(token, strategy[token].harvest(strategyData[token].balance));
 
         if (balance) {
             StrategyData memory data = strategyData[token];
@@ -358,15 +425,18 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
                 token.safeTransfer(address(currentStrategy), amountOut); // REENT: Exit (only for attack on other tokens)
                 strategyData[token].balance = data.balance.add(amountOut.to128());
                 currentStrategy.skim(data.balance); // REENT: Exit (under our control, safe)
+                emit LogStrategyInvest(token, amountOut);
             } else {
                 uint256 amountIn = data.balance.sub(targetBalance.to128());
                 if (maxChangeAmount != 0 && amountIn > maxChangeAmount) { amountIn = maxChangeAmount; }
                 strategyData[token].balance = data.balance.sub(amountIn.to128());
                 strategy[token].withdraw(amountIn, data.balance); // REENT: Exit (only for attack on other tokens)
+                emit LogStrategyDivest(token, amountIn);
             }
         }
     }
 
+    // Contract should be able to receive ETH deposits to support deposit & skim
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 }
