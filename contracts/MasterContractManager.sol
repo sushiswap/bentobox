@@ -22,7 +22,11 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     // V1 - V5: OK
     mapping(address => uint256) public nonces;
 
-    bytes32 private constant DOMAIN_SEPERATOR_SIGNATURE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    bytes32 private constant DOMAIN_SEPARATOR_SIGNATURE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    // See https://eips.ethereum.org/EIPS/eip-191
+    string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = "\x19\x01";
+    bytes32 private constant APPROVAL_SIGNATURE_HASH = 
+        keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
     
     // F1 - F8: OK
     // C1 - C19: OK
@@ -31,7 +35,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         uint256 chainId;
         assembly {chainId := chainid()}
         return keccak256(abi.encode(
-            DOMAIN_SEPERATOR_SIGNATURE_HASH, 
+            DOMAIN_SEPARATOR_SIGNATURE_HASH, 
             "BentoBox V2",
             chainId, 
             address(this)
@@ -65,10 +69,10 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
             // C11: signature is EIP-712 compliant
             // C12: abi.encodePacked has fixed length parameters
             bytes32 digest = keccak256(abi.encodePacked(
-                "\x19\x01", domainSeparator(),
+                EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA,
+                domainSeparator(),
                 keccak256(abi.encode(
-                    // keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
-                    0x1962bc9f5484cb7a998701b81090e966ee1fce5771af884cceee7c081b14ade2,
+                    APPROVAL_SIGNATURE_HASH,
                     approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
                     user, masterContract, approved, nonces[user]++
                 ))

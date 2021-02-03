@@ -9,18 +9,26 @@ const {
   setMasterContractApproval,
   deploy,
   deploymentsFixture,
+  decodeLogs,
 } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
 describe("BentoBoxPlus", function () {
   before(async function () {
-    await prepare(this, ["ERC20Mock", "SneakyFlashLoanerMock", "FlashLoanerMock", "ReturnFalseERC20Mock", "RevertingERC20Mock"])
+    await prepare(this, [
+      "ERC20Mock",
+      "SneakyFlashLoanerMock",
+      "FlashLoanerMock",
+      "ReturnFalseERC20Mock",
+      "RevertingERC20Mock",
+      "BentoBoxPlusMock",
+    ])
   })
 
   beforeEach(async function () {
     await deploymentsFixture(this, async (cmd) => {
-      this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
-      this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
+      await cmd.addToken("a", "Token A", "A", this.ReturnFalseERC20Mock)
+      await cmd.addToken("b", "Token B", "B", this.RevertingERC20Mock)
     })
 
     await deploy(this, [
@@ -49,40 +57,88 @@ describe("BentoBoxPlus", function () {
 
   describe("Conversion", function () {
     it("Should convert Shares to Amounts", async function () {
+      expect(await this.bentoBox.toShare(this.a.address, 1000, false)).to.be.equal(1000)
       expect(await this.bentoBox.toShare(this.a.address, 1, false)).to.be.equal(1)
+      expect(await this.bentoBox.toShare(this.a.address, 0, false)).to.be.equal(0)
+      expect(await this.bentoBox.toShare(this.a.address, 1000, true)).to.be.equal(1000)
+      expect(await this.bentoBox.toShare(this.a.address, 1, true)).to.be.equal(1)
+      expect(await this.bentoBox.toShare(this.a.address, 0, true)).to.be.equal(0)
     })
-    it("Should convert amount to shares", async function () {
+
+    it("Should convert amount to Shares", async function () {
+      expect(await this.bentoBox.toAmount(this.a.address, 1000, false)).to.be.equal(1000)
       expect(await this.bentoBox.toAmount(this.a.address, 1, false)).to.be.equal(1)
+      expect(await this.bentoBox.toAmount(this.a.address, 0, false)).to.be.equal(0)
+      expect(await this.bentoBox.toAmount(this.a.address, 1000, true)).to.be.equal(1000)
+      expect(await this.bentoBox.toAmount(this.a.address, 1, true)).to.be.equal(1)
+      expect(await this.bentoBox.toAmount(this.a.address, 0, true)).to.be.equal(0)
+    })
+
+    it("Should convert at ratio", async function () {
+      await this.BentoBoxPlusMock.new("bento", this.weth9.address)
+      await this.a.approve(this.bento.address, getBigNumber(100))
+
+      await this.bento.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
+      await this.bento.addProfit(this.a.address, getBigNumber(66))
+
+      expect(await this.bento.toAmount(this.a.address, 1000, false)).to.be.equal(1660)
+      expect(await this.bento.toAmount(this.a.address, 1, false)).to.be.equal(1)
+      expect(await this.bento.toAmount(this.a.address, 0, false)).to.be.equal(0)
+      expect(await this.bento.toAmount(this.a.address, 1000, true)).to.be.equal(1660)
+      expect(await this.bento.toAmount(this.a.address, 1, true)).to.be.equal(2)
+      expect(await this.bento.toAmount(this.a.address, 0, true)).to.be.equal(0)
+      // 1000 * 100 / 166 = 602.4096
+      expect(await this.bento.toShare(this.a.address, 1000, false)).to.be.equal(602)
+      expect(await this.bento.toShare(this.a.address, 1000, true)).to.be.equal(603)
+      expect(await this.bento.toShare(this.a.address, 1, false)).to.be.equal(0)
+      expect(await this.bento.toShare(this.a.address, 1, true)).to.be.equal(1)
+      expect(await this.bento.toShare(this.a.address, 0, false)).to.be.equal(0)
+      expect(await this.bento.toShare(this.a.address, 0, true)).to.be.equal(0)
     })
   })
+
   describe("Deposit", function () {
     it("Reverts with to address zero", async function () {
-      await expect(
-        this.bentoBox.deposit(this.a.address, this.alice.address, "0x0000000000000000000000000000000000000000", 1, 0)
-      ).to.be.revertedWith("BentoBox: to not set")
+      await expect(this.bentoBox.deposit(this.a.address, this.alice.address, ADDRESS_ZERO, 0, 0)).to.be.revertedWith("BentoBox: to not set")
+      await expect(this.bentoBox.deposit(ADDRESS_ZERO, this.alice.address, ADDRESS_ZERO, 0, 0)).to.be.revertedWith("BentoBox: to not set")
+      await expect(this.bentoBox.deposit(this.a.address, this.bob.address, ADDRESS_ZERO, 1, 0)).to.be.revertedWith("BentoBox: no masterContract")
     })
-
-    /*
-    it("Reverts with from address BentoBox", async function () {
-      await expect(this.bentoBox.deposit(this.a.address, this.bentoBox.address, this.alice.address, 1, 0)).to.be.revertedWith(
-        "BentoBox: to not set"
-      )
-    })
-    implement with batching
-    */
 
     it("Reverts without approval", async function () {
+      await this.a.connect(this.bob).approve(this.bentoBox.address, 1000)
       await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 1, 0)).to.be.revertedWith(
-        "BoringERC20: TransferFrom "
+        "BoringERC20: TransferFrom"
+      )
+
+      await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.bob.address, 1, 0)).to.be.revertedWith(
+        "BoringERC20: TransferFrom"
+      )
+
+      await expect(this.bentoBox.connect(this.bob).deposit(this.b.address, this.bob.address, this.bob.address, 1, 0)).to.be.revertedWith(
+        "BoringERC20: TransferFrom"
       )
 
       expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address)).to.be.equal(0)
     })
 
+    async function analyse(thisObject, contract, tx_promise) {
+      const tx = await tx_promise
+      const rx = await thisObject.alice.provider.getTransactionReceipt(tx.hash)
+      const logs = decodeLogs(rx.logs)
+      for (var i in logs) {
+        var log = logs[i]
+        console.log(".to.emit(this." + ', "LogWithdraw")')
+        console.log(".withArgs(this.a.address, this.alice.address, this.alice.address, 1, 1)")
+
+        console.log()
+      }
+      //console.log(tx, contract.interface.parseLog(rx.logs[1]));
+    }
+
     it("Mutates balanceOf correctly", async function () {
       await this.a.approve(this.bentoBox.address, 1)
 
-      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 1, 0)
+      await analyse(this, this.bentoBox, this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 1, 0))
 
       expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address)).to.be.equal(1)
     })
@@ -162,9 +218,7 @@ describe("BentoBoxPlus", function () {
 
   describe("Withdraw", function () {
     it("Reverts when address zero is passed as to argument", async function () {
-      await expect(
-        this.bentoBox.withdraw(this.a.address, this.alice.address, "0x0000000000000000000000000000000000000000", 1, 0)
-      ).to.be.revertedWith("BentoBox: to not set")
+      await expect(this.bentoBox.withdraw(this.a.address, this.alice.address, ADDRESS_ZERO, 1, 0)).to.be.revertedWith("BentoBox: to not set")
     })
 
     it("Reverts when attempting to withdraw below 1000 shares", async function () {
@@ -262,9 +316,7 @@ describe("BentoBoxPlus", function () {
 
   describe("Transfer", function () {
     it("Reverts when address zero is given as to argument", async function () {
-      await expect(
-        this.bentoBox.transfer(this.a.address, this.alice.address, "0x0000000000000000000000000000000000000000", 1)
-      ).to.be.revertedWith("BentoBox: to not set")
+      await expect(this.bentoBox.transfer(this.a.address, this.alice.address, ADDRESS_ZERO, 1)).to.be.revertedWith("BentoBox: to not set")
     })
 
     it("Reverts when attempting to transfer larger amount than available", async function () {
@@ -298,8 +350,7 @@ describe("BentoBoxPlus", function () {
 
   describe("Transfer Multiple", function () {
     it("Reverts if first to argument is address zero", async function () {
-      await expect(this.bentoBox.transferMultiple(this.a.address, this.alice.address, ["0x0000000000000000000000000000000000000000"], [1])).to.be
-        .reverted
+      await expect(this.bentoBox.transferMultiple(this.a.address, this.alice.address, [ADDRESS_ZERO], [1])).to.be.reverted
     })
 
     it("should allow transfer multiple from alice to bob and carol", async function () {
@@ -475,19 +526,6 @@ describe("BentoBoxPlus", function () {
           param
         )
       ).to.be.revertedWith("BentoBoxPlus: Wrong amount")
-    })
-
-    it("should return correct maxFlashAmount", async function () {
-      await this.a.approve(this.bentoBox.address, getBigNumber(2))
-      await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, getBigNumber(1))
-
-      expect(await this.bentoBox.maxFlashAmount(this.a.address)).to.equal("1000000000000000000")
-      await expect(this.bentoBox.maxFlashAmount(ADDRESS_ZERO)).to.be.revertedWith("")
-    })
-
-    it("should return correct flashFee", async function () {
-      expect(await this.bentoBox.flashFee(this.a.address, "1000000000000000000")).to.equal("500000000000000")
-      expect(await this.bentoBox.flashFee(ADDRESS_ZERO, "1000000000000000000")).to.equal("500000000000000")
     })
 
     it("should allow flashloan", async function () {

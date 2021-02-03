@@ -89,12 +89,12 @@ describe("Scenario 1", function () {
 
   it("Sets up fixtures, tokens, etc", async function () {
     await deploymentsFixture(this, async (cmd) => {
-      this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
-      this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
-      this.c = await cmd.addToken("Token C", "C", this.RevertingERC20Mock)
-      this.d = await cmd.addToken("Token D", "D", this.RevertingERC20Mock)
-      this.ammpairAB = await cmd.addPair(this.a, this.b, 50000, 50000)
-      this.ammpairAC = await cmd.addPair(this.a, this.c, 50000, 50000)
+      await cmd.addToken("a", "Token A", "A", this.ReturnFalseERC20Mock)
+      await cmd.addToken("b", "Token B", "B", this.RevertingERC20Mock)
+      await cmd.addToken("c", "Token C", "C", this.RevertingERC20Mock)
+      await cmd.addToken("d", "Token D", "D", this.RevertingERC20Mock)
+      await cmd.addPair("ammpairAB", this.a, this.b, 50000, 50000)
+      await cmd.addPair("ammpairAC", this.a, this.c, 50000, 50000)
     })
 
     this.pairAB = await LendingPair.deploy(this.bentoBox, this.lendingPair, this.LendingPairMock, this.a, this.b, this.oracle)

@@ -3,12 +3,12 @@
 
 // TokenA does not revert on errors, it just returns false
 pragma solidity 0.6.12;
-import "../interfaces/IERC3156FlashLoan.sol";
+import "../interfaces/IFlashLoan.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 
 
-contract FlashLoanerMock is IERC3156FlashBorrower, IERC3156BatchFlashBorrower{
+contract FlashLoanerMock is IFlashBorrower, IBatchFlashBorrower{
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
 

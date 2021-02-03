@@ -29,7 +29,6 @@ import "./interfaces/IOracle.sol";
 import "./BentoBoxPlus.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/IWETH.sol";
-import "hardhat/console.sol";
 
 // TODO: check all reentrancy paths
 // TODO: what to do when the entire pool is underwater?

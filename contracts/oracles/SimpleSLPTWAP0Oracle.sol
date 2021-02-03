@@ -10,7 +10,6 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
 import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "../libraries/FixedPoint.sol";
-import "hardhat/console.sol";
 
 // adapted from https://github.com/Uniswap/uniswap-v2-periphery/blob/master/contracts/examples/ExampleSlidingWindowOracle.sol
 

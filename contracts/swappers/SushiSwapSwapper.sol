@@ -6,7 +6,6 @@ import "@sushiswap/core/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 import "../interfaces/ISwapper.sol";
 import "../BentoBoxPlus.sol";
-import "hardhat/console.sol";
 
 contract SushiSwapSwapper is ISwapper {
     using BoringMath for uint256;

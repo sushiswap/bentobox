@@ -10,6 +10,8 @@ const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 
 const BASE_TEN = 10
 
+const contracts = {}
+
 function roundBN(number) {
   return new BN(number.toString()).divRound(new BN("10000000000000000")).toString()
 }
@@ -165,14 +167,27 @@ function getBigNumber(amount, decimals = 18) {
   return BigNumber.from(amount).mul(BigNumber.from(BASE_TEN).pow(decimals))
 }
 
+function addContract(thisObject, name, contract) {
+  thisObject[name] = contract
+  contract.thisName = name
+  contracts[contract.address] = contract
+}
+
+async function getContract(name) {
+  const contract = await ethers.getContract(name)
+  contracts[contract.address] = contract
+  return contract
+}
+
 async function prepare(thisObject, contracts) {
   for (let i in contracts) {
     let contract = contracts[i]
     thisObject[contract] = await ethers.getContractFactory(contract)
     thisObject[contract].thisObject = thisObject
-    thisObject[contract].new = async function (...params) {
+    thisObject[contract].new = async function (name, ...params) {
       let newContract = await thisObject[contract].deploy(...params)
       await newContract.deployed()
+      addContract(thisObject, name, newContract)
       return newContract
     }
   }
@@ -187,26 +202,27 @@ async function prepare(thisObject, contracts) {
 
 async function deploymentsFixture(thisObject, stepsFunction) {
   await deployments.fixture()
-  thisObject.weth9 = await ethers.getContract("WETH9Mock")
-  thisObject.bentoBox = await ethers.getContract("BentoBoxPlus")
-  thisObject.factory = await ethers.getContract("SushiSwapFactoryMock")
-  thisObject.lendingPair = await ethers.getContract("LendingPairMock")
-  thisObject.peggedOracle = await ethers.getContract("PeggedOracle")
-  thisObject.swapper = await ethers.getContract("SushiSwapSwapper")
-  thisObject.oracle = await ethers.getContract("OracleMock")
-  thisObject.helper = await ethers.getContract("BentoHelper")
+  thisObject.weth9 = await getContract("WETH9Mock")
+  thisObject.bentoBox = await getContract("BentoBoxPlus")
+  thisObject.factory = await getContract("SushiSwapFactoryMock")
+  thisObject.lendingPair = await getContract("LendingPairMock")
+  thisObject.peggedOracle = await getContract("PeggedOracle")
+  thisObject.swapper = await getContract("SushiSwapSwapper")
+  thisObject.oracle = await getContract("OracleMock")
+  thisObject.helper = await getContract("BentoHelper")
   await stepsFunction({
-    addToken: async function (name, symbol, tokenClass) {
-      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(name, symbol, getBigNumber(1000000))
+    addToken: async function (var_name, name, symbol, tokenClass) {
+      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(var_name, name, symbol, getBigNumber(1000000))
       await token.transfer(thisObject.bob.address, getBigNumber(1000))
       await token.transfer(thisObject.carol.address, getBigNumber(1000))
       return token
     },
-    addPair: async function (tokenA, tokenB, amountA, amountB) {
+    addPair: async function (var_name, tokenA, tokenB, amountA, amountB) {
       const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
       const pair = (await createPairTx.wait()).events[0].args.pair
       const SushiSwapPairMock = await ethers.getContractFactory("SushiSwapPairMock")
       const sushiSwapPair = await SushiSwapPairMock.attach(pair)
+      addContract(thisObject, var_name, sushiSwapPair)
 
       await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
       await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
@@ -219,10 +235,34 @@ async function deploymentsFixture(thisObject, stepsFunction) {
 
 async function deploy(thisObject, contracts) {
   for (let i in contracts) {
-    let contract = contracts[i]
-    thisObject[contract[0]] = await contract[1].deploy(...(contract[2] || []))
-    await thisObject[contract[0]].deployed()
+    let info = contracts[i]
+    const contract = await info[1].deploy(...(info[2] || []))
+    await contract.deployed()
+    addContract(thisObject, info[0], contract)
   }
+}
+
+function decodeLogs(logs) {
+  const decoded = []
+  for (let i in logs) {
+    const log = logs[i]
+    let contract = contracts[log.address]
+    if (contract) {
+      let decodedLog = contract.interface.parseLog(log)
+      decoded.push({
+        address: contract.address,
+        name: decodedLog.name,
+        args: decodedLog.args,
+        contract: contract,
+        contract_name: contract.thisName,
+        raw: log,
+        decoded: decodedLog,
+      })
+    } else {
+      console.log("Cannot decode log")
+    }
+  }
+  return decoded
 }
 
 function addr(address) {
@@ -255,4 +295,5 @@ module.exports = {
   prepare,
   deploymentsFixture,
   deploy,
+  decodeLogs,
 }

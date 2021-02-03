@@ -9,9 +9,9 @@ describe("SushiSwapSwapper", function () {
 
   beforeEach(async function () {
     await deploymentsFixture(this, async (cmd) => {
-      this.a = await cmd.addToken("Token A", "A", this.ReturnFalseERC20Mock)
-      this.b = await cmd.addToken("Token B", "B", this.RevertingERC20Mock)
-      this.sushiSwapPair = await cmd.addPair(this.a, this.b, 50000, 50000)
+      await cmd.addToken("a", "Token A", "A", this.ReturnFalseERC20Mock)
+      await cmd.addToken("b", "Token B", "B", this.RevertingERC20Mock)
+      await cmd.addPair("sushiSwapPair", this.a, this.b, 50000, 50000)
     })
 
     this.swapper = await this.SushiSwapSwapper.deploy(this.bentoBox.address, this.factory.address)

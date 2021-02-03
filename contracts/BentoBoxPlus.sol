@@ -21,7 +21,7 @@ pragma experimental ABIEncoderV2;
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-import "./interfaces/IERC3156FlashLoan.sol";
+import "./interfaces/IFlashLoan.sol";
 import "./interfaces/IWETH.sol";
 import "./interfaces/IStrategy.sol";
 import "./MasterContractManager.sol";
@@ -32,7 +32,7 @@ import "./MasterContractManager.sol";
 /// Rebasing tokens ARE NOT supported and WILL cause loss of funds.
 /// Any funds transfered directly onto the BentoBox will be lost, use the deposit function instead.
 // T1 - T4: OK
-contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFlashLender {
+contract BentoBoxPlus is MasterContractManager, BoringBatchable {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
     using BoringERC20 for IERC20;
@@ -86,6 +86,9 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     // V2: Private to save gas, to verify it's correct, check the constructor arguments
     IERC20 private immutable wethToken;
 
+    IERC20 private constant USE_ETHEREUM = IERC20(0);
+    uint256 private constant FLASH_LOAN_FEE = 50; // 0.05%
+    uint256 private constant FLASH_LOAN_FEE_PRECISION = 1e5;    
     uint256 private constant STRATEGY_DELAY = 2 weeks;
     uint256 private constant MAX_TARGET_PERCENTAGE = 95;
 
@@ -145,22 +148,6 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         amount = token.balanceOf(address(this)).add(strategyData[token].balance);
     }
 
-    // F1 - F10: OK
-    // C1 - C23: OK
-    // TODO: Reentrancy 
-    function _assetAdded(IERC20 token, int256 amount) internal {
-        // Effects
-        if (amount > 0) {
-            uint256 add = uint256(amount);
-            totals[token].addElastic(add);
-            emit LogStrategyProfit(token, add);
-        } else if (amount < 0) {
-            uint256 sub = uint256(-amount);
-            totals[token].subElastic(sub);
-            emit LogStrategyLoss(token, sub);
-        }
-    }
-
     // ************************ //
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
@@ -179,7 +166,6 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     // C1 - C21: OK
     // C2 - Are any storage slots read multiple times?
     // C2: wethToken is used multiple times, but this is an immutable, so after construction it's hardcoded in the contract
-    // REENT: Only for attack on other tokens + if WETH9 used, safe
     function deposit(
         IERC20 token_, address from, address to, uint256 amount, uint256 share
     ) public payable allowed(from) returns (uint256 amountOut, uint256 shareOut) {
@@ -187,7 +173,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
 
         // Effects
-        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
+        IERC20 token = token_ == USE_ETHEREUM ? wethToken : token_;
         Rebase memory total = totals[token];
 
         // S1 - S4: OK
@@ -202,7 +188,8 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         }
 
         // In case of skimming, check that only the skimmable amount is taken. For ETH, the full balance is available, so no need to check.
-        require(from != address(this) || token_ == IERC20(0) || amount <= _tokenBalanceOf(token).sub(total.elastic), "BentoBox: Skim too much");
+        require(from != address(this) || token_ == USE_ETHEREUM || amount <= _tokenBalanceOf(token).sub(total.elastic), 
+            "BentoBox: Skim too much");
 
         balanceOf[token][to] = balanceOf[token][to].add(share);
         total.base = total.base.add(share.to128());
@@ -211,14 +198,14 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
 
         // Interactions
         // During the first deposit, we check that this token is 'real'
-        if (token_ == IERC20(0)) {
+        if (token_ == USE_ETHEREUM) {
             // X1 - X5: OK
             // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementation)
-            IWETH(address(wethToken)).deposit{value: amount}(); // REENT: Exit (if WETH9 used, safe)
+            IWETH(address(wethToken)).deposit{value: amount}();
         } else if (from != address(this)) {
             // X1 - X5: OK
             // X2: If the token implementation is faulty or malicious, it will block adding tokens. Good.
-            token.safeTransferFrom(from, address(this), amount); // REENT: Exit (only for attack on other tokens)
+            token.safeTransferFrom(from, address(this), amount);
         }
         emit LogDeposit(token, from, to, amount, share);
         amountOut = amount;
@@ -229,7 +216,6 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     // C1 - C22: OK
     // C2 - Are any storage slots read multiple times?
     // C2: wethToken is used multiple times, but this is an immutable, so after construction it's hardcoded in the contract
-    // REENT: Yes
     function withdraw(
         IERC20 token_, address from, address to, uint256 amount, uint256 share
     ) public allowed(from) returns (uint256 amountOut, uint256 shareOut) {
@@ -237,14 +223,14 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         require(to != address(0), "BentoBox: to not set"); // To avoid a bad UI from burning funds
 
         // Effects
-        IERC20 token = token_ == IERC20(0) ? wethToken : token_;
+        IERC20 token = token_ == USE_ETHEREUM ? wethToken : token_;
         Rebase memory total = totals[token];
         if (share == 0) { 
             // value of the share paid could be lower than the amount paid due to rounding, in that case, add a share (Always round up)
             share = total.toBase(amount, true);
         } else {
             // amount may be lower than the value of share due to rounding, that's ok
-            amount = total.toElastic(share, false); 
+            amount = total.toElastic(share, false);
         }
 
         balanceOf[token][from] = balanceOf[token][from].sub(share);
@@ -255,19 +241,19 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         totals[token] = total;
 
         // Interactions
-        if (token_ == IERC20(0)) {
+        if (token_ == USE_ETHEREUM) {
             // X1 - X5: OK
             // X2, X3: A revert or big gas usage in the WETH contract could block withdrawals, but WETH9 is fine.
-            IWETH(address(wethToken)).withdraw(amount); // REENT: Exit (if WETH9 used, safe)
+            IWETH(address(wethToken)).withdraw(amount);
             // X1 - X5: OK
             // X2, X3: A revert or big gas usage could block, however, the to address is under control of the caller.
-            (bool success,) = to.call{value: amount}(""); // REENT: Exit
+            (bool success,) = to.call{value: amount}("");
             require(success, "BentoBox: ETH transfer failed");
         } else {
             // X1 - X5: OK
             // X2, X3: A malicious token could block withdrawal of just THAT token.
             //         masterContracts may want to take care not to rely on withdraw always succeeding.
-            token.safeTransfer(to, amount); // REENT: Exit (only for attack on other tokens)
+            token.safeTransfer(to, amount);
         }
         emit LogWithdraw(token, from, to, amount, share);
         amountOut = amount;
@@ -310,23 +296,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
         balanceOf[token][from] = balanceOf[token][from].sub(totalAmount);
     }
 
-    // F1 - F10: OK
-    // C1 - C23: OK
-    function maxFlashAmount(IERC20 token) public view override returns (uint256 amount) {
-        amount = token.balanceOf(address(this));
-    }
+    function flashLoan(IFlashBorrower borrower, address receiver, IERC20 token, uint256 amount, bytes calldata data) public {
+        uint256 fee = amount.mul(FLASH_LOAN_FEE) / FLASH_LOAN_FEE_PRECISION;
+        token.safeTransfer(receiver, amount);
 
-    // F1 - F10: OK
-    // C1 - C23: OK
-    function flashFee(IERC20, uint256 amount) public view override returns (uint256 fee) {
-        fee = amount.mul(5) / 10000;
-    }
-
-    function flashLoan(IERC3156FlashBorrower borrower, address receiver, IERC20 token, uint256 amount, bytes calldata data) public override {
-        uint256 fee = amount.mul(5) / 10000;
-        token.safeTransfer(receiver, amount); // REENT: Exit (only for attack on other tokens)
-
-        borrower.onFlashLoan(msg.sender, token, amount, fee, data); // REENT: Exit
+        borrower.onFlashLoan(msg.sender, token, amount, fee, data);
         
         require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), "BentoBoxPlus: Wrong amount");
         emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
@@ -338,29 +312,27 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     // F6 - Check for front-running possibilities, such as the approve function (SWC-114)
     // F6: Slight grieving possible by withdrawing an amount before someone tries to flashloan close to the full amount.
     // C1 - C23: OK
-    // REENT: Yes
     function batchFlashLoan(
-        IERC3156BatchFlashBorrower borrower,
+        IBatchFlashBorrower borrower,
         address[] calldata receivers,
         IERC20[] calldata tokens,
         uint256[] calldata amounts,
         bytes calldata data
-    ) public override {
+    ) public {
         uint256[] memory fees = new uint256[](tokens.length);
         
         uint256 len = tokens.length;
         for (uint256 i = 0; i < len; i++) {
             uint256 amount = amounts[i];
-            fees[i] = amount.mul(5) / 10000;
+            fees[i] = amount.mul(FLASH_LOAN_FEE) / FLASH_LOAN_FEE_PRECISION;
 
-            tokens[i].safeTransfer(receivers[i], amounts[i]); // REENT: Exit (only for attack on other tokens)
+            tokens[i].safeTransfer(receivers[i], amounts[i]);
         }
 
-        borrower.onBatchFlashLoan(msg.sender, tokens, amounts, fees, data); // REENT: Exit
+        borrower.onBatchFlashLoan(msg.sender, tokens, amounts, fees, data);
 
         for (uint256 i = 0; i < len; i++) {
             IERC20 token = tokens[i];
-            // REENT: token.balanceOf(this) + strategy[token].balance <= total.amount
             require(_tokenBalanceOf(token) >= totals[token].addElastic(fees[i].to128()), "BentoBoxPlus: Wrong amount");
             emit LogFlashLoan(address(borrower), token, amounts[i], fees[i], receivers[i]);
         }
@@ -394,7 +366,18 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
             StrategyData memory data = strategyData[token];
             require(data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate, "StrategyManager: Too early");
             if (address(strategy[token]) != address(0)) {
-                _assetAdded(token, strategy[token].exit(data.balance)); // REENT: Exit (under our control, safe)
+                int256 balanceChange = strategy[token].exit(data.balance);
+                // Effects
+                if (balanceChange > 0) {
+                    uint256 add = uint256(balanceChange);
+                    totals[token].addElastic(add);
+                    emit LogStrategyProfit(token, add);
+                } else if (balanceChange < 0) {
+                    uint256 sub = uint256(-balanceChange);
+                    totals[token].subElastic(sub);
+                    emit LogStrategyLoss(token, sub);
+                }
+
                 emit LogStrategyDivest(token, data.balance);
             }
             strategy[token] = pending;
@@ -410,30 +393,48 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable, IERC3156BatchFl
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // F5: Not followed to prevent reentrancy issues with flashloans and BentoBox skims?
     // C1 - C23: OK
-    // REENT: Can be used to increase (and maybe decrease) totals[token].amount
     function harvest(IERC20 token, bool balance, uint256 maxChangeAmount) public {
-        _assetAdded(token, strategy[token].harvest(strategyData[token].balance));
+        StrategyData memory data = strategyData[token];
+        IStrategy _strategy = strategy[token];
+        int256 balanceChange = _strategy.harvest(data.balance);
+        if (balanceChange == 0 && !balance) { return; }
+
+        uint256 totalElastic = totals[token].elastic;
+
+        if (balanceChange > 0) {
+            uint256 add = uint256(balanceChange);
+            totalElastic = totalElastic.add(add);
+            totals[token].elastic = totalElastic.to128();
+            emit LogStrategyProfit(token, add);
+        } else if (balanceChange < 0) {
+            uint256 sub = uint256(-balanceChange);
+            totalElastic = totalElastic.sub(sub);
+            totals[token].elastic = totalElastic.to128();
+            data.balance = data.balance.sub(sub.to128());
+            emit LogStrategyLoss(token, sub);
+        }
 
         if (balance) {
-            StrategyData memory data = strategyData[token];
-            uint256 tokenBalance = token.balanceOf(address(this));
-            uint256 targetBalance = tokenBalance.add(data.balance).mul(data.targetPercentage) / 100;
+            uint256 targetBalance = totalElastic.mul(data.targetPercentage) / 100;
             if (data.balance < targetBalance) {
-                IStrategy currentStrategy = strategy[token];
                 uint256 amountOut = targetBalance.sub(data.balance);
                 if (maxChangeAmount != 0 && amountOut > maxChangeAmount) { amountOut = maxChangeAmount; }
-                token.safeTransfer(address(currentStrategy), amountOut); // REENT: Exit (only for attack on other tokens)
-                strategyData[token].balance = data.balance.add(amountOut.to128());
-                currentStrategy.skim(data.balance); // REENT: Exit (under our control, safe)
+                token.safeTransfer(address(_strategy), amountOut);
+                data.balance = data.balance.add(amountOut.to128());
+                _strategy.skim(amountOut);
                 emit LogStrategyInvest(token, amountOut);
-            } else {
+            } else if (data.balance > targetBalance) {
                 uint256 amountIn = data.balance.sub(targetBalance.to128());
                 if (maxChangeAmount != 0 && amountIn > maxChangeAmount) { amountIn = maxChangeAmount; }
-                strategyData[token].balance = data.balance.sub(amountIn.to128());
-                strategy[token].withdraw(amountIn, data.balance); // REENT: Exit (only for attack on other tokens)
+                data.balance = data.balance.sub(amountIn.to128());
+                
+                _strategy.withdraw(amountIn);
+                
                 emit LogStrategyDivest(token, amountIn);
             }
         }
+        
+        strategyData[token] = data;
     }
 
     // Contract should be able to receive ETH deposits to support deposit & skim

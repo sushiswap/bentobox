@@ -18,9 +18,9 @@ describe("SimpleSLPOracle", function () {
 
   beforeEach(async function () {
     await deploymentsFixture(this, async (cmd) => {
-      this.collateral = await cmd.addToken("Collateral", "C", this.ReturnFalseERC20Mock)
-      this.asset = await cmd.addToken("Asset", "A", this.RevertingERC20Mock)
-      this.sushiSwapPair = await cmd.addPair(this.collateral, this.asset, 5, 10)
+      await cmd.addToken("collateral", "Collateral", "C", this.ReturnFalseERC20Mock)
+      await cmd.addToken("asset", "Asset", "A", this.RevertingERC20Mock)
+      await cmd.addPair("sushiSwapPair", this.collateral, this.asset, 5, 10)
     })
 
     this.expectedPrice = encodePrice(getBigNumber(5), getBigNumber(10))

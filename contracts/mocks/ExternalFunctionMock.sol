@@ -3,7 +3,6 @@
 
 // TokenA does not revert on errors, it just returns false
 pragma solidity 0.6.12;
-import "../interfaces/IERC3156FlashLoan.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 

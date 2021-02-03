@@ -65,7 +65,7 @@ describe("StrategyManager", function () {
     })
 
     it("SushiStrategy does not allow to draw a too high share", async function () {
-      await this.sushiStrategy2.withdraw(getBigNumber(1), 0)
+      await this.sushiStrategy2.withdraw(getBigNumber(1))
     })
 
     it("rebalances correctly after a withdraw from BentoBox", async function () {
