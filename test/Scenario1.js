@@ -89,10 +89,10 @@ describe("Scenario 1", function () {
 
   it("Sets up fixtures, tokens, etc", async function () {
     await deploymentsFixture(this, async (cmd) => {
-      await cmd.addToken("a", "Token A", "A", this.ReturnFalseERC20Mock)
-      await cmd.addToken("b", "Token B", "B", this.RevertingERC20Mock)
-      await cmd.addToken("c", "Token C", "C", this.RevertingERC20Mock)
-      await cmd.addToken("d", "Token D", "D", this.RevertingERC20Mock)
+      await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
+      await cmd.addToken("b", "Token B", "B", 8, this.RevertingERC20Mock)
+      await cmd.addToken("c", "Token C", "C", 6, this.RevertingERC20Mock)
+      await cmd.addToken("d", "Token D", "D", 0, this.RevertingERC20Mock)
       await cmd.addPair("ammpairAB", this.a, this.b, 50000, 50000)
       await cmd.addPair("ammpairAC", this.a, this.c, 50000, 50000)
     })
@@ -104,16 +104,16 @@ describe("Scenario 1", function () {
     await setMasterContractApproval(this.bentoBox, this.bob, this.bob, this.bobPrivateKey, this.lendingPair.address, true)
 
     await this.a.approve(this.bentoBox.address, getBigNumber(1000000))
-    await this.b.approve(this.bentoBox.address, getBigNumber(1000000))
+    await this.b.approve(this.bentoBox.address, getBigNumber(1000000, 8))
     await this.a.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000000))
-    await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000000))
+    await this.b.connect(this.bob).approve(this.bentoBox.address, getBigNumber(1000000, 8))
     await this.a.connect(this.carol).approve(this.bentoBox.address, getBigNumber(1000000))
-    await this.b.connect(this.carol).approve(this.bentoBox.address, getBigNumber(1000000))
+    await this.b.connect(this.carol).approve(this.bentoBox.address, getBigNumber(1000000, 8))
   })
 
   it("should allow adding of balances to the BentoBox", async function () {
     await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1000), 0)
-    await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(800), 0)
+    await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(800, 8), 0)
   })
 
   /*  it("should allow adding profit to the BentoBox", async function () {

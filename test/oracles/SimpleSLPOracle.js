@@ -6,7 +6,7 @@ describe("SimpleSLPOracle", function () {
   before(async function () {
     await prepare(this, [
       "WETH9Mock",
-      "BentoBoxPlus",
+      "BentoBoxPlusMock",
       "UniswapV2Pair",
       "UniswapV2Factory",
       "ReturnFalseERC20Mock",
@@ -18,8 +18,8 @@ describe("SimpleSLPOracle", function () {
 
   beforeEach(async function () {
     await deploymentsFixture(this, async (cmd) => {
-      await cmd.addToken("collateral", "Collateral", "C", this.ReturnFalseERC20Mock)
-      await cmd.addToken("asset", "Asset", "A", this.RevertingERC20Mock)
+      await cmd.addToken("collateral", "Collateral", "C", 18, this.ReturnFalseERC20Mock)
+      await cmd.addToken("asset", "Asset", "A", 18, this.RevertingERC20Mock)
       await cmd.addPair("sushiSwapPair", this.collateral, this.asset, 5, 10)
     })
 

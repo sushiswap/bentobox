@@ -43,7 +43,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
-    function withdraw(uint256 amount) external override onlyOwner {
+    function withdraw(uint256 amount) external override onlyOwner returns (uint256 actualAmount) {
         uint256 totalShares = bar.totalSupply();
         uint256 totalSushi = sushi.balanceOf(address(bar));
         uint256 withdrawShare = amount.mul(totalShares) / totalSushi;
@@ -52,7 +52,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
             withdrawShare = share;
         }
         bar.leave(withdrawShare);
-        uint256 actualAmount = sushi.balanceOf(address(this));
+        actualAmount = sushi.balanceOf(address(this));
         sushi.safeTransfer(owner, actualAmount);
     }
 

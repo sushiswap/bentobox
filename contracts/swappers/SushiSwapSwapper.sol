@@ -75,6 +75,8 @@ contract SushiSwapSwapper is ISwapper {
         }
         bentoBox.deposit(toToken, address(bentoBox), recipient, 0, shareToExact);
         shareReturned = shareFromSupplied.sub(shareUsed);
-        bentoBox.transfer(fromToken, address(this), refundTo, shareReturned);
+        if (shareReturned > 0) {
+            bentoBox.transfer(fromToken, address(this), refundTo, shareReturned);
+        }
     }
 }

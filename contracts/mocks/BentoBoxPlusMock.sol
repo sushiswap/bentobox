@@ -10,7 +10,7 @@ contract BentoBoxPlusMock is BentoBoxPlus {
     constructor(IERC20 weth) public BentoBoxPlus(weth) {}
 
     function addProfit(IERC20 token, uint256 amount) public {
+        token.safeTransferFrom(msg.sender, address(this), amount);
         totals[token].addElastic(amount);
     }
-    
 }

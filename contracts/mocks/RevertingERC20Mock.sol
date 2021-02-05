@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 // RevertingERC20 reverts on errors
 pragma solidity 0.6.12;
@@ -6,7 +6,7 @@ pragma solidity 0.6.12;
 contract RevertingERC20Mock {
 	string public symbol;
 	string public name;
-	uint8 public constant decimals = 18;
+	uint8 public immutable decimals;
 	uint256 public totalSupply;
 	mapping(address => uint256) public balanceOf;
 	mapping(address => mapping(address => uint256)) public allowance;
@@ -17,10 +17,12 @@ contract RevertingERC20Mock {
 	constructor(
 		string memory name_,
 		string memory symbol_,
+		uint8 decimals_,
 		uint256 supply
 	) public {
 		name = name_;
 		symbol = symbol_;
+		decimals = decimals_;
 		totalSupply = supply;
 		balanceOf[msg.sender] = supply;
 	}

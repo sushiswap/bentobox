@@ -332,7 +332,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         userBorrowPart[to] = userBorrowPart[to].add(part);
         emit LogBorrow(msg.sender, to, amount.add(feeAmount), part);
 
-        share = bentoBox.toShare(asset, amount, false);
+        share = bentoBox.toShare(asset, amount, true);
         totalAsset.elastic = totalAsset.elastic.sub(share.to128());
         bentoBox.transfer(asset, address(this), to, share);
     }
@@ -370,7 +370,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     uint8 constant internal ACTION_BENTO_TRANSFER = 22;
     uint8 constant internal ACTION_BENTO_TRANSFER_MULTIPLE = 23;
     uint8 constant internal ACTION_BENTO_SETAPPROVAL = 24;
-    uint8 constant internal ACTION_GET_REPAY_AMOUNT = 40;
+    uint8 constant internal ACTION_GET_REPAY_SHARE = 40;
     uint8 constant internal ACTION_GET_REPAY_PART = 41;
 
     int256 constant internal USE_VALUE1 = -1;
@@ -488,9 +488,9 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                 if (returnValues == 1) { (value1) = abi.decode(returnData, (uint256)); }
                 else if (returnValues == 2) { (value1, value2) = abi.decode(returnData, (uint256, uint256)); }
 
-            } else if (action == ACTION_GET_REPAY_AMOUNT) {
+            } else if (action == ACTION_GET_REPAY_SHARE) {
                 (int256 part) = abi.decode(datas[i], (int256));
-                value1 = totalBorrow.toElastic(_num(part, value1, value2), true);
+                value1 = bentoBox.toShare(asset, totalBorrow.toElastic(_num(part, value1, value2), true), true);
                 
             } else if (action == ACTION_GET_REPAY_PART) {
                 (int256 amount) = abi.decode(datas[i], (int256));

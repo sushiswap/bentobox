@@ -118,7 +118,7 @@ const ACTION_BENTO_TRANSFER = 22
 const ACTION_BENTO_TRANSFER_MULTIPLE = 23
 const ACTION_BENTO_SETAPPROVAL = 24
 const ACTION_PERMIT = 30
-const ACTION_GET_REPAY_AMOUNT = 40
+const ACTION_GET_REPAY_SHARE = 40
 const ACTION_GET_REPAY_PART = 41
 
 class LendingPair {
@@ -299,11 +299,11 @@ class LendingPair {
 
   repay(part) {
     return this.contract.cook(
-      [ACTION_GET_REPAY_AMOUNT, ACTION_BENTO_DEPOSIT, ACTION_REPAY],
+      [ACTION_GET_REPAY_SHARE, ACTION_BENTO_DEPOSIT, ACTION_REPAY],
       [0, 0, 0],
       [
         defaultAbiCoder.encode(["int256"], [part]),
-        defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), -1, 0]),
+        defaultAbiCoder.encode(["address", "address", "int256", "int256"], [this.asset.address, addr(this.contract.signer), 0, -1]),
         defaultAbiCoder.encode(["int256", "address", "bool"], [part, addr(this.contract.signer), false]),
       ]
     )
@@ -354,7 +354,7 @@ class LendingPair {
       0,
     ])
     return this.contract.cook(
-      [ACTION_REMOVE_COLLATERAL, ACTION_GET_REPAY_AMOUNT, ACTION_CALL, ACTION_REPAY, ACTION_ADD_COLLATERAL],
+      [ACTION_REMOVE_COLLATERAL, ACTION_GET_REPAY_SHARE, ACTION_CALL, ACTION_REPAY, ACTION_ADD_COLLATERAL],
       [0, 0, 0, 0, 0],
       [
         // Remove collateral for user to Swapper contract (maxShare)
@@ -413,12 +413,13 @@ Object.defineProperty(LendingPair.prototype, "cmd", {
 })
 
 LendingPair.deploy = async function (bentoBox, masterContract, masterContractClass, asset, collateral, oracle) {
-  await oracle.set(getBigNumber(1))
+  await oracle.set(getBigNumber(1, 28))
   const oracleData = await oracle.getDataParameter()
   const initData = await masterContract.getInitData(addr(asset), addr(collateral), oracle.address, oracleData)
   const deployTx = await bentoBox.deploy(masterContract.address, initData)
   const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
   const pair = await masterContractClass.attach(cloneAddress)
+  await pair.updateExchangeRate()
   const pairHelper = new LendingPair(pair)
   pairHelper.initData = initData
   await pairHelper.init(bentoBox)

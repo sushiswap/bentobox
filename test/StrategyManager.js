@@ -4,11 +4,14 @@ const { ethers } = require("hardhat")
 
 describe("StrategyManager", function () {
   before(async function () {
-    await prepare(this, ["RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxPlus"])
-    await deploy(this, [["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", getBigNumber("10000000")]]])
+    await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxPlusMock"])
     await deploy(this, [
-      ["bentoBox", this.BentoBoxPlus, [this.sushi.address]],
-      ["bar", this.SushiBarMock, [this.sushi.address]],
+      ["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
+      ["weth9", this.WETH9Mock]
+    ])
+    await deploy(this, [
+      ["bentoBox", this.BentoBoxPlusMock, [this.sushi.address]],
+      ["bar", this.SushiBarMock, [this.sushi.address]]
     ])
     await deploy(this, [["sushiStrategy", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
     await this.sushiStrategy.transferOwnership(this.bentoBox.address, true, false)

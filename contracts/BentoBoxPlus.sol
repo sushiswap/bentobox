@@ -186,6 +186,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable {
             // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)
             amount = total.toElastic(share, true);
         }
+        if (share == 0) { return (0, 0); }
 
         // In case of skimming, check that only the skimmable amount is taken. For ETH, the full balance is available, so no need to check.
         require(from != address(this) || token_ == USE_ETHEREUM || amount <= _tokenBalanceOf(token).sub(total.elastic), 
@@ -384,6 +385,7 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable {
             data.strategyStartDate = 0;
             data.balance = 0;
             strategyData[token] = data;
+            pendingStrategy[token] = IStrategy(0);
             emit LogStrategySet(token, newStrategy);
         }
     }
@@ -426,11 +428,11 @@ contract BentoBoxPlus is MasterContractManager, BoringBatchable {
             } else if (data.balance > targetBalance) {
                 uint256 amountIn = data.balance.sub(targetBalance.to128());
                 if (maxChangeAmount != 0 && amountIn > maxChangeAmount) { amountIn = maxChangeAmount; }
-                data.balance = data.balance.sub(amountIn.to128());
                 
-                _strategy.withdraw(amountIn);
+                uint256 actualAmountIn = _strategy.withdraw(amountIn);
                 
-                emit LogStrategyDivest(token, amountIn);
+                data.balance = data.balance.sub(actualAmountIn.to128());
+                emit LogStrategyDivest(token, actualAmountIn);
             }
         }
         

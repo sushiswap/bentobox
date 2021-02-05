@@ -5,7 +5,7 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
 
   const sushiSwapSwapper = await deployments.get("SushiSwapSwapper")
 
-  const bentoBox = await deployments.get("BentoBoxPlus")
+  const bentoBox = await deployments.get("BentoBoxPlusMock")
 
   /*let response = await deploy("LendingPair", {
     from: deployer,

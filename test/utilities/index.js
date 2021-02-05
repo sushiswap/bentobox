@@ -173,10 +173,32 @@ function addContract(thisObject, name, contract) {
   contracts[contract.address] = contract
 }
 
-async function getContract(name) {
+async function getContract(thisObject, var_name, name) {
   const contract = await ethers.getContract(name)
-  contracts[contract.address] = contract
+  addContract(thisObject, var_name, contract)
   return contract
+}
+
+async function analyse(thisObject, tx_promise) {
+  let tx
+  try {
+    tx = await tx_promise
+  } catch(e) {
+    const revertMsg = e.message.replace("VM Exception while processing transaction: revert ", "")
+    if (revertMsg) {
+      console.log('.to.be.revertedWith("' + revertMsg + '")')
+    } else {
+      console.log('.to.be.reverted')
+    }
+    return
+  }
+  const rx = await thisObject.alice.provider.getTransactionReceipt(tx.hash)
+  const logs = decodeLogs(rx.logs)
+  for (var i in logs) {
+    var log = logs[i]
+    console.log(".to.emit(this." + log.contract_name + ', "' + log.name + '")')
+    console.log(".withArgs(" + log.args.join(", ") + ")")
+  }
 }
 
 async function prepare(thisObject, contracts) {
@@ -192,9 +214,12 @@ async function prepare(thisObject, contracts) {
     }
   }
   thisObject.signers = await ethers.getSigners()
-  thisObject.alice = thisObject.signers[0]
-  thisObject.bob = thisObject.signers[1]
-  thisObject.carol = thisObject.signers[2]
+  addContract(thisObject, "alice", thisObject.signers[0])
+  addContract(thisObject, "bob", thisObject.signers[1])
+  addContract(thisObject, "carol", thisObject.signers[2])
+  addContract(thisObject, "dirk", thisObject.signers[3])
+  addContract(thisObject, "erin", thisObject.signers[4])
+  addContract(thisObject, "fred", thisObject.signers[5])
   thisObject.alicePrivateKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
   thisObject.bobPrivateKey = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d"
   thisObject.carolPrivateKey = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a"
@@ -202,19 +227,21 @@ async function prepare(thisObject, contracts) {
 
 async function deploymentsFixture(thisObject, stepsFunction) {
   await deployments.fixture()
-  thisObject.weth9 = await getContract("WETH9Mock")
-  thisObject.bentoBox = await getContract("BentoBoxPlus")
-  thisObject.factory = await getContract("SushiSwapFactoryMock")
-  thisObject.lendingPair = await getContract("LendingPairMock")
-  thisObject.peggedOracle = await getContract("PeggedOracle")
-  thisObject.swapper = await getContract("SushiSwapSwapper")
-  thisObject.oracle = await getContract("OracleMock")
-  thisObject.helper = await getContract("BentoHelper")
+  await getContract(thisObject, "weth9", "WETH9Mock")
+  await getContract(thisObject, "bentoBox", "BentoBoxPlusMock")
+  await getContract(thisObject, "factory", "SushiSwapFactoryMock")
+  await getContract(thisObject, "lendingPair", "LendingPairMock")
+  await getContract(thisObject, "peggedOracle", "PeggedOracle")
+  await getContract(thisObject, "swapper", "SushiSwapSwapper")
+  await getContract(thisObject, "oracle", "OracleMock")
+  await getContract(thisObject, "helper", "BentoHelper")
+
   await stepsFunction({
-    addToken: async function (var_name, name, symbol, tokenClass) {
-      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(var_name, name, symbol, getBigNumber(1000000))
-      await token.transfer(thisObject.bob.address, getBigNumber(1000))
-      await token.transfer(thisObject.carol.address, getBigNumber(1000))
+    addToken: async function (var_name, name, symbol, decimals, tokenClass) {
+      const token = await (tokenClass || thisObject.ReturnFalseERC20Mock).new(var_name, name, symbol, decimals, getBigNumber(1000000, decimals))
+      await token.transfer(thisObject.bob.address, getBigNumber(1000, decimals))
+      await token.transfer(thisObject.carol.address, getBigNumber(1000, decimals))
+      await token.transfer(thisObject.fred.address, getBigNumber(1000, decimals))
       return token
     },
     addPair: async function (var_name, tokenA, tokenB, amountA, amountB) {
@@ -224,13 +251,17 @@ async function deploymentsFixture(thisObject, stepsFunction) {
       const sushiSwapPair = await SushiSwapPairMock.attach(pair)
       addContract(thisObject, var_name, sushiSwapPair)
 
-      await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA))
-      await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB))
+      await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA, await tokenA.decimals()))
+      await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB, await tokenB.decimals()))
 
       await sushiSwapPair.mint(thisObject.alice.address)
       return sushiSwapPair
     },
   })
+
+  global.expect2 = async function(tx_promise) {
+    return await analyse(thisObject, tx_promise);
+  }
 }
 
 async function deploy(thisObject, contracts) {
@@ -249,10 +280,23 @@ function decodeLogs(logs) {
     let contract = contracts[log.address]
     if (contract) {
       let decodedLog = contract.interface.parseLog(log)
+      const easyArgs = []
+      for (var j in decodedLog.args) {
+        if (!isNaN(j)) {
+          const arg = decodedLog.args[j]
+          //console.log(typeof arg, arg, arg.toString())
+          if(typeof(arg) == "string" && contracts[arg]) {
+            easyArgs.push("this." + contracts[arg].thisName + ".address")
+          } else {
+            easyArgs.push('"' + arg.toString() +'"')
+          }
+        }
+      }
+
       decoded.push({
         address: contract.address,
         name: decodedLog.name,
-        args: decodedLog.args,
+        args: easyArgs,
         contract: contract,
         contract_name: contract.thisName,
         raw: log,

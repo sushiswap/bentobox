@@ -6,7 +6,7 @@ describe("CompositeOracle", function () {
   before(async function () {
     await prepare(this, [
       "WETH9Mock",
-      "BentoBoxPlus",
+      "BentoBoxPlusMock",
       "UniswapV2Pair",
       "UniswapV2Factory",
       "ReturnFalseERC20Mock",
@@ -23,12 +23,12 @@ describe("CompositeOracle", function () {
   beforeEach(async function () {
     await deploy(this, [
       ["weth9", this.WETH9Mock],
-      ["sushiToken", this.ReturnFalseERC20Mock, ["SUSHI", "SUSHI", getBigNumber("10000000")]],
-      ["ethToken", this.ReturnFalseERC20Mock, ["WETH", "ETH", getBigNumber("10000000")]],
-      ["daiToken", this.ReturnFalseERC20Mock, ["DAI", "DAI", getBigNumber("10000000")]],
+      ["sushiToken", this.ReturnFalseERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
+      ["ethToken", this.ReturnFalseERC20Mock, ["WETH", "ETH", 18, getBigNumber("10000000")]],
+      ["daiToken", this.ReturnFalseERC20Mock, ["DAI", "DAI", 18, getBigNumber("10000000")]],
       ["factory", this.UniswapV2Factory, [this.alice.address]],
     ])
-    await deploy(this, [["bentoBox", this.BentoBoxPlus, [this.weth9.address]]])
+    await deploy(this, [["bentoBox", this.BentoBoxPlusMock, [this.weth9.address]]])
 
     let createPairTx = await this.factory.createPair(this.sushiToken.address, this.ethToken.address)
 
