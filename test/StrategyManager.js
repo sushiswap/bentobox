@@ -7,11 +7,11 @@ describe("StrategyManager", function () {
     await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxPlusMock"])
     await deploy(this, [
       ["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
-      ["weth9", this.WETH9Mock]
+      ["weth9", this.WETH9Mock],
     ])
     await deploy(this, [
       ["bentoBox", this.BentoBoxPlusMock, [this.sushi.address]],
-      ["bar", this.SushiBarMock, [this.sushi.address]]
+      ["bar", this.SushiBarMock, [this.sushi.address]],
     ])
     await deploy(this, [["sushiStrategy", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
     await this.sushiStrategy.transferOwnership(this.bentoBox.address, true, false)

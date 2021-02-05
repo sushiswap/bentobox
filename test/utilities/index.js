@@ -183,12 +183,12 @@ async function analyse(thisObject, tx_promise) {
   let tx
   try {
     tx = await tx_promise
-  } catch(e) {
+  } catch (e) {
     const revertMsg = e.message.replace("VM Exception while processing transaction: revert ", "")
     if (revertMsg) {
       console.log('.to.be.revertedWith("' + revertMsg + '")')
     } else {
-      console.log('.to.be.reverted')
+      console.log(".to.be.reverted")
     }
     return
   }
@@ -259,8 +259,8 @@ async function deploymentsFixture(thisObject, stepsFunction) {
     },
   })
 
-  global.expect2 = async function(tx_promise) {
-    return await analyse(thisObject, tx_promise);
+  global.expect2 = async function (tx_promise) {
+    return await analyse(thisObject, tx_promise)
   }
 }
 
@@ -285,10 +285,10 @@ function decodeLogs(logs) {
         if (!isNaN(j)) {
           const arg = decodedLog.args[j]
           //console.log(typeof arg, arg, arg.toString())
-          if(typeof(arg) == "string" && contracts[arg]) {
+          if (typeof arg == "string" && contracts[arg]) {
             easyArgs.push("this." + contracts[arg].thisName + ".address")
           } else {
-            easyArgs.push('"' + arg.toString() +'"')
+            easyArgs.push('"' + arg.toString() + '"')
           }
         }
       }

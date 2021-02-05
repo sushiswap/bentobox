@@ -83,7 +83,7 @@ describe("Lending Pair", function () {
       .to.emit(this.bentoBox, "LogDeposit")
       .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 8), getBigNumber(200, 8))
 
-      this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 8))
+    this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 8))
   })
 
   describe("Deployment", function () {

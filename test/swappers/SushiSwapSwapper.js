@@ -22,12 +22,18 @@ describe("SushiSwapSwapper", function () {
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
       await this.bentoBox.transfer(this.a.address, this.alice.address, this.swapper.address, getBigNumber(20))
       await expect(this.swapper.swap(this.a.address, this.b.address, this.alice.address, 0, getBigNumber(20)))
-        .to.emit(this.a, "Transfer").withArgs(this.bentoBox.address, this.sushiSwapPair.address, "20000000000000000000")
-        .to.emit(this.bentoBox, "LogWithdraw").withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20000000000000000000", "20000000000000000000")
-        .to.emit(this.b, "Transfer").withArgs(this.sushiSwapPair.address, this.bentoBox.address, "1993205109")
-        .to.emit(this.sushiSwapPair, "Sync").withArgs("50020000000000000000000", "4998006794891")
-        .to.emit(this.sushiSwapPair, "Swap").withArgs(this.swapper.address, "20000000000000000000", "0", "0", "1993205109", this.bentoBox.address)
-        .to.emit(this.bentoBox, "LogDeposit").withArgs(this.b.address, this.bentoBox.address, this.alice.address, "1993205109", "1993205109")
+        .to.emit(this.a, "Transfer")
+        .withArgs(this.bentoBox.address, this.sushiSwapPair.address, "20000000000000000000")
+        .to.emit(this.bentoBox, "LogWithdraw")
+        .withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20000000000000000000", "20000000000000000000")
+        .to.emit(this.b, "Transfer")
+        .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "1993205109")
+        .to.emit(this.sushiSwapPair, "Sync")
+        .withArgs("50020000000000000000000", "4998006794891")
+        .to.emit(this.sushiSwapPair, "Swap")
+        .withArgs(this.swapper.address, "20000000000000000000", "0", "0", "1993205109", this.bentoBox.address)
+        .to.emit(this.bentoBox, "LogDeposit")
+        .withArgs(this.b.address, this.bentoBox.address, this.alice.address, "1993205109", "1993205109")
     })
 
     it("should swap with minimum set", async function () {
@@ -46,16 +52,17 @@ describe("SushiSwapSwapper", function () {
         .to.emit(this.sushiSwapPair, "Swap")
         .withArgs(this.swapper.address, "20000000000000000000", "0", "0", "1993205109", this.bentoBox.address)
         .to.emit(this.bentoBox, "LogDeposit")
-        .withArgs(this.b.address, this.bentoBox.address, this.alice.address, "1993205109", "1993205109")      
-    })   
-    
+        .withArgs(this.b.address, this.bentoBox.address, this.alice.address, "1993205109", "1993205109")
+    })
+
     it("should not swap with minimum not met", async function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
       await this.bentoBox.transfer(this.a.address, this.alice.address, this.swapper.address, getBigNumber(20))
-      await expect(this.swapper.swap(this.a.address, this.b.address, this.alice.address, "1993205110", getBigNumber(20)))
-        .to.be.revertedWith("BoringMath: Underflow")
-    })  
+      await expect(this.swapper.swap(this.a.address, this.b.address, this.alice.address, "1993205110", getBigNumber(20))).to.be.revertedWith(
+        "BoringMath: Underflow"
+      )
+    })
 
     it("should swap in opposite direction", async function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(100, 8))
@@ -99,8 +106,9 @@ describe("SushiSwapSwapper", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(100, 8))
       await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(100, 8), 0)
       await this.bentoBox.transfer(this.b.address, this.alice.address, this.swapper.address, getBigNumber(20, 8))
-      await expect(this.swapper.swap(this.b.address, this.a.address, this.alice.address, "19932051098022108784", getBigNumber(20, 8)))
-        .to.be.revertedWith("BoringMath: Underflow")      
+      await expect(
+        this.swapper.swap(this.b.address, this.a.address, this.alice.address, "19932051098022108784", getBigNumber(20, 8))
+      ).to.be.revertedWith("BoringMath: Underflow")
     })
   })
 
@@ -109,7 +117,9 @@ describe("SushiSwapSwapper", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
       await this.bentoBox.transfer(this.a.address, this.alice.address, this.swapper.address, getBigNumber(30))
-      await expect(this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, getBigNumber(30), getBigNumber(20, 8)))
+      await expect(
+        this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, getBigNumber(30), getBigNumber(20, 8))
+      )
         .to.emit(this.a, "Transfer")
         .withArgs(this.bentoBox.address, this.sushiSwapPair.address, "20068207824754776535")
         .to.emit(this.bentoBox, "LogWithdraw")
@@ -130,7 +140,9 @@ describe("SushiSwapSwapper", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
       await this.bentoBox.transfer(this.a.address, this.alice.address, this.swapper.address, "20068207824754776535")
-      await expect(this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, "20068207824754776535", getBigNumber(20, 8)))
+      await expect(
+        this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, "20068207824754776535", getBigNumber(20, 8))
+      )
         .to.emit(this.a, "Transfer")
         .withArgs(this.bentoBox.address, this.sushiSwapPair.address, "20068207824754776535")
         .to.emit(this.bentoBox, "LogWithdraw")
@@ -149,15 +161,18 @@ describe("SushiSwapSwapper", function () {
       await this.a.approve(this.bentoBox.address, getBigNumber(100))
       await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
       await this.bentoBox.transfer(this.a.address, this.alice.address, this.swapper.address, "20068207824754776534")
-      await expect(this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, "20068207824754776534", getBigNumber(20, 8)))
-        .to.be.revertedWith("BoringMath: Underflow")
+      await expect(
+        this.swapper.swapExact(this.a.address, this.b.address, this.alice.address, this.bob.address, "20068207824754776534", getBigNumber(20, 8))
+      ).to.be.revertedWith("BoringMath: Underflow")
     })
 
     it("should swap exact in opposite direction", async function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(100, 8))
       await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(100, 8), 0)
       await this.bentoBox.transfer(this.b.address, this.alice.address, this.swapper.address, getBigNumber(30, 8))
-      await expect(this.swapper.swapExact(this.b.address, this.a.address, this.alice.address, this.bob.address, getBigNumber(30, 8), getBigNumber(20)))
+      await expect(
+        this.swapper.swapExact(this.b.address, this.a.address, this.alice.address, this.bob.address, getBigNumber(30, 8), getBigNumber(20))
+      )
         .to.emit(this.b, "Transfer")
         .withArgs(this.bentoBox.address, this.sushiSwapPair.address, "2006820783")
         .to.emit(this.bentoBox, "LogWithdraw")
@@ -171,7 +186,7 @@ describe("SushiSwapSwapper", function () {
         .to.emit(this.bentoBox, "LogDeposit")
         .withArgs(this.a.address, this.bentoBox.address, this.alice.address, "20000000000000000000", "20000000000000000000")
         .to.emit(this.bentoBox, "LogTransfer")
-        .withArgs(this.b.address, this.swapper.address, this.bob.address, "993179217")      
+        .withArgs(this.b.address, this.swapper.address, this.bob.address, "993179217")
     })
 
     it("should swap exact in opposite direction with exact AmountIn", async function () {
@@ -197,8 +212,9 @@ describe("SushiSwapSwapper", function () {
       await this.b.approve(this.bentoBox.address, getBigNumber(100, 8))
       await this.bentoBox.deposit(this.b.address, this.alice.address, this.alice.address, getBigNumber(100, 8), 0)
       await this.bentoBox.transfer(this.b.address, this.alice.address, this.swapper.address, "2006820782")
-      await expect(this.swapper.swapExact(this.b.address, this.a.address, this.alice.address, this.bob.address, "2006820782", getBigNumber(20)))
-        .to.be.revertedWith("BoringMath: Underflow")
+      await expect(
+        this.swapper.swapExact(this.b.address, this.a.address, this.alice.address, this.bob.address, "2006820782", getBigNumber(20))
+      ).to.be.revertedWith("BoringMath: Underflow")
     })
   })
 })
