@@ -3,11 +3,11 @@ const { expect } = require("chai")
 
 describe("Ownable", function () {
     before(async function () {
-        await prepare(this, ["OwnableMock"])
+        await prepare(this, ["BoringOwnable"])
     })
 
     beforeEach(async function () {
-        this.ownable = await this.OwnableMock.deploy()
+        this.ownable = await this.BoringOwnable.deploy()
         await this.ownable.deployed()
     })
 

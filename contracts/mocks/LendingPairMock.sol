@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-
 import "../BentoBox.sol";
 import "../LendingPair.sol";
 
 contract LendingPairMock is LendingPair {
-    constructor(BentoBox bentoBox) public LendingPair(bentoBox) {}
+    constructor(BentoBox bentoBox) public LendingPair(bentoBox) {
+        return;
+    }
 
     function accrueTwice() public {
         accrue();

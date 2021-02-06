@@ -11,7 +11,6 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
     from: deployer,
     args: [bentoBox.address],
     log: true,
-    // TODO: Had to disable this for the account to match, investigate...
     deterministicDeployment: false,
   })
 
@@ -24,7 +23,6 @@ module.exports = async function ({ ethers, getNamedAccounts, deployments }) {
     from: deployer,
     args: [bentoBox.address],
     log: true,
-    // TODO: Had to disable this for the account to match, investigate...
     deterministicDeployment: false,
   })
 

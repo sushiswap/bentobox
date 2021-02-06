@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
-
-// RevertingERC20 reverts on errors
 pragma solidity 0.6.12;
 
+// RevertingERC20 reverts on errors
 contract RevertingERC20Mock {
     string public symbol;
     string public name;

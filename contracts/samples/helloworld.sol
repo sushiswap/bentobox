@@ -2,7 +2,9 @@
 pragma solidity 0.6.12;
 import "../BentoBox.sol";
 
-// This is an example contract that
+// An example a contract that stores tokens in the BentoBox.
+// A single contract that users can approve for the BentoBox, hence the registerProtocol call.
+// PS. This isn't good code, just kept it simple to illustrate usage.
 contract HelloWorld {
     BentoBox public bentoBox;
     IERC20 public token;

@@ -23,7 +23,6 @@ describe("ERC20", function () {
             expect(await this.token.totalSupply()).to.equal(ownerBalance)
         })
 
-        // TODO: Ask about this one (Why is it needed?)
         it("Succeeds in creating over 2^256 - 1 (max) tokens", async function () {
             // 2^256 - 1
             const token = await this.ERC20Mock.deploy("115792089237316195423570985008687907853269984665640564039457584007913129639935")
@@ -53,16 +52,6 @@ describe("ERC20", function () {
 
         it("Succeeds for zero value transfer", async function () {
             await expect(() => this.token.transfer(this.bob.address, 0)).to.changeTokenBalances(this.token, [this.alice, this.bob], [-0, 0])
-        })
-
-        it("Reverts when transfering eth without approval", async function () {
-            const initialOwnerBalance = await this.token.balanceOf(this.alice.address)
-
-            // TODO: This isn't right...
-            // Need to loopback on original version of this test and see what's up
-            await expect(this.weth9.transfer(this.token.address, 10)).to.revertedWith("WETH9: Error")
-
-            expect(await this.token.balanceOf(this.alice.address)).to.equal(initialOwnerBalance)
         })
 
         it("Emits Transfer event with expected arguments", async function () {

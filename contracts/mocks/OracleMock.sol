@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "../interfaces/IOracle.sol";
@@ -8,7 +7,7 @@ import "../interfaces/IOracle.sol";
 contract OracleMock is IOracle {
     using BoringMath for uint256;
 
-    uint256 rate;
+    uint256 public rate;
 
     function set(uint256 rate_) public {
         // The rate can be updated.

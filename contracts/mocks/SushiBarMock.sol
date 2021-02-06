@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.6.12;
-
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 
+// solhint-disable const-name-snakecase
+
 // SushiBar is the coolest bar in town. You come in with some Sushi, and leave with more! The longer you stay, the more Sushi you get.
-//
 // This contract handles swapping to and from xSushi, SushiSwap's staking token.
 contract SushiBarMock is ERC20 {
     using BoringMath for uint256;
@@ -31,7 +30,8 @@ contract SushiBarMock is ERC20 {
         if (totalShares == 0 || totalSushi == 0) {
             _mint(msg.sender, _amount);
         }
-        // Calculate and mint the amount of xSushi the Sushi is worth. The ratio will change overtime, as xSushi is burned/minted and Sushi deposited + gained from fees / withdrawn.
+        // Calculate and mint the amount of xSushi the Sushi is worth. The ratio will change overtime,
+        // as xSushi is burned/minted and Sushi deposited + gained from fees / withdrawn.
         else {
             uint256 what = _amount.mul(totalShares) / totalSushi;
             _mint(msg.sender, what);

@@ -4,12 +4,12 @@ const { LendingPair } = require("./utilities/lendingpair")
 
 describe("MasterContractManager", function () {
     before(async function () {
-        await prepare(this, ["MasterContractManagerMock", "MaliciousMasterContractMock"])
+        await prepare(this, ["MasterContractManager", "MaliciousMasterContractMock"])
     })
 
     beforeEach(async function () {
         await deploymentsFixture(this, (cmd) => {})
-        this.mcmanager = await this.MasterContractManagerMock.deploy()
+        this.mcmanager = await this.MasterContractManager.deploy()
         await this.mcmanager.deployed()
     })
 

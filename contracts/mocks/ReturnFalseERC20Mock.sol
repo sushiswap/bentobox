@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
+pragma solidity 0.6.12;
 
 // solhint-disable no-inline-assembly
 // solhint-disable not-rely-on-time
 
 // ReturnFalseERC20 does not revert on errors, it just returns false
-pragma solidity 0.6.12;
-
 contract ReturnFalseERC20Mock {
     string public symbol;
     string public name;

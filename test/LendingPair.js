@@ -117,7 +117,6 @@ describe("Lending Pair", function () {
         })
     })
 
-    // TODO: Problem with deploying fixtures
     describe("Permit", function () {
         it("should allow permit", async function () {
             const nonce = await this.a.nonces(this.alice.address)
@@ -296,7 +295,6 @@ describe("Lending Pair", function () {
 
         it("should emit correct event on adding asset", async function () {
             await this.b.approve(this.bentoBox.address, 300)
-            // TODO: here it fails if await inside expect is not removed
             await expect(this.pairHelper.depositAsset(290))
                 .to.emit(this.pairHelper.contract, "LogAddAsset")
                 .withArgs(this.alice.address, this.alice.address, 145, 145)

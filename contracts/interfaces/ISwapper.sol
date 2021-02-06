@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
-
-import "./IBentoBox.sol";
+import "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol";
 
 interface ISwapper {
     // Withdraws 'amountFrom' of token 'from' from the BentoBox account for this swapper

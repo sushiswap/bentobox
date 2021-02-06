@@ -1,7 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
-
 import "@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol";
 import "../BentoBox.sol";
 

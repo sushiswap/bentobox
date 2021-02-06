@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
 // Audit on 5-Jan-2021 by Keno and BoringCrypto
-
 pragma solidity 0.6.12;
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";

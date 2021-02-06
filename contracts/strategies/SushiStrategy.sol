@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.6.12;
 import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
@@ -63,7 +62,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
         uint256 amount = sushi.balanceOf(address(this));
-        amountAdded = int256(amount - balance); // TODO: BoringMath?
+        amountAdded = int256(amount - balance);
         sushi.safeTransfer(owner, amount);
     }
 }

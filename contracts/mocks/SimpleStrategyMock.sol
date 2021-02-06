@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity 0.6.12;
 import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
@@ -25,8 +24,9 @@ contract SimpleStrategyMock is IStrategy {
     }
 
     // Send the assets to the Strategy and call skim to invest them
-    function skim(uint256 amount) external override onlyBentoBox {
+    function skim(uint256) external override onlyBentoBox {
         // Leave the tokens on the contract
+        return;
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller

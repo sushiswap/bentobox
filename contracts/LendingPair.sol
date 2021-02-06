@@ -8,19 +8,14 @@
 // ▐█▌▐▌▐█▄▄▌██▐█▌██. ██ ▐█▌██▐█▌▐█▄▪▐█▐█▪·•▐█ ▪▐▌▐█▌▐█•█▌
 // .▀▀▀  ▀▀▀ ▀▀ █▪▀▀▀▀▀• ▀▀▀▀▀ █▪·▀▀▀▀ .▀    ▀  ▀ ▀▀▀.▀  ▀
 
-// Copyright (c) 2020 BoringCrypto - All rights reserved
+// Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
 // Special thanks to:
 // @burger_crypto - for the idea of trying to let the LPs benefit from liquidations
 
-// WARNING!!! DO NOT USE!!! BEING AUDITED!!!
-
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
-// solhint-disable avoid-low-level-calls
-// solhint-disable no-inline-assembly
-
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
@@ -30,9 +25,8 @@ import "./BentoBox.sol";
 import "./interfaces/ISwapper.sol";
 import "./interfaces/IWETH.sol";
 
-// TODO: check all reentrancy paths
-// TODO: what to do when the entire pool is underwater?
-// TODO: check that all actions on a users funds can only be initiated by that user as msg.sender
+// solhint-disable avoid-low-level-calls
+// solhint-disable no-inline-assembly
 
 contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     using BoringMath for uint256;
@@ -246,8 +240,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                 ),
                 false
             ) >=
-            userBorrowPart[user].mul(_totalBorrow.elastic).mul(exchangeRate) / // Moved here instead of dividing the other side to preserve more precision
-                _totalBorrow.base;
+            // Moved exchangeRate here instead of dividing the other side to preserve more precision
+            userBorrowPart[user].mul(_totalBorrow.elastic).mul(exchangeRate) / _totalBorrow.base;
     }
 
     modifier solvent() {
@@ -264,7 +258,6 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         uint256 rate;
         (success, rate) = oracle.get(oracleData);
 
-        // TODO: How to deal with unsuccessful fetch
         if (success) {
             exchangeRate = rate;
             emit LogExchangeRate(rate);

@@ -285,11 +285,6 @@ describe("BentoBox", function () {
         })
     })
 
-    // TODO: Cover these
-    describe("Deposit With Permit", function () {
-        // tested in BoringSolidity
-    })
-
     describe("Withdraw", function () {
         it("Reverts when address zero is passed as to argument", async function () {
             await expect(this.bentoBox.withdraw(this.a.address, this.alice.address, ADDRESS_ZERO, 1, 0)).to.be.revertedWith(

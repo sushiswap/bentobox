@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-
+// SPDX-License-Identifier: MIT
 // Using the same Copyleft License as in the original Repository
 pragma solidity 0.6.12;
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
