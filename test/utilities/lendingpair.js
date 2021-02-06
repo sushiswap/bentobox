@@ -429,7 +429,7 @@ LendingPair.deploy = async function (bentoBox, masterContract, masterContractCla
     await oracle.set(getBigNumber(1, 28))
     const oracleData = await oracle.getDataParameter()
     const initData = await masterContract.getInitData(addr(asset), addr(collateral), oracle.address, oracleData)
-    const deployTx = await bentoBox.deploy(masterContract.address, initData)
+    const deployTx = await bentoBox.deploy(masterContract.address, initData, true)
     const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
     const pair = await masterContractClass.attach(cloneAddress)
     await pair.updateExchangeRate()

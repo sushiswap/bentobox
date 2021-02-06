@@ -60,7 +60,7 @@ describe("MasterContractManager", function () {
 
         it("Reverts with contract being a clone", async function () {
             await deploy(this, [["badMaster", this.MaliciousMasterContractMock]])
-            const deployTx = await this.bentoBox.deploy(this.badMaster.address, "0x")
+            const deployTx = await this.bentoBox.deploy(this.badMaster.address, "0x", true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
             const badMasterClone = await this.badMaster.attach(cloneAddress)
 

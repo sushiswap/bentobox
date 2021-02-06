@@ -78,7 +78,7 @@ describe("BentoBox", function () {
                 await this.peggedOracle.getDataParameter("0")
             )
 
-            await expect(this.bentoBox.deploy(this.lendingPair.address, data)).to.emit(this.bentoBox, "LogDeploy")
+            await expect(this.bentoBox.deploy(this.lendingPair.address, data, true)).to.emit(this.bentoBox, "LogDeploy")
         })
     })
 
@@ -500,7 +500,7 @@ describe("BentoBox", function () {
                 await this.peggedOracle.getDataParameter("0")
             )
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data)
+            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
             let pair = await this.lendingPair.attach(cloneAddress)
 
@@ -520,7 +520,7 @@ describe("BentoBox", function () {
                 await this.peggedOracle.getDataParameter("0")
             )
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data)
+            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
             let pair = await this.lendingPair.attach(cloneAddress)
 

@@ -15,6 +15,13 @@
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
+import "./interfaces/IFlashLoan.sol";
+import "./interfaces/IWETH.sol";
+import "./interfaces/IStrategy.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
+import "./MasterContractManager.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable not-rely-on-time
@@ -448,23 +455,3 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
 }
-
-// solhint-disable imports-on-top
-// Moved imports to the bottom to get the main contract at the top
-import "./MasterContractManager.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
-
-// ***************** //
-// *** LIBRARIES *** //
-// ***************** //
-
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
-
-// ****************** //
-// *** INTERFACES *** //
-// ****************** //
-
-import "./interfaces/IFlashLoan.sol";
-import "./interfaces/IWETH.sol";
-import "./interfaces/IStrategy.sol";
