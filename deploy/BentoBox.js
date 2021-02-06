@@ -14,7 +14,7 @@ module.exports = async function ({ deployments, getChainId, getNamedAccounts }) 
 
   const wethAddress = WETH_MAP.has(chainId) ? WETH_MAP.get(chainId) : (await deployments.get("WETH9Mock")).address
 
-  await deploy("BentoBoxPlusMock", {
+  await deploy("BentoBoxMock", {
     from: deployer,
     args: [wethAddress],
     log: true,

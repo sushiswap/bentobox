@@ -3,12 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../BentoBoxPlus.sol";
+import "../BentoBox.sol";
 import "../LendingPair.sol";
 
 contract LendingPairMock is LendingPair {
-    
-    constructor(BentoBoxPlus bentoBox) public LendingPair(bentoBox) {}
+    constructor(BentoBox bentoBox) public LendingPair(bentoBox) {}
 
     function accrueTwice() public {
         accrue();
@@ -18,5 +17,4 @@ contract LendingPairMock is LendingPair {
     function setInterestPerBlock(uint64 interestPerBlock) public {
         accrueInfo.interestPerBlock = interestPerBlock;
     }
-    
 }

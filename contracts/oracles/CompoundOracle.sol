@@ -10,7 +10,7 @@ interface IUniswapAnchoredView {
 contract CompoundOracle is IOracle {
     using BoringMath for uint256;
 
-    IUniswapAnchoredView constant private ORACLE = IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1);
+    IUniswapAnchoredView private constant ORACLE = IUniswapAnchoredView(0x922018674c12a7F0D394ebEEf9B58F186CdE13c1);
 
     struct PriceInfo {
         uint128 price;
@@ -19,8 +19,10 @@ contract CompoundOracle is IOracle {
 
     mapping(string => PriceInfo) public prices;
 
-    function _peekPrice(string memory symbol) internal view returns(uint256) {
-        if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
+    function _peekPrice(string memory symbol) internal view returns (uint256) {
+        if (bytes(symbol).length == 0) {
+            return 1000000;
+        } // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number > info.blockNumber + 8) {
             return uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
@@ -28,8 +30,10 @@ contract CompoundOracle is IOracle {
         return info.price;
     }
 
-    function _getPrice(string memory symbol) internal returns(uint256) {
-        if (bytes(symbol).length == 0) {return 1000000;} // To allow only using collateralSymbol or assetSymbol if paired against USDx
+    function _getPrice(string memory symbol) internal returns (uint256) {
+        if (bytes(symbol).length == 0) {
+            return 1000000;
+        } // To allow only using collateralSymbol or assetSymbol if paired against USDx
         PriceInfo memory info = prices[symbol];
         if (block.number > info.blockNumber + 8) {
             info.price = uint128(ORACLE.price(symbol)); // Prices are denominated with 6 decimals, so will fit in uint128
@@ -39,7 +43,11 @@ contract CompoundOracle is IOracle {
         return info.price;
     }
 
-    function getDataParameter(string memory collateralSymbol, string memory assetSymbol, uint256 division) public pure returns (bytes memory) {
+    function getDataParameter(
+        string memory collateralSymbol,
+        string memory assetSymbol,
+        uint256 division
+    ) public pure returns (bytes memory) {
         return abi.encode(collateralSymbol, assetSymbol, division);
     }
 
@@ -50,16 +58,16 @@ contract CompoundOracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata data) public override view returns(bool, uint256) {
+    function peek(bytes calldata data) public view override returns (bool, uint256) {
         (string memory collateralSymbol, string memory assetSymbol, uint256 division) = abi.decode(data, (string, string, uint256));
         return (true, uint256(1e36).mul(_peekPrice(assetSymbol)) / _peekPrice(collateralSymbol) / division);
     }
 
-    function name(bytes calldata) public override view returns (string memory) {
+    function name(bytes calldata) public view override returns (string memory) {
         return "Compound";
     }
 
-    function symbol(bytes calldata) public override view returns (string memory) {
+    function symbol(bytes calldata) public view override returns (string memory) {
         return "COMP";
     }
 }

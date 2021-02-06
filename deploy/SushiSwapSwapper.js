@@ -12,7 +12,7 @@ module.exports = async function ({ deployments, getChainId, getNamedAccounts }) 
 
   const chainId = await getChainId()
 
-  const bentoBox = await deployments.get("BentoBoxPlusMock")
+  const bentoBox = await deployments.get("BentoBoxMock")
 
   const factoryAddress = FACTORY_MAP.has(chainId) ? FACTORY_MAP.get(chainId) : (await deployments.get("SushiSwapFactoryMock")).address
 

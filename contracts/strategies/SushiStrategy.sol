@@ -5,10 +5,12 @@ import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+
 // solhint-disable not-rely-on-time
 
 interface ISushiBar is IERC20 {
     function enter(uint256 _amount) external;
+
     function leave(uint256 _share) external;
 }
 

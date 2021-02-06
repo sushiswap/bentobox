@@ -28,7 +28,7 @@
     "test:coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage",
     "test:gas": "REPORT_GAS=true yarn test",
     "coverage": ".\\node_modules\\.bin\\hardhat.cmd coverage",
-    "prettier": "prettier --write test/**/*.js",
+    "prettier": "prettier --write test/**/*.js contracts/**/*.sol",
     "lint": "yarn prettier && solhint -c .solhint.json 'contracts/**/*.sol'"
   },
   "husky": {
@@ -82,6 +82,6 @@
     "solidity-coverage": "^0.7.12"
   },
   "dependencies": {
-    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#011d109"
+    "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#39fdd3b"
   }
 }

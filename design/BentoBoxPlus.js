@@ -11,7 +11,7 @@ accounts["SUSHI-External"] = 0;
 accounts["SUSHI-PAIR"] = 0;
 accounts["SUSHI-Saver"] = 0;
 
-class BentoBoxPlus {
+class BentoBox {
     constructor() {
         this.userShare = mapping();
         this.totalShare = mapping();
@@ -135,7 +135,7 @@ class LendingPair {
     }
 }
 
-let bento = new BentoBoxPlus()
+let bento = new BentoBox()
 let pair = new LendingPair(bento)
 
 bento.deposit("SUSHI", "Saver", "Saver", 500);

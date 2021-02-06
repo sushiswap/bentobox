@@ -4,6 +4,7 @@ pragma solidity 0.6.12;
 import "../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+
 // solhint-disable not-rely-on-time
 
 contract SimpleStrategyMock is IStrategy {
@@ -16,7 +17,7 @@ contract SimpleStrategyMock is IStrategy {
     modifier onlyBentoBox() {
         require(msg.sender == bentoBox, "Ownable: caller is not the owner");
         _;
-    }    
+    }
 
     constructor(address bentoBox_, IERC20 token_) public {
         bentoBox = bentoBox_;
