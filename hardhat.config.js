@@ -12,6 +12,8 @@ require("hardhat-gas-reporter")
 require("hardhat-spdx-license-identifier")
 require("hardhat-watcher")
 require("solidity-coverage")
+require('hardhat-docgen');
+
 
 const { normalizeHardhatNetworkAccountsConfig } = require("hardhat/internal/core/providers/util")
 
@@ -68,6 +70,11 @@ module.exports = {
     flat: true,
     // only: [],
     // except: []
+  },
+  docgen: {
+    path: './docs',
+    clear: false,
+    runOnCompile: false,
   },
   defaultNetwork: "hardhat",
   etherscan: {
