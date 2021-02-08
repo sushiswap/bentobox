@@ -6,10 +6,12 @@ import "../libraries/SignedSafeMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+
 // solhint-disable not-rely-on-time
 
 interface ISushiBar is IERC20 {
     function enter(uint256 _amount) external;
+
     function leave(uint256 _share) external;
 }
 
@@ -21,18 +23,17 @@ contract MoneySink is IStrategy, BoringOwnable {
     uint256 private moneyLost;
     IERC20 public immutable sushi;
 
-    constructor (IERC20 _sushi) public {
+    constructor(IERC20 _sushi) public {
         sushi = _sushi;
     }
 
     // Send the assets to the Strategy and call skim to invest them
-    function skim(uint256 amount) external override {
-    }
+    function skim(uint256 amount) external override {}
 
     // Harvest any profits made converted to the asset and pass them to the caller
     function harvest(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
         uint256 _moneyLost = moneyLost.add(balance.mul(10000)) / 100000;
-        uint256 amount = balance.mul(90000) / 100000 ;
+        uint256 amount = balance.mul(90000) / 100000;
         int256 moneyToBeLost = int256(amount).sub(int256(moneyLost));
         moneyLost = _moneyLost;
         amountAdded = moneyToBeLost.sub(int256(balance));
@@ -47,13 +48,13 @@ contract MoneySink is IStrategy, BoringOwnable {
         } else {
             actualAmount = amount;
         }
-        
+
         sushi.safeTransfer(owner, actualAmount);
     }
 
     // Withdraw all assets in the safest way possible. This shouldn't fail.
     function exit(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
-        uint256 amount = sushi.balanceOf(address(this)).mul(90000) / 100000 ;
+        uint256 amount = sushi.balanceOf(address(this)).mul(90000) / 100000;
         int256 moneyToBeTransferred = int256(amount).sub(int256(moneyLost));
         amountAdded = moneyToBeTransferred.sub(int256(balance));
         sushi.safeTransfer(owner, moneyToBeTransferred.toUInt256());
