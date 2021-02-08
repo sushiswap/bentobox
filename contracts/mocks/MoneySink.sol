@@ -28,10 +28,12 @@ contract MoneySink is IStrategy, BoringOwnable {
     }
 
     // Send the assets to the Strategy and call skim to invest them
-    function skim(uint256 amount) external override {}
+    function skim(uint256) external override {
+        return;
+    }
 
     // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
+    function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
         uint256 _moneyLost = moneyLost.add(balance.mul(10000)) / 100000;
         uint256 amount = balance.mul(90000) / 100000;
         int256 moneyToBeLost = int256(amount).sub(int256(moneyLost));
