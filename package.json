@@ -28,12 +28,8 @@
     "test:coverage": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat coverage",
     "test:gas": "REPORT_GAS=true yarn test",
     "coverage": ".\\node_modules\\.bin\\hardhat.cmd coverage",
-<<<<<<< HEAD
-    "prettier": "prettier --write test/**/*.js contracts/**/*.sol",
-=======
     "prettier": "prettier --write test/**/*.js",
     "docgen": "hardhat compile && hardhat docgen",
->>>>>>> dc1e251 (losing money test)
     "lint": "yarn prettier && solhint -c .solhint.json 'contracts/**/*.sol'"
   },
   "husky": {
