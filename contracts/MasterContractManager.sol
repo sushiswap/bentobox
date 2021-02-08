@@ -23,7 +23,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = "\x19\x01";
     bytes32 private constant APPROVAL_SIGNATURE_HASH =
         keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
-    
+
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private immutable DOMAIN_SEPARATOR;
 
