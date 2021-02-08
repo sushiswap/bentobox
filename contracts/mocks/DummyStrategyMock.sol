@@ -36,7 +36,8 @@ contract DummyStrategyMock is IStrategy {
 
     // Harvest any profits made converted to the asset and pass them to the caller
     function harvest(
-        uint256 /*balance*/
+        uint256, /*balance*/
+        address /*sender*/
     ) external override onlyBentoBox returns (int256 amountAdded) {
         amountAdded = _harvestProfit;
     }
