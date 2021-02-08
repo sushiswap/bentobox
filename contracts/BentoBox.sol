@@ -401,7 +401,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     ) public {
         StrategyData memory data = strategyData[token];
         IStrategy _strategy = strategy[token];
-        int256 balanceChange = _strategy.harvest(data.balance);
+        int256 balanceChange = _strategy.harvest(data.balance, msg.sender);
         if (balanceChange == 0 && !balance) {
             return;
         }

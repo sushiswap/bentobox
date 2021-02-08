@@ -32,7 +32,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
+    function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
         uint256 share = bar.balanceOf(address(this));
         uint256 totalShares = bar.totalSupply();
         uint256 totalSushi = sushi.balanceOf(address(bar));

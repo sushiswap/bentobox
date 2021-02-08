@@ -9,6 +9,7 @@ import "@boringcrypto/boring-solidity/contracts/BoringFactory.sol";
 contract MasterContractManager is BoringOwnable, BoringFactory {
     event LogWhiteListMasterContract(address indexed masterContract, bool approved);
     event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool approved);
+    event LogRegisterProtocol(address indexed protocol);
 
     // masterContract to user to approval state
     mapping(address => mapping(address => bool)) public masterContractApproved;
@@ -22,19 +23,21 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     string private constant EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA = "\x19\x01";
     bytes32 private constant APPROVAL_SIGNATURE_HASH =
         keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
+    
+    // solhint-disable-next-line var-name-mixedcase
+    bytes32 private immutable DOMAIN_SEPARATOR;
 
-    // C20 - Is calculation on the fly cheaper than storing the value?
-    // C20: Recalculating the domainSeparator is cheaper than reading it from storage
-    function domainSeparator() private view returns (bytes32) {
+    constructor() public {
         uint256 chainId;
         assembly {
             chainId := chainid()
         }
-        return keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, "BentoBox V2", chainId, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, "BentoBox V2", chainId, address(this)));
     }
 
     function registerProtocol() public {
         masterContractOf[msg.sender] = msg.sender;
+        emit LogRegisterProtocol(msg.sender);
     }
 
     function whitelistMasterContract(address masterContract, bool approved) public onlyOwner {
@@ -81,7 +84,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
                 keccak256(
                     abi.encodePacked(
                         EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA,
-                        domainSeparator(),
+                        DOMAIN_SEPARATOR,
                         keccak256(
                             abi.encode(
                                 APPROVAL_SIGNATURE_HASH,
