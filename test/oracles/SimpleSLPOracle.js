@@ -55,6 +55,7 @@ describe("SimpleSLPOracle", function () {
         describe("peek", function () {
             it("should return false on first peek", async function () {
                 expect((await this.oracleF.peek(this.oracleData))[1]).to.equal("0")
+                expect((await this.oracleB.peek(this.oracleData))[1]).to.equal("0")
             })
 
             it("should get price even when time since last update is longer than period", async function () {
