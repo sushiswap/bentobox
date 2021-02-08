@@ -420,12 +420,14 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             uint256 sub = uint256(-balanceChange);
             totalElastic = totalElastic.sub(sub);
             totals[token].elastic = totalElastic.to128();
-            data.balance = data.balance.sub(sub.to128());
+            // XXX: probably wrong place?
+            // data.balance = data.balance.sub(sub.to128());
             emit LogStrategyLoss(token, sub);
         }
 
         if (balance) {
             uint256 targetBalance = totalElastic.mul(data.targetPercentage) / 100;
+            // if data.balance == targetBalance there is nothing to update
             if (data.balance < targetBalance) {
                 uint256 amountOut = targetBalance.sub(data.balance);
                 if (maxChangeAmount != 0 && amountOut > maxChangeAmount) {
