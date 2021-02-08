@@ -41,12 +41,14 @@ describe("SimpleSLPOracle", function () {
         describe("name", function () {
             it("should get name", async function () {
                 expect(await this.oracleF.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
+                expect(await this.oracleB.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
             })
         })
 
         describe("symbol", function () {
             it("should get symbol", async function () {
                 expect(await this.oracleF.symbol(this.oracleData)).to.be.equal("S")
+                expect(await this.oracleB.symbol(this.oracleData)).to.be.equal("S")
             })
         })
 
