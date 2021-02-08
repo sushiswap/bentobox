@@ -4,13 +4,13 @@ const { ethers } = require("hardhat")
 
 describe("MoneySink", function () {
   before(async function () {
-    await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "MoneySink", "BentoBoxPlusMock"])
+    await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "MoneySink", "BentoBoxMock"])
     await deploy(this, [
       ["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
       ["weth9", this.WETH9Mock],
     ])
     await deploy(this, [
-      ["bentoBox", this.BentoBoxPlusMock, [this.sushi.address]],
+      ["bentoBox", this.BentoBoxMock, [this.sushi.address]],
     ])
     await deploy(this, [["moneySink", this.MoneySink, [this.sushi.address]]])
     await this.moneySink.transferOwnership(this.bentoBox.address, true, false)
