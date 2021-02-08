@@ -80,7 +80,6 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     AccrueInfo public accrueInfo;
-    uint256 public feesPaidAmount;
 
     // ERC20 'variables'
     function symbol() external view returns (string memory) {
@@ -124,7 +123,6 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     // Fees
     uint256 private constant PROTOCOL_FEE = 10000; // 10%
     uint256 private constant PROTOCOL_FEE_DIVISOR = 1e5;
-    uint256 private constant DEV_FEE = 10000; // 10% of the PROTOCOL_FEE = 1%
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
 

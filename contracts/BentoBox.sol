@@ -169,12 +169,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         if (share == 0) {
             // value of the share may be lower than the amount due to rounding, that's ok
             share = total.toBase(amount, false);
+            if (share == 0) {
+                return (0, 0);
+            }
         } else {
             // amount may be lower than the value of share due to rounding, in that case, add 1 to amount (Always round up)
             amount = total.toElastic(share, true);
-        }
-        if (share == 0) {
-            return (0, 0);
         }
 
         // In case of skimming, check that only the skimmable amount is taken.
@@ -401,7 +401,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     ) public {
         StrategyData memory data = strategyData[token];
         IStrategy _strategy = strategy[token];
-        int256 balanceChange = _strategy.harvest(data.balance);
+        int256 balanceChange = _strategy.harvest(data.balance, msg.sender);
         if (balanceChange == 0 && !balance) {
             return;
         }

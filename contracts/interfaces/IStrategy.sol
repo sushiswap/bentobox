@@ -6,7 +6,7 @@ interface IStrategy {
     function skim(uint256 amount) external;
 
     // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest(uint256 balance) external returns (int256 amountAdded);
+    function harvest(uint256 balance, address sender) external returns (int256 amountAdded);
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding.
     // The actualAmount should be very close to the amount. The difference should NOT be used to report a loss. That's what harvest is for.
