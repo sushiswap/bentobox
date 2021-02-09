@@ -154,6 +154,11 @@ describe("BentoBox", function () {
         })
 
         it("Mutates balanceOf correctly", async function () {
+            await this.c.approve(this.bentoBox.address, 1000)
+            await expect(this.bentoBox.deposit(this.c.address, this.alice.address, this.alice.address, 1, 0)).to.not.emit(this.c, "Transfer")
+            await expect(this.bentoBox.deposit(this.c.address, this.alice.address, this.alice.address, 999, 0)).to.not.emit(this.c, "Transfer")
+            await expect(this.bentoBox.deposit(this.c.address, this.alice.address, this.alice.address, 0, 1000)).to.emit(this.c, "Transfer")
+
             await this.a.approve(this.bentoBox.address, 1000)
 
             await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 130, 0))
@@ -163,22 +168,21 @@ describe("BentoBox", function () {
                 .withArgs(this.a.address, this.alice.address, this.alice.address, "130", "100")
 
             expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address)).to.be.equal(100)
-
-            await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 1, 0)).to.not.emit(this.a, "Transfer")
-
             expect(await this.bentoBox.balanceOf(this.a.address, this.alice.address)).to.be.equal(100)
         })
 
         it("Mutates balanceOf for BentoBox and WETH correctly", async function () {
-            await this.weth9.connect(this.alice).deposit({ value: 1 })
+            await this.weth9.connect(this.alice).deposit({ value: 1000 })
             await expect(this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1, 0, { value: 1 }))
+                .to.not.emit(this.weth9, "Deposit")
+            await expect(this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1000, 0, { value: 1000 }))
                 .to.emit(this.weth9, "Deposit")
-                .withArgs(this.bentoBox.address, "1")
+                .withArgs(this.bentoBox.address, "1000")
                 .to.emit(this.bentoBox, "LogDeposit")
-                .withArgs(this.weth9.address, this.bob.address, this.bob.address, "1", "1")
+                .withArgs(this.weth9.address, this.bob.address, this.bob.address, "1000", "1000")
 
-            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.be.equal(1)
-            expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "bob should have weth").to.be.equal(1)
+            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.be.equal(1000)
+            expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "bob should have weth").to.be.equal(1000)
         })
 
         it("Reverts if TotalSupply of token is Zero or if token isn't a token", async function () {
@@ -532,20 +536,20 @@ describe("BentoBox", function () {
     describe("Skim ETH", function () {
         it("Skims ether to from address", async function () {
             await this.weth9.connect(this.alice).deposit({
-                value: 1,
+                value: 1000,
             })
 
             await this.bentoBox.batch([], true, {
-                value: 1,
+                value: 1000,
             })
 
-            await this.bentoBox.deposit(ADDRESS_ZERO, this.bentoBox.address, this.alice.address, 1, 0)
+            await this.bentoBox.deposit(ADDRESS_ZERO, this.bentoBox.address, this.alice.address, 1000, 0)
 
             amount = await this.bentoBox.balanceOf(this.weth9.address, this.alice.address)
 
-            expect(amount, "alice should have weth").to.equal(1)
+            expect(amount, "alice should have weth").to.equal(1000)
 
-            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.equal(1)
+            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.equal(1000)
         })
     })
 
