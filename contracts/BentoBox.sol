@@ -63,7 +63,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     struct StrategyData {
         uint64 strategyStartDate;
         uint64 targetPercentage;
-        uint128 balance; // the actual balance of the strategy that can differ from `totals[token]`
+        uint128 balance; // the balance of the strategy that BentoBox thinks is in there
     }
 
     // ******************************** //

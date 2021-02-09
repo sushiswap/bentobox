@@ -479,8 +479,9 @@ describe("BentoBox", function () {
 
             expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
 
-            await expect(this.bentoBox.connect(this.bob).deposit(this.a.address, this.bentoBox.address, this.bob.address, 101, 0))
-                .to.be.revertedWith("BentoBox: Skim too much")
+            await expect(
+                this.bentoBox.connect(this.bob).deposit(this.a.address, this.bentoBox.address, this.bob.address, 101, 0)
+            ).to.be.revertedWith("BentoBox: Skim too much")
 
             expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
         })
@@ -688,6 +689,5 @@ describe("BentoBox", function () {
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.a.address, ADDRESS_ZERO)
         })
-
     })
 })

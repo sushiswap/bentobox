@@ -83,7 +83,7 @@ describe("StrategyManager", function () {
         })
 
         it("switches to new strategy and exits from old with profit", async function () {
-            await this.sushi.transfer(this.bar.address, getBigNumber(1));
+            await this.sushi.transfer(this.bar.address, getBigNumber(1))
             await deploy(this, [["sushiStrategy3", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
             await advanceTime(1209600, ethers)
@@ -91,6 +91,5 @@ describe("StrategyManager", function () {
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("16063274198568316213")
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("16063274198568316213")
         })
-
     })
 })

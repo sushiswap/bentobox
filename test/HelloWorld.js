@@ -1,19 +1,11 @@
 const assert = require("assert")
-const {
-    getBigNumber,
-    prepare,
-    setMasterContractApproval,
-    deploymentsFixture,
-} = require("./utilities")
+const { getBigNumber, prepare, setMasterContractApproval, deploymentsFixture } = require("./utilities")
 
 describe("HelloWorld", function () {
     const APPROVAL_AMOUNT = 1000
 
     before(async function () {
-        await prepare(this, [
-            "HelloWorld",
-            "ReturnFalseERC20Mock",
-        ])
+        await prepare(this, ["HelloWorld", "ReturnFalseERC20Mock"])
     })
 
     it("Setup", async function () {

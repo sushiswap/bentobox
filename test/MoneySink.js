@@ -44,7 +44,7 @@ describe("MoneySink", function () {
     })
 
     it("tracks loss from harvest correctly", async function () {
-        await this.moneySink.lose(getBigNumber(1));
+        await this.moneySink.lose(getBigNumber(1))
         expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.equal("10000000000000000000")
         await expect(this.bentoBox.harvest(this.sushi.address, false, 0))
             .to.emit(this.bentoBox, "LogStrategyLoss")
@@ -64,14 +64,13 @@ describe("MoneySink", function () {
     it("holds correct asset after withdraw and harvest from BentoBox", async function () {
         await this.moneySink2.transferOwnership(this.bentoBox.address, true, false)
         expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(0)
-        this.moneySink2.lose(getBigNumber(2))
         await this.bentoBox.harvest(this.sushi.address, true, 0)
         await this.bentoBox.withdraw(this.sushi.address, this.alice.address, this.alice.address, getBigNumber(1, 17), 0)
         expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(getBigNumber(720, 16))
-        this.moneySink2.lose(getBigNumber(4))
+        await this.moneySink2.lose(getBigNumber(3))
         await this.bentoBox.harvest(this.sushi.address, false, 0)
         expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal(getBigNumber(170, 16))
-        expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(getBigNumber(320, 16))
-        expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal(getBigNumber(490, 16))
+        expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal(getBigNumber(420, 16))
+        expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal(getBigNumber(590, 16))
     })
 })
