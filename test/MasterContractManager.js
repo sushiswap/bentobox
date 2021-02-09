@@ -32,6 +32,13 @@ describe("MasterContractManager", function () {
             )
         })
 
+        it("Reverts if whitelisting address(0) as MasterContract", async function () {
+            await expect(this.mcmanager.connect(this.alice).whitelistMasterContract(ADDRESS_ZERO, true)).to.be.revertedWith(
+                "MasterCMgr: Cannot approve 0"
+            )
+            expect(await this.mcmanager.whitelistedMasterContracts(ADDRESS_ZERO)).to.be.false
+        })
+
         it("Allows to WhiteList MasterContract", async function () {
             await this.mcmanager.connect(this.alice).whitelistMasterContract(this.lendingPair.address, true)
             expect(await this.mcmanager.whitelistedMasterContracts(this.lendingPair.address)).to.be.true
