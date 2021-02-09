@@ -166,7 +166,22 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 100,
+        runs: 256,
+        details: {
+          peephole: true,
+          jumpdestRemover: true,
+          orderLiterals: false,
+          deduplicate: true,
+          cse: true,
+          constantOptimizer: true,
+          yul: true,
+          yulDetails: {
+            stackAllocation: true,
+          },
+        },
+      },
+      metadata: {
+        'bytecodeHash': 'none',
       },
     },
   },
