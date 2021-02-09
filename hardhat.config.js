@@ -140,6 +140,7 @@ module.exports = {
   networks: {
     hardhat: {
       chainId: 31337,
+      blockGasLimit: 10_000_000,
       accounts,
     },
     // mainnet: {
