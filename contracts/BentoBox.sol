@@ -63,7 +63,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     struct StrategyData {
         uint64 strategyStartDate;
         uint64 targetPercentage;
-        uint128 balance;
+        uint128 balance; // the actual balance of the strategy that can differ from `totals[token]`
     }
 
     // ******************************** //
@@ -420,8 +420,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             uint256 sub = uint256(-balanceChange);
             totalElastic = totalElastic.sub(sub);
             totals[token].elastic = totalElastic.to128();
-            // XXX: probably wrong place?
-            // data.balance = data.balance.sub(sub.to128());
+            data.balance = data.balance.sub(sub.to128());
             emit LogStrategyLoss(token, sub);
         }
 

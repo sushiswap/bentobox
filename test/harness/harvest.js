@@ -1,7 +1,6 @@
-const { ethers } = require("hardhat")
 const assert = require("assert")
+const { ethers } = require("hardhat")
 const { getBigNumber, advanceTime, prepare, setMasterContractApproval, deploymentsFixture } = require("../utilities")
-const { LendingPair } = require("../utilities/lendingpair")
 
 async function depositHelper(bentoBox, token, wallet, amount) {
     await bentoBox.deposit(token.address, wallet.address, wallet.address, getBigNumber(amount, await token.decimals()), 0)
@@ -14,7 +13,7 @@ async function withdrawHelper(bentoBox, token, wallet, amount) {
 describe("Harvest with DummyStrategyMock", function () {
     const APPROVAL_AMOUNT = 1000000
     const DEPOSIT_AMOUNT = 1000
-    let strategyBalance = 0
+    const HARVEST_MAX_AMOUNT = 3
 
     before(async function () {
         await prepare(this, ["ReturnFalseERC20Mock", "DummyStrategyMock"])
@@ -47,8 +46,8 @@ describe("Harvest with DummyStrategyMock", function () {
         )
     })
 
-    it("set harvest profit on strategy mock", async function () {
-        await this.dummyStrategy.setHarvestProfit(DEPOSIT_AMOUNT)
+    it("set harvest profit on strategy mock to zero", async function () {
+        await this.dummyStrategy.setHarvestProfit(0)
     })
 
     it("harvest without strategy set - revert", async function () {
@@ -64,24 +63,26 @@ describe("Harvest with DummyStrategyMock", function () {
     })
 
     it("harvest", async function () {
-        await this.bentoBox.harvest(this.tokenA.address, true, 1)
-        strategyBalance++
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
-    it("set harvest profit on strategy mock to zero", async function () {
-        await this.dummyStrategy.setHarvestProfit(0)
+    it("set harvest profit on strategy mock positive", async function () {
+        await this.dummyStrategy.setHarvestProfit(DEPOSIT_AMOUNT)
     })
 
-    it("harvest", async function () {
-        await this.bentoBox.harvest(this.tokenA.address, true, 1)
-        strategyBalance++
+    it("harvest profit", async function () {
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
+    })
+
+    it("harvest profit", async function () {
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
     it("check balance of dummy strategy contract", async function () {
         assert.equal(
-            (await this.tokenA.balanceOf(this.dummyStrategy.address)).toString(),
-            strategyBalance.toString(),
-            "should match DEPOSIT_AMOUNT - (2x profit drain)"
+            (await this.bentoBox.strategyData(this.tokenA.address)).balance.toString(),
+            (HARVEST_MAX_AMOUNT * 3).toString(),
+            "should match"
         )
     })
 
@@ -94,7 +95,7 @@ describe("Harvest with DummyStrategyMock", function () {
     })
 
     it("harvest", async function () {
-        await this.bentoBox.harvest(this.tokenA.address, true, 1)
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
     it("set target percentage positive and set re-apply strategy contract", async function () {
@@ -105,14 +106,27 @@ describe("Harvest with DummyStrategyMock", function () {
     })
 
     it("harvest", async function () {
-        await this.bentoBox.harvest(this.tokenA.address, true, 1)
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
-    it("should allow withdraw from BentoBox", async function () {
-        await withdrawHelper(this.bentoBox, this.tokenA, this.alice, DEPOSIT_AMOUNT - strategyBalance)
+    it("should allow withdraw original deposit amount from BentoBox", async function () {
+        await withdrawHelper(this.bentoBox, this.tokenA, this.alice, DEPOSIT_AMOUNT)
     })
 
     it("harvest", async function () {
-        await this.bentoBox.harvest(this.tokenA.address, true, 1)
+        await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
+    })
+
+    it("check token balances of contracts", async function () {
+        assert.equal(
+            (await this.tokenA.balanceOf(this.bentoBox.address)).toString(),
+            "0",
+            "bentoBox"
+        )
+        assert.equal(
+            (await this.tokenA.balanceOf(this.dummyStrategy.address)).toString(),
+            "0",
+            "dummyStrategy"
+        )
     })
 })
