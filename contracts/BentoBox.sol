@@ -79,6 +79,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     uint256 private constant FLASH_LOAN_FEE_PRECISION = 1e5;
     uint256 private constant STRATEGY_DELAY = 2 weeks;
     uint256 private constant MAX_TARGET_PERCENTAGE = 95; // 95%
+    uint256 private constant MINIMUM_SHARE_BALANCE = 1000; // To prevent the ratio going off
 
     // ***************** //
     // *** VARIABLES *** //
@@ -169,7 +170,8 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         if (share == 0) {
             // value of the share may be lower than the amount due to rounding, that's ok
             share = total.toBase(amount, false);
-            if (share == 0) {
+            // Any deposit should lead to at least the minimum share balance, otherwise it's ignored (no amount taken)
+            if (total.base.add(share.to128()) < MINIMUM_SHARE_BALANCE) {
                 return (0, 0);
             }
         } else {
@@ -231,7 +233,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         total.elastic = total.elastic.sub(amount.to128());
         total.base = total.base.sub(share.to128());
         // There have to be at least 1000 shares left to prevent reseting the share/amount ratio (unless it's fully emptied)
-        require(total.base >= 1000 || total.base == 0, "BentoBox: cannot empty");
+        require(total.base >= MINIMUM_SHARE_BALANCE || total.base == 0, "BentoBox: cannot empty");
         totals[token] = total;
 
         // Interactions
