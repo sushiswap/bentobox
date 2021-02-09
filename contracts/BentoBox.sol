@@ -63,7 +63,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     struct StrategyData {
         uint64 strategyStartDate;
         uint64 targetPercentage;
-        uint128 balance;
+        uint128 balance; // the actual balance of the strategy that can differ from `totals[token]`
     }
 
     // ******************************** //
@@ -135,6 +135,11 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
+    /// @dev Helper function to represent an `amount` of `token` in shares.
+    /// @param token The ERC-20 token.
+    /// @param amount The `token` amount.
+    /// @param roundUp If the result `share` should be rounded up.
+    /// @return share The token amount represented in shares.
     function toShare(
         IERC20 token,
         uint256 amount,
@@ -143,6 +148,11 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         share = totals[token].toBase(amount, roundUp);
     }
 
+    /// @dev Helper function represent shares back into the `token` amount.
+    /// @param token The ERC-20 token.
+    /// @param share The amount of shares.
+    /// @param roundUp If the result should be rounded up.
+    /// @return amount The share amount back into native representation.
     function toAmount(
         IERC20 token,
         uint256 share,
@@ -151,6 +161,14 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         amount = totals[token].toElastic(share, roundUp);
     }
 
+    /// @notice Deposit an amount of `token` represented in either `amount` or `share`.
+    /// @param token_ The ERC-20 token to deposit.
+    /// @param from which account to pull the tokens.
+    /// @param to which account to push the tokens.
+    /// @param amount Token amount in native representation to deposit.
+    /// @param share Token amount represented in shares to deposit. Takes precedence over `amount`.
+    /// @return amountOut The amount deposited.
+    /// @return shareOut The deposited amount repesented in shares.
     function deposit(
         IERC20 token_,
         address from,
@@ -208,6 +226,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         shareOut = share;
     }
 
+    /// @notice Withdraws an amount of `token` from a user account.
+    /// @param token_ The ERC-20 token to withdraw.
+    /// @param from which user to pull the tokens.
+    /// @param to which user to push the tokens.
+    /// @param amount of tokens. Either one of `amount` or `share` needs to be supplied.
+    /// @param share Like above, but `share` takes precedence over `amount`.
     function withdraw(
         IERC20 token_,
         address from,
@@ -253,6 +277,11 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         shareOut = share;
     }
 
+    /// @notice Transfer shares from a user account to another one.
+    /// @param token The ERC-20 token to transfer.
+    /// @param from which user to pull the tokens.
+    /// @param to which user to push the tokens.
+    /// @param share The amount of `token` in shares.
     // Clones of master contracts can transfer from any account that has approved them
     // F3 - Can it be combined with another similar function?
     // F3: This isn't combined with transferMultiple for gas optimization
@@ -272,6 +301,11 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         emit LogTransfer(token, from, to, share);
     }
 
+    /// @notice Transfer shares from a user account to multiple other ones.
+    /// @param token The ERC-20 token to transfer.
+    /// @param from which user to pull the tokens.
+    /// @param tos The receivers of the tokens.
+    /// @param shares The amount of `token` in shares for each receiver in `tos`.
     // F3 - Can it be combined with another similar function?
     // F3: This isn't combined with transfer for gas optimization
     function transferMultiple(
@@ -295,6 +329,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         balanceOf[token][from] = balanceOf[token][from].sub(totalAmount);
     }
 
+    /// @notice Flashloan ability.
+    /// @param borrower The address of the contract that implements and conforms to `IFlashBorrower` and handles the flashloan.
+    /// @param receiver Address of the token receiver.
+    /// @param token The address of the token to receive.
+    /// @param amount of the tokens to receive.
+    /// @param data The calldata to pass to the `borrower` contract.
     // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Not possible to follow this here, reentrancy has been reviewed
     // F6 - Check for front-running possibilities, such as the approve function (SWC-114)
@@ -315,6 +355,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
     }
 
+    /// @notice Support for batched flashloans. Useful to request multiple different `tokens` in a single transaction.
+    /// @param borrower The address of the contract that implements and conforms to `IBatchFlashBorrower` and handles the flashloan.
+    /// @param receivers An array of the token receivers. A one-to-one mapping with `tokens` and `amounts`.
+    /// @param tokens The addresses of the tokens.
+    /// @param amounts of the tokens for each receiver.
+    /// @param data The calldata to pass to the `borrower` contract.
     // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Not possible to follow this here, reentrancy has been reviewed
     // F6 - Check for front-running possibilities, such as the approve function (SWC-114)
@@ -345,6 +391,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         }
     }
 
+    /// @notice Sets the target percentage of the strategy for `token`.
+    /// @dev Only the owner of this contract is allowed to change this.
+    /// @param token The address of the token that maps to a strategy to change.
+    /// @param targetPercentage_ The new target in percent. Must be lesser or equal to `MAX_TARGET_PERCENTAGE`.
     function setStrategyTargetPercentage(IERC20 token, uint64 targetPercentage_) public onlyOwner {
         // Checks
         require(targetPercentage_ <= MAX_TARGET_PERCENTAGE, "StrategyManager: Target too high");
@@ -354,6 +404,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         emit LogStrategyTargetPercentage(token, targetPercentage_);
     }
 
+    /// @notice Sets the contract address of a new strategy that conforms to `IStrategy` for `token`.
+    /// Must be called twice with the same arguments.
+    /// A new strategy becomes pending first and can be activated once `STRATEGY_DELAY` is over.
+    /// @dev Only the owner of this contract is allowed to change this.
+    /// @param token The address of the token that maps to a strategy to change.
+    /// @param newStrategy The address of the contract that conforms to `IStrategy`.
     // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // C4 - Use block.timestamp only for long intervals (SWC-116)
@@ -393,6 +449,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         strategyData[token] = data;
     }
 
+    /// @notice The actual process of yield farming. Executes the strategy of `token`.
+    /// Optionally does housekeeping if `balance` is true.
+    /// `maxChangeAmount` is relevant for skimming or withdrawing if `balance` is true.
+    /// @param token The address of the token for which a strategy is deployed.
+    /// @param balance True if housekeeping should be done.
+    /// @param maxChangeAmount The maximum amount for either pulling or pushing from/to the `IStrategy` contract.
     // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)
     // F5: Total amount is updated AFTER interaction. But strategy is under our control.
     // F5: Not followed to prevent reentrancy issues with flashloans and BentoBox skims?
@@ -428,6 +490,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
 
         if (balance) {
             uint256 targetBalance = totalElastic.mul(data.targetPercentage) / 100;
+            // if data.balance == targetBalance there is nothing to update
             if (data.balance < targetBalance) {
                 uint256 amountOut = targetBalance.sub(data.balance);
                 if (maxChangeAmount != 0 && amountOut > maxChangeAmount) {
