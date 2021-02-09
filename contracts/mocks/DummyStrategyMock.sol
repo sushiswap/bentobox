@@ -56,9 +56,7 @@ contract DummyStrategyMock is IStrategy {
     }
 
     // Withdraw all assets in the safest way possible. This shouldn't fail.
-    function exit(
-        uint256 balance
-    ) external override onlyBentoBox returns (int256 amountAdded) {
+    function exit(uint256 balance) external override onlyBentoBox returns (int256 amountAdded) {
         uint256 moneyToBeTransferred = token.balanceOf(address(this));
         amountAdded = int256(moneyToBeTransferred) - int256(balance);
         // that is here to reach some branches in BentoBox

@@ -118,15 +118,7 @@ describe("Harvest with DummyStrategyMock", function () {
     })
 
     it("check token balances of contracts", async function () {
-        assert.equal(
-            (await this.tokenA.balanceOf(this.bentoBox.address)).toString(),
-            "0",
-            "bentoBox"
-        )
-        assert.equal(
-            (await this.tokenA.balanceOf(this.dummyStrategy.address)).toString(),
-            "0",
-            "dummyStrategy"
-        )
+        assert.equal((await this.tokenA.balanceOf(this.bentoBox.address)).toString(), "0", "bentoBox")
+        assert.equal((await this.tokenA.balanceOf(this.dummyStrategy.address)).toString(), "0", "dummyStrategy")
     })
 })
