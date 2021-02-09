@@ -10,7 +10,7 @@ module.exports = async function ({ deployments, getChainId, getNamedAccounts }) 
 
   const { deployer } = await getNamedAccounts()
 
-  const chainId = await getChainId()
+  const chainId = Number(await getChainId())
 
   const bentoBox = await deployments.get("BentoBoxMock")
 
