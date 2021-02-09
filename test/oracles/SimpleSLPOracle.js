@@ -41,18 +41,21 @@ describe("SimpleSLPOracle", function () {
         describe("name", function () {
             it("should get name", async function () {
                 expect(await this.oracleF.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
+                expect(await this.oracleB.name(this.oracleData)).to.be.equal("SushiSwap TWAP")
             })
         })
 
         describe("symbol", function () {
             it("should get symbol", async function () {
                 expect(await this.oracleF.symbol(this.oracleData)).to.be.equal("S")
+                expect(await this.oracleB.symbol(this.oracleData)).to.be.equal("S")
             })
         })
 
         describe("peek", function () {
             it("should return false on first peek", async function () {
                 expect((await this.oracleF.peek(this.oracleData))[1]).to.equal("0")
+                expect((await this.oracleB.peek(this.oracleData))[1]).to.equal("0")
             })
 
             it("should get price even when time since last update is longer than period", async function () {
