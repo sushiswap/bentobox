@@ -60,6 +60,16 @@ task("pairs", "Prints the list of pairs", async () => {
   // ...
 })
 
+subtask("compile:solidity:get-compilation-job-for-file", async (_, { config }) => {
+  const compilationJob = await runSuper()
+
+  if (process.env.COVERAGE) {
+    Object.assign(compilationJob.solidityConfig.settings, config.solidityCoverageOverrides)
+  }
+
+  return compilationJob
+})
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -183,6 +193,11 @@ module.exports = {
       metadata: {
         'bytecodeHash': 'none',
       },
+    },
+  },
+  solidityCoverageOverrides: {
+    optimizer: {
+      enabled: false,
     },
   },
   spdxLicenseIdentifier: {
