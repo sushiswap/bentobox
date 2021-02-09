@@ -2,7 +2,6 @@
 
 pragma solidity 0.6.12;
 import "../interfaces/IStrategy.sol";
-import "../libraries/SignedSafeMath.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
@@ -18,13 +17,17 @@ interface ISushiBar is IERC20 {
 contract MoneySink is IStrategy, BoringOwnable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
-    using SignedSafeMath for int256;
 
-    uint256 private moneyLost;
     IERC20 public immutable sushi;
+    address public immutable bentoBox;
 
-    constructor(IERC20 _sushi) public {
+    constructor(address _bentoBox, IERC20 _sushi) public {
         sushi = _sushi;
+        bentoBox = _bentoBox;
+    }
+
+    function lose(uint256 amount) public {
+        sushi.safeTransfer(0xdEad000000000000000000000000000000000000, amount);
     }
 
     // Send the assets to the Strategy and call skim to invest them
@@ -34,31 +37,29 @@ contract MoneySink is IStrategy, BoringOwnable {
 
     // Harvest any profits made converted to the asset and pass them to the caller
     function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
-        uint256 _moneyLost = moneyLost.add(balance.mul(10000)) / 100000;
-        uint256 amount = balance.mul(90000) / 100000;
-        int256 moneyToBeLost = int256(amount).sub(int256(moneyLost));
-        moneyLost = _moneyLost;
-        amountAdded = moneyToBeLost.sub(int256(balance));
+        uint256 realBalance = sushi.balanceOf(address(this));
+        if (realBalance < balance) {
+            amountAdded = -int256(balance.sub(realBalance));
+        } else {
+            amountAdded = int256(realBalance.sub(balance));
+            sushi.safeTransfer(bentoBox, uint256(amountAdded));
+        }
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
     function withdraw(uint256 amount) external override onlyOwner returns (uint256 actualAmount) {
-        uint256 balance = sushi.balanceOf(address(this));
-        int256 moneyToBeTransferred = int256(balance).sub(int256(moneyLost));
-        if (amount > moneyToBeTransferred.toUInt256()) {
-            actualAmount = moneyToBeTransferred.toUInt256();
-        } else {
-            actualAmount = amount;
-        }
-
-        sushi.safeTransfer(owner, actualAmount);
+        sushi.safeTransfer(owner, amount);
+        actualAmount = amount;
     }
 
     // Withdraw all assets in the safest way possible. This shouldn't fail.
     function exit(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
-        uint256 amount = sushi.balanceOf(address(this)).mul(90000) / 100000;
-        int256 moneyToBeTransferred = int256(amount).sub(int256(moneyLost));
-        amountAdded = moneyToBeTransferred.sub(int256(balance));
-        sushi.safeTransfer(owner, moneyToBeTransferred.toUInt256());
+        uint256 realBalance = sushi.balanceOf(address(this));
+        if (realBalance < balance) {
+            amountAdded = -int256(balance.sub(realBalance));
+        } else {
+            amountAdded = int256(realBalance.sub(balance));
+        }
+        sushi.safeTransfer(bentoBox, realBalance);
     }
 }

@@ -173,8 +173,9 @@ describe("BentoBox", function () {
 
         it("Mutates balanceOf for BentoBox and WETH correctly", async function () {
             await this.weth9.connect(this.alice).deposit({ value: 1000 })
-            await expect(this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1, 0, { value: 1 }))
-                .to.not.emit(this.weth9, "Deposit")
+            await expect(
+                this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1, 0, { value: 1 })
+            ).to.not.emit(this.weth9, "Deposit")
             await expect(this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1000, 0, { value: 1000 }))
                 .to.emit(this.weth9, "Deposit")
                 .withArgs(this.bentoBox.address, "1000")
@@ -473,6 +474,17 @@ describe("BentoBox", function () {
             expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have tokens").to.be.equal(76)
         })
 
+        it("should not allow skimming more than available", async function () {
+            await this.a.transfer(this.bentoBox.address, 100)
+
+            expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
+
+            await expect(this.bentoBox.connect(this.bob).deposit(this.a.address, this.bentoBox.address, this.bob.address, 101, 0))
+                .to.be.revertedWith("BentoBox: Skim too much")
+
+            expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
+        })
+
         it("Emits LogDeposit event with expected arguments", async function () {
             await this.a.transfer(this.bentoBox.address, 100)
 
@@ -663,11 +675,19 @@ describe("BentoBox", function () {
         })
 
         it("should be reverted if 2 weeks are not up", async function () {
-            await expect(this.bentoBox.setStrategy(this.a.address, ADDRESS_ZERO)).to.be.revertedWith("StrategyManager: Too early")
+            await this.bentoBox.setStrategy(this.a.address, this.a.address)
+            await expect(this.bentoBox.setStrategy(this.a.address, this.a.address)).to.be.revertedWith("StrategyManager: Too early")
         })
 
         it("should not allow bob to set Strategy", async function () {
             await expect(this.bentoBox.connect(this.bob).setStrategy(this.a.address, this.a.address)).to.be.reverted
         })
+
+        it("should allow to exit strategy", async function () {
+            await this.bentoBox.setStrategy(this.a.address, ADDRESS_ZERO)
+            await advanceTime(1209600, ethers)
+            await this.bentoBox.setStrategy(this.a.address, ADDRESS_ZERO)
+        })
+
     })
 })

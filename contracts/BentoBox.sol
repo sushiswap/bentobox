@@ -359,15 +359,15 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // C4 - Use block.timestamp only for long intervals (SWC-116)
     // C4: block.timestamp is used for a period of 2 weeks, which is long enough
     function setStrategy(IERC20 token, IStrategy newStrategy) public onlyOwner {
+        StrategyData memory data = strategyData[token];
         IStrategy pending = pendingStrategy[token];
-        if (pending != newStrategy) {
+        if (data.strategyStartDate == 0 || pending != newStrategy) {
             pendingStrategy[token] = newStrategy;
             // C1 - All math done through BoringMath (SWC-101)
             // C1: Our sun will swallow the earth well before this overflows
-            strategyData[token].strategyStartDate = (block.timestamp + STRATEGY_DELAY).to64();
+            data.strategyStartDate = (block.timestamp + STRATEGY_DELAY).to64();
             emit LogStrategyQueued(token, newStrategy);
         } else {
-            StrategyData memory data = strategyData[token];
             require(data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate, "StrategyManager: Too early");
             if (address(strategy[token]) != address(0)) {
                 int256 balanceChange = strategy[token].exit(data.balance);
@@ -387,10 +387,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             strategy[token] = pending;
             data.strategyStartDate = 0;
             data.balance = 0;
-            strategyData[token] = data;
             pendingStrategy[token] = IStrategy(0);
             emit LogStrategySet(token, newStrategy);
         }
+        strategyData[token] = data;
     }
 
     // F5 - Checks-Effects-Interactions pattern followed? (SWC-107)

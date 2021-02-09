@@ -19,7 +19,7 @@ describe("StrategyManager", function () {
         await this.bar.enter(getBigNumber(1))
     })
 
-    describe("allow to set Strategy", function () {
+    describe("Strategy", function () {
         it("allows to set strategy", async function () {
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy.address)
             expect(await this.bentoBox.pendingStrategy(this.sushi.address)).to.be.equal(this.sushiStrategy.address)
@@ -81,5 +81,16 @@ describe("StrategyManager", function () {
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3042222222222222220")
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("15211111111111111110")
         })
+
+        it("switches to new strategy and exits from old with profit", async function () {
+            await this.sushi.transfer(this.bar.address, getBigNumber(1));
+            await deploy(this, [["sushiStrategy3", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
+            await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
+            await advanceTime(1209600, ethers)
+            await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
+            expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("16063274198568316213")
+            expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("16063274198568316213")
+        })
+
     })
 })
