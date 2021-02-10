@@ -70,7 +70,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     // userAssetFraction is called balanceOf for ERC20 compatibility (it's in ERC20.sol)
     mapping(address => uint256) public userBorrowPart;
 
-    // Exchange and interest rate tracking
+    /// @notice Exchange and interest rate tracking.
+    /// This is 'cached' here because calls to Oracles can be very expensive.
     uint256 public exchangeRate;
 
     struct AccrueInfo {
@@ -145,6 +146,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
 
         accrueInfo.interestPerBlock = uint64(STARTING_INTEREST_PER_BLOCK); // 1% APR, with 1e18 being 100%
+        // can fail
         updateExchangeRate();
     }
 
@@ -223,12 +225,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         accrueInfo = _accrueInfo;
     }
 
-    /// @notice Checks if the user is solvent.
-    /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
-    /// @param user The address of the user in question.
-    /// @param open If True then the check is perfomed with `OPEN_COLLATERIZATION_RATE` else with `CLOSED_COLLATERIZATION_RATE`.
-    /// @return (bool) User is solvent if True.
-    function isSolvent(address user, bool open) public view returns (bool) {
+    /// @dev Concrete implementation of `isSolvent`. This helps the caller to 'cache' `exchangeRate` on stack.
+    function _isSolvent(address user, bool open, uint256 _exchangeRate) internal view returns (bool) {
         // accrue must have already been called!
         if (userBorrowPart[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
@@ -244,7 +242,16 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
                 false
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
-            userBorrowPart[user].mul(_totalBorrow.elastic).mul(exchangeRate) / _totalBorrow.base;
+            userBorrowPart[user].mul(_totalBorrow.elastic).mul(_exchangeRate) / _totalBorrow.base;
+    }
+
+    /// @notice Checks if the user is solvent.
+    /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
+    /// @param user The address of the user in question.
+    /// @param open If True then the check is perfomed with `OPEN_COLLATERIZATION_RATE` else with `CLOSED_COLLATERIZATION_RATE`.
+    /// @return (bool) User is solvent if True.
+    function isSolvent(address user, bool open) public view returns (bool) {
+        return _isSolvent(user, open, exchangeRate);
     }
 
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
@@ -258,11 +265,11 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return oracle.peek(oracleData);
     }
 
-    /// @notice Gets the exchange rate. How much collateral to buy 1e18 asset.
-    // XXX: only used in init(). Supposed to be triggered manually for every clone???
-    // Also it should get the current rate on every invocation where needed(?!)
-    function updateExchangeRate() public returns (bool success) {
-        uint256 rate;
+    /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
+    /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
+    /// @return success True if `exchangeRate` was updated.
+    /// @return rate The new exchange rate.
+    function updateExchangeRate() public returns (bool success, uint256 rate) {
         (success, rate) = oracle.get(oracleData);
 
         if (success) {
@@ -560,7 +567,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
-    /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low
+    /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
     function liquidate(
         address[] calldata users,
         uint256[] calldata borrowParts,
@@ -568,6 +575,9 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         ISwapper swapper,
         bool open
     ) public {
+        // Updating the exchange rate here is important, otherwise we might allow 'wrong' liquidations.
+        (bool success, uint256 _exchangeRate) = updateExchangeRate();
+        require(success, "LendingPair: can't update exchange rate");
         accrue();
 
         uint256 allCollateralShare;
@@ -577,13 +587,13 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         uint256 len = users.length;
         for (uint256 i = 0; i < len; i++) {
             address user = users[i];
-            if (!isSolvent(user, open)) {
+            if (!_isSolvent(user, open, _exchangeRate)) {
                 uint256 borrowPart = borrowParts[i];
                 uint256 borrowAmount = _totalBorrow.toElastic(borrowPart, false);
                 uint256 collateralShare =
                     bentoBox.toShare(
                         collateral,
-                        borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(exchangeRate) /
+                        borrowAmount.mul(LIQUIDATION_MULTIPLIER).mul(_exchangeRate) /
                             (LIQUIDATION_MULTIPLIER_PRECISION * EXCHANGE_RATE_PRECISION),
                         false
                     );
