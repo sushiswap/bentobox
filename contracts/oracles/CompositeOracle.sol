@@ -17,7 +17,7 @@ contract CompositeOracle is IOracle {
     }
 
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
-    function get(bytes calldata data) external override returns (bool status, uint256 amountOut) {
+    function get(bytes calldata data) external override returns (bool, uint256) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         (bool success1, uint256 price1) = oracle1.get(data1);
         (bool success2, uint256 price2) = oracle2.get(data2);
@@ -25,7 +25,7 @@ contract CompositeOracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
-    function peek(bytes calldata data) public view override returns (bool success, uint256 amountOut) {
+    function peek(bytes calldata data) public view override returns (bool, uint256) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         (bool success1, uint256 price1) = oracle1.peek(data1);
         (bool success2, uint256 price2) = oracle2.peek(data2);
