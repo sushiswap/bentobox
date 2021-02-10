@@ -26,5 +26,4 @@ describe("Compound Oracle", function () {
         expect(success).to.be.true
         expect(rate).to.be.equal("1732737377287504692829")
     })
-
 })
