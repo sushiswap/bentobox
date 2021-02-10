@@ -24,6 +24,6 @@ describe("Compound Oracle", function () {
         await this.oracle.get(this.oracleData)
         const [success, rate] = await this.oracle.peek(this.oracleData)
         expect(success).to.be.true
-        expect(rate).to.be.equal("1732737377287504692829")
+        expect(rate).to.be.equal("1706297776996748967577")
     })
 })
