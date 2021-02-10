@@ -91,6 +91,7 @@ module.exports = {
   hardhat: {
     forking: {
       url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      blocknumber: 11829739
     },
   },
   // mocha: {
@@ -129,7 +130,11 @@ module.exports = {
 
   networks: {
     hardhat: {
-      chainId: 31337,
+      //chainId: 31337,
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        blocknumber: 11829739
+      },
       accounts,
     },
     // mainnet: {
