@@ -126,6 +126,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     uint256 private constant BORROW_OPENING_FEE = 50; // 0.05%
     uint256 private constant BORROW_OPENING_FEE_PRECISION = 1e5;
 
+    /// @notice The constructor is only used for the initial master contract. Subsequent clones are initialised via `init`.
     constructor(BentoBox bentoBox_) public {
         bentoBox = bentoBox_;
         masterContract = address(this);
@@ -137,7 +138,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         collateral = IERC20(address(1)); // Just a dummy value for the Master Contract
     }
 
-    // Serves as the constructor, as clones can't have a regular constructor
+    /// @notice Serves as the constructor for clones, as clones can't have a regular constructor
+    /// @dev `data` is abi encoded in the format: (IERC20 collateral, IERC20 asset, IOracle oracle, bytes oracleData)
     function init(bytes calldata data) public payable override {
         require(address(collateral) == address(0), "LendingPair: already initialized");
         (collateral, asset, oracle, oracleData) = abi.decode(data, (IERC20, IERC20, IOracle, bytes));
@@ -146,6 +148,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         updateExchangeRate();
     }
 
+    /// @notice Helper function to get the abi encoded bytes for the `init` function.
     function getInitData(
         IERC20 collateral_,
         IERC20 asset_,
@@ -155,7 +158,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return abi.encode(collateral_, asset_, oracle_, oracleData_);
     }
 
-    // Accrues the interest on the borrowed tokens and handles the accumulation of fees
+    /// @notice Accrues the interest on the borrowed tokens and handles the accumulation of fees.
     function accrue() public {
         AccrueInfo memory _accrueInfo = accrueInfo;
         // Number of blocks since accrue was called
@@ -165,10 +168,6 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
         _accrueInfo.lastBlockAccrued = uint64(block.number);
 
-        uint256 extraAmount = 0;
-        uint256 feeFraction = 0;
-
-        Rebase memory _totalBorrow = totalBorrow;
         Rebase memory _totalAsset = totalAsset;
         if (_totalAsset.base == 0) {
             if (_accrueInfo.interestPerBlock != STARTING_INTEREST_PER_BLOCK) {
@@ -179,7 +178,10 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             return;
         }
 
+        uint256 extraAmount = 0;
+        uint256 feeFraction = 0;
         uint256 totalAssetAmount = bentoBox.toAmount(asset, _totalAsset.elastic, false);
+        Rebase memory _totalBorrow = totalBorrow;
         if (_totalBorrow.elastic > 0) {
             // Accrue interest
             extraAmount = uint256(_totalBorrow.elastic).mul(_accrueInfo.interestPerBlock).mul(blocks) / 1e18;
@@ -221,8 +223,11 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         accrueInfo = _accrueInfo;
     }
 
-    // Checks if the user is solvent.
-    // Has an option to check if the user is solvent in an open/closed liquidation case.
+    /// @notice Checks if the user is solvent.
+    /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
+    /// @param user The address of the user in question.
+    /// @param open If True then the check is perfomed with `OPEN_COLLATERIZATION_RATE` else with `CLOSED_COLLATERIZATION_RATE`.
+    /// @return (bool) User is solvent if True.
     function isSolvent(address user, bool open) public view returns (bool) {
         // accrue must have already been called!
         if (userBorrowPart[user] == 0) return true;
@@ -242,16 +247,20 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             userBorrowPart[user].mul(_totalBorrow.elastic).mul(exchangeRate) / _totalBorrow.base;
     }
 
+    /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent() {
         _;
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
+    /// @notice Helper function for convenience.
     function peekExchangeRate() public view returns (bool, uint256) {
         return oracle.peek(oracleData);
     }
 
-    // Gets the exchange rate. How much collateral to buy 1e18 asset.
+    /// @notice Gets the exchange rate. How much collateral to buy 1e18 asset.
+    // XXX: only used in init(). Supposed to be triggered manually for every clone???
+    // Also it should get the current rate on every invocation where needed(?!)
     function updateExchangeRate() public returns (bool success) {
         uint256 rate;
         (success, rate) = oracle.get(oracleData);
@@ -262,6 +271,8 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
+    /// @notice Helper function to move tokens.
+    // XXX: `skim` condition only used as check
     function _addTokens(
         IERC20 token,
         uint256 share,
@@ -275,6 +286,9 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
+    /// @notice Adds `collateral` from msg.sender to the account `to`.
+    /// @param to The receiver of the tokens.
+    // XXX: call accrue?
     function addCollateral(
         address to,
         bool skim,
@@ -398,6 +412,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     int256 internal constant USE_VALUE1 = -1;
     int256 internal constant USE_VALUE2 = -2;
 
+    /// @dev Helper function for choosing the correct value (`value1` or `value2`) depending on `inNum`.
     function _num(
         int256 inNum,
         uint256 value1,
@@ -414,6 +429,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
+    /// @dev Helper function to extract a useful revert message from a failed call.
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Transaction reverted silently";
@@ -544,7 +560,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
-    // Handles the liquidation of users' balances, once the users' amount of collateral is too low
+    /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low
     function liquidate(
         address[] calldata users,
         uint256[] calldata borrowParts,
@@ -616,7 +632,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
-    // Withdraws the fees accumulated
+    /// @notice Withdraws the fees accumulated.
     function withdrawFees() public {
         accrue();
         address _feeTo = LendingPair(masterContract).feeTo();
@@ -627,11 +643,17 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         emit LogWithdrawFees(_feeTo, _feesEarnedFraction);
     }
 
-    // MasterContract Only Admin functions
+    /// @notice Used to register and enable or disable swapper contracts used in closed liquidations.
+    /// MasterContract Only Admin function.
+    /// @param swapper The address of the swapper contract that conforms to `ISwapper`.
+    /// @param enable True to enable the swapper. To disable use False.
     function setSwapper(ISwapper swapper, bool enable) public onlyOwner {
         swappers[swapper] = enable;
     }
 
+    /// @notice Sets the beneficiary of fees accrued in liquidations.
+    /// MasterContract Only Admin function.
+    /// @param newFeeTo The address of the receiver.
     function setFeeTo(address newFeeTo) public onlyOwner {
         feeTo = newFeeTo;
         emit LogFeeTo(newFeeTo);
