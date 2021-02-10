@@ -411,6 +411,20 @@ describe("Lending Pair", function () {
                 .withArgs(this.alice.address, this.alice.address, "7499999999", "7499999999")
         })
 
+        it("should allow borrowing to other with correct borrowPart", async function () {
+            await this.pairHelper.run((cmd) => [
+                cmd.as(this.bob).approveAsset(getBigNumber(300, 8)),
+                cmd.as(this.bob).depositAsset(getBigNumber(290, 8)),
+                cmd.approveCollateral(getBigNumber(100)),
+                cmd.depositCollateral(getBigNumber(100)),
+            ])
+            await expect(this.pairHelper.contract.borrow(this.bob.address, sansBorrowFee(getBigNumber(75, 8))))
+                .to.emit(this.pairHelper.contract, "LogBorrow")
+                .withArgs(this.alice.address, this.bob.address, "7499999999", "7499999999")
+            expect(await this.pairHelper.contract.userBorrowPart(this.alice.address)).to.be.equal("7499999999")
+            expect(await this.pairHelper.contract.userBorrowPart(this.bob.address)).to.be.equal("0")
+        })
+
         it("should not allow any more borrowing", async function () {
             await this.pairHelper.run((cmd) => [
                 cmd.approveAsset(getBigNumber(300, 8)),
