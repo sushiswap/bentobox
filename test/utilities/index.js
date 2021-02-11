@@ -17,10 +17,7 @@ function roundBN(number) {
 }
 
 function encodePrice(reserve0, reserve1) {
-    return [
-        reserve1.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve0),
-        reserve0.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve1),
-    ]
+    return [reserve1.mul(getBigNumber(1)).div(reserve0), reserve0.mul(getBigNumber(1)).div(reserve1)]
 }
 
 const PERMIT_TYPEHASH = keccak256(toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
