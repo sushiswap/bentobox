@@ -18,8 +18,8 @@ function roundBN(number) {
 
 function encodePrice(reserve0, reserve1) {
     return [
-        reserve1.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve0),
-        reserve0.mul(BigNumber.from(2).pow(BigNumber.from(112))).div(reserve1),
+        reserve1.mul(getBigNumber(1)).div(reserve0),
+        reserve0.mul(getBigNumber(1)).div(reserve1),
     ]
 }
 
