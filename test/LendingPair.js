@@ -698,6 +698,13 @@ describe("Lending Pair", function () {
     })
 
     describe("Liquidate", function () {
+        it("liquidate should revert with a failing oracle", async function () {
+            await this.oracle.setSuccess(false)
+            await expect(
+                this.pairHelper.contract.liquidate([], [], this.alice.address, "0x0000000000000000000000000000000000000000", true)
+            ).to.be.revertedWith("LendingPair: oracle error")
+        })
+
         it("should not allow open liquidate yet", async function () {
             await this.pairHelper.run((cmd) => [
                 cmd.as(this.bob).approveAsset(getBigNumber(310, 8)),
