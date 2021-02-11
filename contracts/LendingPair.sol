@@ -636,7 +636,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     ) public {
         // Updating the exchange rate here is important, otherwise we might allow 'wrong' liquidations.
         (bool success, uint256 _exchangeRate) = updateExchangeRate();
-        require(success, "LendingPair: can't update exchange rate");
+        require(success, "LendingPair: exchange rate");
         accrue();
 
         uint256 allCollateralShare;
