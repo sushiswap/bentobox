@@ -21,8 +21,8 @@ describe("Compound Oracle", function () {
     })
 
     if (!hre.network.config.forking) {
-        console.trace("*** chain forking not available, skipping tests ***");
-        return;
+        console.trace("*** chain forking not available, skipping tests ***")
+        return
     }
 
     it("should return ETH Price in USD on rate request", async function () {

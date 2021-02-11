@@ -23,8 +23,8 @@ describe("ChainLink Oracle", function () {
     })
 
     if (!hre.network.config.forking) {
-        console.trace("*** chain forking not available, skipping tests ***");
-        return;
+        console.trace("*** chain forking not available, skipping tests ***")
+        return
     }
 
     it("should return SUSHI Price on rate request", async function () {
