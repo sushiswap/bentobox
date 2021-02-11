@@ -20,7 +20,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     struct PairInfo {
         uint256 priceCumulativeLast;
         uint32 blockTimestampLast;
-        FixedPoint.uq112x112 priceAverage;
+        uint144 priceAverage;
     }
 
     mapping(IUniswapV2Pair => PairInfo) public pairs; // Map of pairs and their info
@@ -53,15 +53,15 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         }
         uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
         if (timeElapsed < PERIOD) {
-            return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+            return (true, pairs[pair].priceAverage);
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        pairs[pair].priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        pairs[pair].priceAverage = FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed)).mul(10**18).decode144();
         pairs[pair].blockTimestampLast = blockTimestamp;
         pairs[pair].priceCumulativeLast = priceCumulative;
 
-        return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+        return (true, pairs[pair].priceAverage);
     }
 
     // Check the last exchange rate without any state changes
@@ -73,14 +73,14 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         }
         uint32 timeElapsed = blockTimestamp - pairs[pair].blockTimestampLast; // overflow is desired
         if (timeElapsed < PERIOD) {
-            return (true, pairs[pair].priceAverage.mul(10**18).decode144());
+            return (true, pairs[pair].priceAverage);
         }
 
         uint256 priceCumulative = _get(pair, blockTimestamp);
-        FixedPoint.uq112x112 memory priceAverage =
-            FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed));
+        uint144 priceAverage =
+            FixedPoint.uq112x112(uint224((priceCumulative - pairs[pair].priceCumulativeLast) / timeElapsed)).mul(10**18).decode144();
 
-        return (true, priceAverage.mul(10**18).decode144());
+        return (true, priceAverage);
     }
 
     function name(bytes calldata) public view override returns (string memory) {
