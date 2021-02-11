@@ -28,6 +28,9 @@ import "./interfaces/IWETH.sol";
 // solhint-disable avoid-low-level-calls
 // solhint-disable no-inline-assembly
 
+/// @title LendingPair
+/// @dev This contract allows contract calls to any contract (except BentoBox)
+/// from arbitrary callers thus, don't trust calls from this contract in any circumstances.
 contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
@@ -260,7 +263,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
     }
 
-    /// @notice Helper function for convenience.
+    /// @notice Helper function for convenience. Peek should not modify state.
     function peekExchangeRate() public view returns (bool, uint256) {
         return oracle.peek(oracleData);
     }
@@ -278,8 +281,13 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
-    /// @notice Helper function to move tokens.
-    // XXX: `skim` condition only used as check
+    /// @dev Helper function to move tokens.
+    /// @param token The ERC-20 token.
+    /// @param share The amount in shares to add.
+    /// @param total Grand total amount to deduct from this contract's balance. Only applicable if `skim` is True.
+    /// Only used for accounting checks.
+    /// @param skim If True, only does a balance check on this contract.
+    /// False if tokens from msg.sender in `bentoBox` should be transferred.
     function _addTokens(
         IERC20 token,
         uint256 share,
@@ -295,7 +303,9 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
 
     /// @notice Adds `collateral` from msg.sender to the account `to`.
     /// @param to The receiver of the tokens.
-    // XXX: call accrue?
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `bentoBox` should be transferred.
+    /// @param share The amount of shares to add for `to`.
     function addCollateral(
         address to,
         bool skim,
@@ -307,6 +317,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         emit LogAddCollateral(skim ? address(bentoBox) : msg.sender, to, share);
     }
 
+    /// @dev Concrete implementation of `removeCollateral`.
     function _removeCollateral(address to, uint256 share) internal {
         userCollateralShare[msg.sender] = userCollateralShare[msg.sender].sub(share);
         totalCollateralShare = totalCollateralShare.sub(share);
@@ -314,11 +325,16 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         bentoBox.transfer(collateral, address(this), to, share);
     }
 
+    /// @notice Removes `share` amount of collateral and transfers it to `to`.
+    /// @param to The receiver of the shares.
+    /// @param share Amount of shares to remove.
     function removeCollateral(address to, uint256 share) public solvent {
+        // accrue must be called because we check solvency
         accrue();
         _removeCollateral(to, share);
     }
 
+    /// @dev Concrete implementation of `addAsset`.
     function _addAsset(
         address to,
         bool skim,
@@ -334,6 +350,12 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         emit LogAddAsset(skim ? address(bentoBox) : msg.sender, to, share, fraction);
     }
 
+    /// @notice Adds assets to the lending pair.
+    /// @param to The address of the user to receive the assets.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `bentoBox` should be transferred.
+    /// @param share The amount of shares to add.
+    /// @return fraction Total fractions added.
     function addAsset(
         address to,
         bool skim,
@@ -343,6 +365,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         fraction = _addAsset(to, skim, share);
     }
 
+    /// @dev Concrete implementation of `removeAsset`.
     function _removeAsset(address to, uint256 fraction) internal returns (uint256 share) {
         Rebase memory _totalAsset = totalAsset;
         uint256 allShare = _totalAsset.elastic + bentoBox.toShare(asset, totalBorrow.elastic, true);
@@ -355,11 +378,16 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         bentoBox.transfer(asset, address(this), to, share);
     }
 
+    /// @notice Removes an asset from msg.sender and transfers it to `to`.
+    /// @param to The user that receives the removed assets.
+    /// @param fraction The amount/fraction of assets held to remove.
+    /// @return share The amount of shares transferred to `to`.
     function removeAsset(address to, uint256 fraction) public returns (uint256 share) {
         accrue();
         share = _removeAsset(to, fraction);
     }
 
+    /// @dev Concrete implementation of `borrow`.
     function _borrow(address to, uint256 amount) internal returns (uint256 part, uint256 share) {
         uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
 
@@ -372,11 +400,15 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         bentoBox.transfer(asset, address(this), to, share);
     }
 
+    /// @notice Sender borrows `amount` and transfers it to `to`.
+    /// @return part Total part of the debt held by borrowers.
+    /// @return share Total amount in shares borrowed.
     function borrow(address to, uint256 amount) public solvent returns (uint256 part, uint256 share) {
         accrue();
         (part, share) = _borrow(to, amount);
     }
 
+    /// @dev Concrete implementation of `repay`.
     function _repay(
         address to,
         bool skim,
@@ -392,6 +424,12 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         emit LogRepay(skim ? address(bentoBox) : msg.sender, to, amount, part);
     }
 
+    /// @notice Repays a loan.
+    /// @param to Address of the user this payment should go.
+    /// @param skim True if the amount should be skimmed from the deposit balance of msg.sender.
+    /// False if tokens from msg.sender in `bentoBox` should be transferred.
+    /// @param part The amount to repay. See `userBorrowPart`.
+    /// @return amount The total amount repayed.
     function repay(
         address to,
         bool skim,
@@ -448,6 +486,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
+    /// @dev Helper function for depositing into `bentoBox`.
     function _bentoDeposit(
         bytes memory data,
         uint256 value,
@@ -460,6 +499,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return bentoBox.deposit{value: value}(token, msg.sender, to, uint256(amount), uint256(share));
     }
 
+    /// @dev Helper function to withdraw from the `bentoBox`.
     function _bentoWithdraw(
         bytes memory data,
         uint256 value1,
@@ -469,6 +509,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return bentoBox.withdraw(token, msg.sender, to, _num(amount, value1, value2), _num(share, value1, value2));
     }
 
+    /// @dev Helper function for conditional abi encoding based on inputs.
     function _callData(
         bytes memory callData,
         bool useValue1,
@@ -487,6 +528,12 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
     }
 
+    /// @dev Helper function to perform a contract call and eventually extracting revert messages on failure.
+    /// Calls to `bentoBox` are not allowed for obvious security reasons.
+    /// This also means that calls made from this contract shall *not* be trusted.
+    /// @param value Amount of ETH to transfer.
+    /// @param callee The address to call. Calling `bentoBox` is not allowed.
+    /// @return (bytes) the data that the call returned.
     function _call(
         uint256 value,
         address callee,
@@ -499,6 +546,13 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         return returnData;
     }
 
+    /// @notice Executes a set of actions and allows composability (contract calls) to other contracts.
+    /// @param actions An array with a sequence of actions to execute (see ACTION_ declarations).
+    /// @param values A one-to-one mapped array to `actions`. ETH amounts to send along with the actions.
+    /// Only applicable to `ACTION_CALL`, `ACTION_BENTO_DEPOSIT`.
+    /// @param datas A one-to-one mapped array to `actions`. Contains abi encoded data of function arguments.
+    /// @return value1 May contain the first positioned return value of the last executed action (if applicable).
+    /// @return value2 May contain the second positioned return value of the last executed action which returns 2 values (if applicable).
     function cook(
         uint8[] calldata actions,
         uint256[] calldata values,
@@ -568,6 +622,11 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     /// @notice Handles the liquidation of users' balances, once the users' amount of collateral is too low.
+    /// @param users An array of user addresses.
+    /// @param borrowParts A one-to-one mapping to `users`, contains partial borrow amounts (to liquidate) of the respective user.
+    /// @param to Address of the receiver in open liquidations if `swapper` is zero.
+    /// @param swapper Contract address of the `ISwapper` implementation. Swappers are restricted for closed liquidations. See `setSwapper`.
+    /// @param open True to perform a open liquidation else False.
     function liquidate(
         address[] calldata users,
         uint256[] calldata borrowParts,
