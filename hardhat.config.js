@@ -133,15 +133,16 @@ module.exports = {
   },
 
   networks: {
-    hardhat: {
-      blockGasLimit: 10_000_000,
-      //chainId: 31337,
-      forking: {
-        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-        blockNumber: 11829739
+    hardhat: Object.assign(
+      {
+        blockGasLimit: 10_000_000,
+        //chainId: 31337,
+        accounts,
       },
-      accounts,
-    },
+      process.env.ALCHEMY_API_KEY ?
+      { forking: { url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, blockNumber: 11829739 } }
+      : {}
+    ),
     // mainnet: {
     //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
     //   accounts: [process.env.PRIVATE_KEY],
