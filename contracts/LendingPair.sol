@@ -392,7 +392,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         uint256 feeAmount = amount.mul(BORROW_OPENING_FEE) / BORROW_OPENING_FEE_PRECISION; // A flat % fee is charged for any borrow
 
         (totalBorrow, part) = totalBorrow.add(amount.add(feeAmount), true);
-        userBorrowPart[to] = userBorrowPart[to].add(part);
+        userBorrowPart[msg.sender] = userBorrowPart[msg.sender].add(part);
         emit LogBorrow(msg.sender, to, amount.add(feeAmount), part);
 
         share = bentoBox.toShare(asset, amount, true);

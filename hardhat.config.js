@@ -98,11 +98,6 @@ module.exports = {
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
     excludeContracts: ["contracts/mocks/", "contracts/libraries/"],
   },
-  hardhat: {
-    forking: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
-    },
-  },
   // mocha: {
   //   timeout: 0,
   // },
@@ -139,8 +134,12 @@ module.exports = {
 
   networks: {
     hardhat: {
-      chainId: 31337,
       blockGasLimit: 10_000_000,
+      //chainId: 31337,
+      forking: {
+        url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+        blockNumber: 11829739
+      },
       accounts,
     },
     // mainnet: {
