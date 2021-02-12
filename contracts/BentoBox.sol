@@ -107,12 +107,12 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // *** MODIFIERS *** //
     // ***************** //
 
-    // Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    // If 'from' is msg.sender, it's allowed.
-    // If 'from' is the BentoBox itself, it's allowed. Any ETH, token balances (above the known balances) or BentoBox balances
-    // can be taken by anyone.
-    // This is to enable skimming, not just for deposits, but also for withdrawals or transfers, enabling better composability.
-    // If 'from' is a clone of a masterContract AND the 'from' address has approved that masterContract, it's allowed.
+    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
+    /// If 'from' is msg.sender, it's allowed.
+    /// If 'from' is the BentoBox itself, it's allowed. Any ETH, token balances (above the known balances) or BentoBox balances
+    /// can be taken by anyone.
+    /// This is to enable skimming, not just for deposits, but also for withdrawals or transfers, enabling better composability.
+    /// If 'from' is a clone of a masterContract AND the 'from' address has approved that masterContract, it's allowed.
     modifier allowed(address from) {
         if (from != msg.sender && from != address(this)) {
             // From is sender or you are skimming
@@ -127,6 +127,8 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // *** INTERNAL FUNCTIONS *** //
     // ************************** //
 
+    /// @dev Returns the total balance of `token` this contracts holds,
+    /// plus the total amount this contract thinks the strategy holds.
     function _tokenBalanceOf(IERC20 token) internal view returns (uint256 amount) {
         amount = token.balanceOf(address(this)).add(strategyData[token].balance);
     }
