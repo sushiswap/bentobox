@@ -228,13 +228,22 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         accrueInfo = _accrueInfo;
     }
 
-    /// @dev Concrete implementation of `isSolvent`. This helps the caller to 'cache' `exchangeRate` on stack.
-    function _isSolvent(address user, bool open, uint256 _exchangeRate) internal view returns (bool) {
+    /// @notice Checks if the user is solvent.
+    /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
+    /// @param user The address of the user in question.
+    /// @param open If True then the check is perfomed with `OPEN_COLLATERIZATION_RATE` else with `CLOSED_COLLATERIZATION_RATE`.
+    /// @param _exchangeRate Used to cache the `exchangeValue` between calls. Pass `0` for default behaviour.
+    /// @return (bool) User is solvent if True.
+    function isSolvent(address user, bool open, uint256 _exchangeRate) public view returns (bool) {
         // accrue must have already been called!
         if (userBorrowPart[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
 
         Rebase memory _totalBorrow = totalBorrow;
+
+        if (_exchangeRate == 0) {
+            _exchangeRate = exchangeRate;
+        }
 
         return
             bentoBox.toAmount(
@@ -248,19 +257,10 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             userBorrowPart[user].mul(_totalBorrow.elastic).mul(_exchangeRate) / _totalBorrow.base;
     }
 
-    /// @notice Checks if the user is solvent.
-    /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
-    /// @param user The address of the user in question.
-    /// @param open If True then the check is perfomed with `OPEN_COLLATERIZATION_RATE` else with `CLOSED_COLLATERIZATION_RATE`.
-    /// @return (bool) User is solvent if True.
-    function isSolvent(address user, bool open) public view returns (bool) {
-        return _isSolvent(user, open, exchangeRate);
-    }
-
     /// @dev Checks if the user is solvent in the closed liquidation case at the end of the function body.
     modifier solvent() {
         _;
-        require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
+        require(isSolvent(msg.sender, false, 0), "LendingPair: user insolvent");
     }
 
     /// @notice Helper function for convenience. Peek should not modify state.
@@ -618,7 +618,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         }
 
         if (needsSolvencyCheck) {
-            require(isSolvent(msg.sender, false), "LendingPair: user insolvent");
+            require(isSolvent(msg.sender, false, 0), "LendingPair: user insolvent");
         }
     }
 
@@ -647,7 +647,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         uint256 len = users.length;
         for (uint256 i = 0; i < len; i++) {
             address user = users[i];
-            if (!_isSolvent(user, open, _exchangeRate)) {
+            if (!isSolvent(user, open, _exchangeRate)) {
                 uint256 borrowPart = borrowParts[i];
                 uint256 borrowAmount = _totalBorrow.toElastic(borrowPart, false);
                 uint256 collateralShare =
