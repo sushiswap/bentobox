@@ -43,6 +43,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     }
 
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
+    /// @inheritdoc IOracle
     function get(bytes calldata data) external override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
         uint32 blockTimestamp = uint32(block.timestamp);
@@ -68,6 +69,7 @@ contract SimpleSLPTWAP1Oracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
+    /// @inheritdoc IOracle
     function peek(bytes calldata data) public view override returns (bool, uint256) {
         IUniswapV2Pair pair = abi.decode(data, (IUniswapV2Pair));
         uint32 blockTimestamp = uint32(block.timestamp);
@@ -86,10 +88,12 @@ contract SimpleSLPTWAP1Oracle is IOracle {
         return (true, priceAverage);
     }
 
+    /// @inheritdoc IOracle
     function name(bytes calldata) public view override returns (string memory) {
         return "SushiSwap TWAP";
     }
 
+    /// @inheritdoc IOracle
     function symbol(bytes calldata) public view override returns (string memory) {
         return "S";
     }

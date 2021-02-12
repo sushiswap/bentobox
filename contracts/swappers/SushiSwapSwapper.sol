@@ -41,6 +41,7 @@ contract SushiSwapSwapper is ISwapper {
     }
 
     // Swaps to a flexible amount, from an exact input amount
+    /// @inheritdoc ISwapper
     function swap(
         IERC20 fromToken,
         IERC20 toToken,
@@ -66,6 +67,7 @@ contract SushiSwapSwapper is ISwapper {
     }
 
     // Swaps to an exact amount, from a flexible input amount
+    /// @inheritdoc ISwapper
     function swapExact(
         IERC20 fromToken,
         IERC20 toToken,

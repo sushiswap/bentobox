@@ -17,6 +17,7 @@ contract CompositeOracle is IOracle {
     }
 
     // Get the latest exchange rate, if no valid (recent) rate is available, return false
+    /// @inheritdoc IOracle
     function get(bytes calldata data) external override returns (bool, uint256) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         (bool success1, uint256 price1) = oracle1.get(data1);
@@ -25,6 +26,7 @@ contract CompositeOracle is IOracle {
     }
 
     // Check the last exchange rate without any state changes
+    /// @inheritdoc IOracle
     function peek(bytes calldata data) public view override returns (bool, uint256) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         (bool success1, uint256 price1) = oracle1.peek(data1);
@@ -32,11 +34,13 @@ contract CompositeOracle is IOracle {
         return (success1 && success2, price1.mul(price2) / 10**18);
     }
 
+    /// @inheritdoc IOracle
     function name(bytes calldata data) public view override returns (string memory) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         return string(abi.encodePacked(oracle1.name(data1), "+", oracle2.name(data2)));
     }
 
+    /// @inheritdoc IOracle
     function symbol(bytes calldata data) public view override returns (string memory) {
         (IOracle oracle1, IOracle oracle2, bytes memory data1, bytes memory data2) = abi.decode(data, (IOracle, IOracle, bytes, bytes));
         return string(abi.encodePacked(oracle1.symbol(data1), "+", oracle2.symbol(data2)));

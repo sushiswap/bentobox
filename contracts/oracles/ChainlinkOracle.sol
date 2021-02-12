@@ -54,21 +54,25 @@ contract ChainlinkOracle is IOracle {
     }
 
     // Get the latest exchange rate
+    /// @inheritdoc IOracle
     function get(bytes calldata data) public override returns (bool, uint256) {
         (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
         return (true, _get(multiply, divide, decimals));
     }
 
     // Check the last exchange rate without any state changes
+    /// @inheritdoc IOracle
     function peek(bytes calldata data) public view override returns (bool, uint256) {
         (address multiply, address divide, uint256 decimals) = abi.decode(data, (address, address, uint256));
         return (true, _get(multiply, divide, decimals));
     }
 
+    /// @inheritdoc IOracle
     function name(bytes calldata) public view override returns (string memory) {
         return "Chainlink";
     }
 
+    /// @inheritdoc IOracle
     function symbol(bytes calldata) public view override returns (string memory) {
         return "LINK";
     }
