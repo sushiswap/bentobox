@@ -1,6 +1,6 @@
 name: Coveralls
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
@@ -39,8 +39,8 @@ jobs:
     - name: Installing dependencies
       run: yarn install --frozen-lockfile
 
-    - name: yarn test:coverage
-      run: yarn test:coverage
+    - name: yarn coverage
+      run: yarn coverage
       env:
         ALCHEMY_API_KEY: ${{ secrets.ALCHEMY }}
 
