@@ -229,17 +229,13 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
     }
 
     /// @notice Concrete implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
-    /// @param _exchangeRate Used to cache the `exchangeValue` between calls. Pass `0` for default behaviour.
+    /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
     function _isSolvent(address user, bool open, uint256 _exchangeRate) internal view returns (bool) {
         // accrue must have already been called!
         if (userBorrowPart[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
 
         Rebase memory _totalBorrow = totalBorrow;
-
-        if (_exchangeRate == 0) {
-            _exchangeRate = exchangeRate;
-        }
 
         return
             bentoBox.toAmount(
