@@ -159,10 +159,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+      [BigNumber, number, BigNumber] & {
         priceCumulativeLast: BigNumber;
         blockTimestampLast: number;
-        priceAverage: [BigNumber] & { _x: BigNumber };
+        priceAverage: BigNumber;
       }
     >;
 
@@ -170,10 +170,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+      [BigNumber, number, BigNumber] & {
         priceCumulativeLast: BigNumber;
         blockTimestampLast: number;
-        priceAverage: [BigNumber] & { _x: BigNumber };
+        priceAverage: BigNumber;
       }
     >;
 
@@ -240,10 +240,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
     arg0: string,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+    [BigNumber, number, BigNumber] & {
       priceCumulativeLast: BigNumber;
       blockTimestampLast: number;
-      priceAverage: [BigNumber] & { _x: BigNumber };
+      priceAverage: BigNumber;
     }
   >;
 
@@ -251,10 +251,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
     arg0: string,
     overrides?: CallOverrides
   ): Promise<
-    [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+    [BigNumber, number, BigNumber] & {
       priceCumulativeLast: BigNumber;
       blockTimestampLast: number;
-      priceAverage: [BigNumber] & { _x: BigNumber };
+      priceAverage: BigNumber;
     }
   >;
 
@@ -321,10 +321,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+      [BigNumber, number, BigNumber] & {
         priceCumulativeLast: BigNumber;
         blockTimestampLast: number;
-        priceAverage: [BigNumber] & { _x: BigNumber };
+        priceAverage: BigNumber;
       }
     >;
 
@@ -332,10 +332,10 @@ export class SimpleSLPTWAP0Oracle extends Contract {
       arg0: string,
       overrides?: CallOverrides
     ): Promise<
-      [BigNumber, number, [BigNumber] & { _x: BigNumber }] & {
+      [BigNumber, number, BigNumber] & {
         priceCumulativeLast: BigNumber;
         blockTimestampLast: number;
-        priceAverage: [BigNumber] & { _x: BigNumber };
+        priceAverage: BigNumber;
       }
     >;
 
