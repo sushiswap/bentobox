@@ -1651,9 +1651,13 @@ export class LendingPair extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    updateExchangeRate(overrides?: CallOverrides): Promise<boolean>;
+    updateExchangeRate(
+      overrides?: CallOverrides
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
-    "updateExchangeRate()"(overrides?: CallOverrides): Promise<boolean>;
+    "updateExchangeRate()"(
+      overrides?: CallOverrides
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     userBorrowPart(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 

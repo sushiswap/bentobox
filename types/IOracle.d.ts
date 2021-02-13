@@ -101,12 +101,12 @@ export class IOracle extends Contract {
     peek(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     "peek(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     symbol(data: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
@@ -130,12 +130,12 @@ export class IOracle extends Contract {
   peek(
     data: BytesLike,
     overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber]>;
+  ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
   "peek(bytes)"(
     data: BytesLike,
     overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber]>;
+  ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
   symbol(data: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -145,12 +145,12 @@ export class IOracle extends Contract {
     get(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     "get(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     name(data: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -159,12 +159,12 @@ export class IOracle extends Contract {
     peek(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     "peek(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber]>;
+    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
 
     symbol(data: BytesLike, overrides?: CallOverrides): Promise<string>;
 

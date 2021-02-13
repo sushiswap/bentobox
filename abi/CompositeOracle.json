@@ -11,12 +11,12 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "status",
+        "name": "",
         "type": "bool"
       },
       {
         "internalType": "uint256",
-        "name": "amountOut",
+        "name": "",
         "type": "uint256"
       }
     ],
@@ -88,12 +88,12 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "success",
+        "name": "",
         "type": "bool"
       },
       {
         "internalType": "uint256",
-        "name": "amountOut",
+        "name": "",
         "type": "uint256"
       }
     ],
