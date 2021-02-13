@@ -1,9 +1,49 @@
-const {
-    utils: { keccak256, defaultAbiCoder, toUtf8Bytes, solidityPack },
-} = require("ethers")
-const { ADDRESS_ZERO, addr, getBigNumber, getSignedMasterContractApprovalData } = require(".")
 const ethers = require("ethers")
+const { utils: { keccak256, defaultAbiCoder } } = require("ethers")
 const { ecsign } = require("ethereumjs-util")
+
+function addr(address) {
+    if (typeof address == "object" && address.address) {
+        address = address.address
+    }
+    return address
+}
+
+const BENTOBOX_MASTER_APPROVAL_TYPEHASH = keccak256(
+    ethers.utils.toUtf8Bytes("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)")
+)
+
+function getBentoBoxDomainSeparator(address, chainId) {
+    return keccak256(
+        defaultAbiCoder.encode(
+            ["bytes32", "string", "uint256", "address"],
+            [keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V2", chainId, address]
+        )
+    )
+}
+
+function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, chainId = 1) {
+    const DOMAIN_SEPARATOR = getBentoBoxDomainSeparator(bentoBox.address, chainId)
+    const msg = defaultAbiCoder.encode(
+        ["bytes32", "string", "address", "address", "bool", "uint256"],
+        [
+            BENTOBOX_MASTER_APPROVAL_TYPEHASH,
+            approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
+            user.address,
+            masterContractAddress,
+            approved,
+            nonce,
+        ]
+    )
+    const pack = ethers.utils.solidityPack(["bytes1", "bytes1", "bytes32", "bytes32"], ["0x19", "0x01", DOMAIN_SEPARATOR, keccak256(msg)])
+    return keccak256(pack)
+}
+
+function getSignedMasterContractApprovalData(bentoBox, user, privateKey, masterContractAddress, approved, nonce) {
+    const digest = getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, user.provider._network.chainId)
+    const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
+    return { v, r, s }
+}
 
 const ERC20abi = [
     {
@@ -125,13 +165,13 @@ class LendingPair {
     constructor(contract, helper) {
         this.contract = contract
         this.helper = helper
+        this.address = contract.address
     }
 
     async init(bentoBox) {
         this.bentoBox = bentoBox
         this.asset = new ethers.Contract(await this.contract.asset(), ERC20abi, this.contract.signer)
         this.collateral = new ethers.Contract(await this.contract.collateral(), ERC20abi, this.contract.signer)
-        await this.sync()
         return this
     }
 
@@ -145,24 +185,6 @@ class LendingPair {
         return connectedPair
     }
 
-    async sync() {
-        /*this.info = {
-            totalAssetAmount: (await this.bentoBox.totals(this.asset.address)).elastic,
-            totalAssetShare: (await this.bentoBox.totals(this.asset.address)).base,
-            totalCollateralAmount: (await this.bentoBox.totals(this.collateral.address)).elastic,
-            totalCollateralShare: (await this.bentoBox.totals(this.collateral.address)).base,
-            pairAssetShare: (await this.contract.totalAsset()).elastic,
-            pairAssetFraction: (await this.contract.totalAsset()).base,
-            pairBorrowAmount: (await this.contract.totalBorrow()).elastic,
-            pairBorrowPart: (await this.contract.totalBorrow()).base
-        }*/
-        return this
-    }
-
-    async syncAs(from) {
-        return this.as(from).sync()
-    }
-
     async run(commandsFunction) {
         const commands = commandsFunction(this.cmd)
         for (let i = 0; i < commands.length; i++) {
@@ -172,7 +194,6 @@ class LendingPair {
                 if (commands[i].as) {
                     pair = await pair.as(commands[i].as)
                 }
-                await pair.sync()
                 let tx = await pair[commands[i].method](...commands[i].params)
                 let receipt = await tx.wait()
                 //console.log("Gas used: ", receipt.gasUsed.toString());
@@ -190,19 +211,19 @@ class LendingPair {
         return keccak256(
             defaultAbiCoder.encode(
                 ["bytes32", "uint256", "address"],
-                [keccak256(toUtf8Bytes("EIP712Domain(uint256 chainId,address verifyingContract)")), chainId, tokenAddress]
+                [keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(uint256 chainId,address verifyingContract)")), chainId, tokenAddress]
             )
         )
     }
 
     getApprovalDigest(token, approve, nonce, deadline, chainId = 1) {
-        const PERMIT_TYPEHASH = keccak256(toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
+        const PERMIT_TYPEHASH = keccak256(ethers.utils.toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
         const DOMAIN_SEPARATOR = this.getDomainSeparator(token.address, chainId)
         const msg = defaultAbiCoder.encode(
             ["bytes32", "address", "address", "uint256", "uint256", "uint256"],
             [PERMIT_TYPEHASH, approve.owner, approve.spender, approve.value, nonce, deadline]
         )
-        const pack = solidityPack(["bytes1", "bytes1", "bytes32", "bytes32"], ["0x19", "0x01", DOMAIN_SEPARATOR, keccak256(msg)])
+        const pack = ethers.utils.solidityPack(["bytes1", "bytes1", "bytes32", "bytes32"], ["0x19", "0x01", DOMAIN_SEPARATOR, keccak256(msg)])
         return keccak256(pack)
     }
 
@@ -425,13 +446,10 @@ Object.defineProperty(LendingPair.prototype, "cmd", {
     },
 })
 
-LendingPair.deploy = async function (bentoBox, masterContract, masterContractClass, asset, collateral, oracle) {
-    await oracle.set(getBigNumber(1, 28))
-    const oracleData = await oracle.getDataParameter()
-    const initData = await masterContract.getInitData(addr(asset), addr(collateral), oracle.address, oracleData)
+LendingPair.deploy = async function (bentoBox, masterContract, masterContractClass, asset, collateral, oracle, oracleData) {
+    const initData = await masterContract.getInitData(addr(asset), addr(collateral), addr(oracle), oracleData)
     const deployTx = await bentoBox.deploy(masterContract.address, initData, true)
-    const cloneAddress = (await deployTx.wait()).events[1].args.cloneAddress
-    const pair = await masterContractClass.attach(cloneAddress)
+    const pair = await masterContractClass.attach((await deployTx.wait()).events[1].args.cloneAddress)
     await pair.updateExchangeRate()
     const pairHelper = new LendingPair(pair)
     pairHelper.initData = initData

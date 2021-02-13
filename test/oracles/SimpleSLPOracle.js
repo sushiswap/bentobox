@@ -1,40 +1,29 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
-const { getBigNumber, roundBN, encodePrice, advanceTime, advanceTimeAndBlock, deploymentsFixture, prepare } = require("../utilities")
+const { getBigNumber, roundBN, encodePrice, advanceTime, advanceTimeAndBlock, createFixture } = require("../utilities")
 
 describe("SimpleSLPOracle", function () {
     before(async function () {
-        await prepare(this, [
-            "WETH9Mock",
-            "BentoBoxMock",
-            "UniswapV2Pair",
-            "UniswapV2Factory",
-            "ReturnFalseERC20Mock",
-            "RevertingERC20Mock",
-            "SimpleSLPTWAP0Oracle",
-            "SimpleSLPTWAP1Oracle",
-        ])
-    })
-
-    beforeEach(async function () {
-        await deploymentsFixture(this, async (cmd) => {
+        fixture = await createFixture(deployments, this, async cmd => {
             await cmd.addToken("collateral", "Collateral", "C", 18, this.ReturnFalseERC20Mock)
             await cmd.addToken("asset", "Asset", "A", 18, this.RevertingERC20Mock)
             await cmd.addPair("sushiSwapPair", this.collateral, this.asset, 5, 10)
+    
+            this.expectedPrice = encodePrice(getBigNumber(5), getBigNumber(10))
+    
+            if (this.asset.address == (await this.sushiSwapPair.token0())) {
+                await cmd.deploy("oracleF", "SimpleSLPTWAP0Oracle")
+                await cmd.deploy("oracleB", "SimpleSLPTWAP1Oracle")
+            } else {
+                await cmd.deploy("oracleF", "SimpleSLPTWAP1Oracle")
+                await cmd.deploy("oracleB", "SimpleSLPTWAP0Oracle")
+            }
+            this.oracleData = await this.oracleF.getDataParameter(this.sushiSwapPair.address)
         })
+    })
 
-        this.expectedPrice = encodePrice(getBigNumber(5), getBigNumber(10))
-
-        if (this.asset.address == (await this.sushiSwapPair.token0())) {
-            this.oracleF = await this.SimpleSLPTWAP0Oracle.deploy()
-            this.oracleB = await this.SimpleSLPTWAP1Oracle.deploy()
-        } else {
-            this.oracleF = await this.SimpleSLPTWAP1Oracle.deploy()
-            this.oracleB = await this.SimpleSLPTWAP0Oracle.deploy()
-        }
-        await this.oracleF.deployed()
-        await this.oracleB.deployed()
-        this.oracleData = await this.oracleF.getDataParameter(this.sushiSwapPair.address)
+    beforeEach(async function () {
+        cmd = await fixture()
     })
 
     describe("forward oracle", function () {

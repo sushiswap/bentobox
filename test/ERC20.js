@@ -1,19 +1,20 @@
 const { ethers } = require("hardhat")
 const { expect, assert } = require("chai")
-const { ADDRESS_ZERO, getApprovalDigest, getDomainSeparator, prepare } = require("./utilities")
+const { ADDRESS_ZERO, getApprovalDigest, getDomainSeparator, createFixture } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
+
+let cmd, fixture;
 
 describe("ERC20", function () {
     before(async function () {
-        await prepare(this, ["WETH9Mock", "ERC20Mock"])
+        fixture = await createFixture(deployments, this, async cmd => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("token", "ERC20Mock", 10000)
+        })
     })
 
     beforeEach(async function () {
-        this.weth9 = await this.WETH9Mock.deploy()
-        await this.weth9.deployed()
-
-        this.token = await this.ERC20Mock.deploy(10000)
-        await this.token.deployed()
+        cmd = await fixture()
     })
 
     // You can nest describe calls to create subsections.
@@ -25,17 +26,14 @@ describe("ERC20", function () {
 
         it("Succeeds in creating over 2^256 - 1 (max) tokens", async function () {
             // 2^256 - 1
-            const token = await this.ERC20Mock.deploy("115792089237316195423570985008687907853269984665640564039457584007913129639935")
-            await token.deployed()
-
-            const totalSupply = await token.totalSupply()
-            expect(totalSupply).to.be.equal("115792089237316195423570985008687907853269984665640564039457584007913129639935")
+            const token = await cmd.deploy("tokenTest", "ERC20Mock", "115792089237316195423570985008687907853269984665640564039457584007913129639935") 
+            expect(await token.totalSupply()).to.be.equal("115792089237316195423570985008687907853269984665640564039457584007913129639935")
         })
     })
 
     describe("Transfer", function () {
         it("Succeeds transfering 10000 tokens from alice to bob", async function () {
-            expect(() => this.token.transfer(this.bob.address, 10000)).to.changeTokenBalances(
+            await expect(() => this.token.transfer(this.bob.address, 10000)).to.changeTokenBalances(
                 this.token,
                 [this.alice, this.bob],
                 [-10000, 10000]

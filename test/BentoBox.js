@@ -1,4 +1,4 @@
-const { ethers, deployments } = require("hardhat")
+const { ethers, deployments, getChainId } = require("hardhat")
 const { expect, assert } = require("chai")
 const {
     getApprovalDigest,
@@ -11,62 +11,61 @@ const {
     deploymentsFixture,
     decodeLogs,
     advanceTime,
+    weth,
+    createFixture,
 } = require("./utilities")
+
 const { ecsign } = require("ethereumjs-util")
+let cmd, fixture;
 
 describe("BentoBox", function () {
     before(async function () {
-        await prepare(this, [
-            "ERC20Mock",
-            "SneakyFlashLoanerMock",
-            "FlashLoanerMock",
-            "ReturnFalseERC20Mock",
-            "RevertingERC20Mock",
-            "BentoBoxMock",
-            "SimpleStrategyMock",
-        ])
+        fixture = await createFixture(deployments, this, async cmd => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+
+            await cmd.addToken("a", "Token A", "A", 18)
+            await cmd.addToken("b", "Token B", "B", 6, "RevertingERC20Mock")
+            await cmd.addToken("c", "Token C", "C", 8, "RevertingERC20Mock")
+
+            await cmd.deploy("flashLoaner", "FlashLoanerMock")
+            await cmd.deploy("sneakyFlashLoaner", "SneakyFlashLoanerMock")
+            await cmd.deploy("strategy", "SimpleStrategyMock", this.bentoBox.address, this.a.address)
+
+            await this.bentoBox.setStrategy(this.a.address, this.strategy.address)
+            await advanceTime(1209600, ethers)
+            await this.bentoBox.setStrategy(this.a.address, this.strategy.address)
+            await this.bentoBox.setStrategyTargetPercentage(this.a.address, 20)
+
+            await cmd.deploy("erc20", "ERC20Mock", 10000000)
+            await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
+            await cmd.deploy("peggedOracle", "PeggedOracle")
+
+            this.a.approve = function(...params) { console.log(params); this.a.approve(...params) }
+            await this.a.connect(this.fred).approve(this.bentoBox.address, getBigNumber(130))
+            await expect(this.bentoBox.connect(this.fred).deposit(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), 0))
+                .to.emit(this.a, "Transfer")
+                .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(100))
+                .to.emit(this.bentoBox, "LogDeposit")
+                .withArgs(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), getBigNumber(100))
+    
+            this.bentoBox.connect(this.fred).addProfit(this.a.address, getBigNumber(30))
+    
+            await this.b.connect(this.fred).approve(this.bentoBox.address, getBigNumber(400, 6))
+            await expect(this.bentoBox.connect(this.fred).deposit(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), 0))
+                .to.emit(this.b, "Transfer")
+                .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(200, 6))
+                .to.emit(this.bentoBox, "LogDeposit")
+                .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), getBigNumber(200, 6))
+    
+            this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 6))
+    
+            await this.bentoBox.harvest(this.a.address, true, 0)   
+        });
     })
 
     beforeEach(async function () {
-        await deploymentsFixture(this, async (cmd) => {
-            await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
-            await cmd.addToken("b", "Token B", "B", 6, this.RevertingERC20Mock)
-            await cmd.addToken("c", "Token C", "C", 8, this.RevertingERC20Mock)
-        })
-
-        await deploy(this, [
-            ["flashLoaner", this.FlashLoanerMock],
-            ["sneakyFlashLoaner", this.SneakyFlashLoanerMock],
-            ["strategy", this.SimpleStrategyMock, [this.bentoBox.address, this.a.address]],
-        ])
-
-        await this.bentoBox.setStrategy(this.a.address, this.strategy.address)
-        await advanceTime(1209600, ethers)
-        await this.bentoBox.setStrategy(this.a.address, this.strategy.address)
-        await this.bentoBox.setStrategyTargetPercentage(this.a.address, 20)
-
-        this.erc20 = await this.ERC20Mock.deploy(10000000)
-        await this.erc20.deployed()
-
-        await this.a.connect(this.fred).approve(this.bentoBox.address, getBigNumber(130))
-        await expect(this.bentoBox.connect(this.fred).deposit(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), 0))
-            .to.emit(this.a, "Transfer")
-            .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(100))
-            .to.emit(this.bentoBox, "LogDeposit")
-            .withArgs(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), getBigNumber(100))
-
-        this.bentoBox.connect(this.fred).addProfit(this.a.address, getBigNumber(30))
-
-        await this.b.connect(this.fred).approve(this.bentoBox.address, getBigNumber(400, 6))
-        await expect(this.bentoBox.connect(this.fred).deposit(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), 0))
-            .to.emit(this.b, "Transfer")
-            .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(200, 6))
-            .to.emit(this.bentoBox, "LogDeposit")
-            .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), getBigNumber(200, 6))
-
-        this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 6))
-
-        await this.bentoBox.harvest(this.a.address, true, 0)
+        cmd = await fixture();
     })
 
     describe("Deploy", function () {

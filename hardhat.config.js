@@ -24,16 +24,16 @@ const test_accounts = {
     accountsBalance: "990000000000000000000",
 }
 
-const accounts = [
+const accounts = process.env.MNEMONIC && process.env.FUNDER_MNEMONIC ? [
     ethers.Wallet.fromMnemonic(process.env.MNEMONIC).privateKey,
     ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).privateKey,
-]
+] : []
 
-console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.MNEMONIC).address)
+/*console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.MNEMONIC).address)
 console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).address)
 
 console.log("Key:", accounts[0])
-console.log("Key:", accounts[1])
+console.log("Key:", accounts[1])*/
 
 task("accounts", "Prints the list of accounts", async (_, { config }) => {
     const networkConfig = config.networks["hardhat"]
@@ -209,6 +209,58 @@ module.exports = {
             saveDeployments: true,
             tags: ["staging"],
         },
+        huobi: {
+            url: "https://http-mainnet.hecochain.com",
+            accounts,
+            chainId: 128,
+            live: true,
+            saveDeployments: true,
+        },
+        huobitest: {
+            url: "https://http-testnet.hecochain.com",
+            accounts,
+            chainId: 256,
+            live: true,
+            saveDeployments: true,
+            tags: ["staging"],
+        },
+        okex: {
+            url: "http://okexchain-rpc1.okex.com:26659",
+            accounts,
+            chainId: 66,
+            live: true,
+            saveDeployments: true,
+        },
+        okextest: {
+            url: "http://okexchaintest-rpc1.okex.com:26659",
+            accounts,
+            chainId: 65,
+            live: true,
+            saveDeployments: true,
+            tags: ["staging"],
+        },
+        xdai: {
+            url: "https://rpc.xdaichain.com",
+            accounts,
+            chainId: 100,
+            live: true,
+            saveDeployments: true,
+        },
+        tomo: {
+            url: "https://rpc.tomochain.com",
+            accounts,
+            chainId: 88,
+            live: true,
+            saveDeployments: true,
+        },
+        tomotest: {
+            url: "https://rpc.testnet.tomochain.com",
+            accounts,
+            chainId: 89,
+            live: true,
+            saveDeployments: true,
+            tags: ["staging"],
+        },
     },
     paths: {
         artifacts: "artifacts",
@@ -227,7 +279,7 @@ module.exports = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 50000,
+                runs: 256,
             },
         },
     },

@@ -1,22 +1,22 @@
-const { ADDRESS_ZERO, setMasterContractApproval, prepare, deploy, getBigNumber, advanceTime } = require("./utilities")
+const { ADDRESS_ZERO, setMasterContractApproval, createFixture, getBigNumber, advanceTime } = require("./utilities")
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
 
+let cmd, fixture;
+
 describe("StrategyManager", function () {
     before(async function () {
-        await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "SushiStrategy", "SushiBarMock", "BentoBoxMock"])
-        await deploy(this, [
-            ["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
-            ["weth9", this.WETH9Mock],
-        ])
-        await deploy(this, [
-            ["bentoBox", this.BentoBoxMock, [this.sushi.address]],
-            ["bar", this.SushiBarMock, [this.sushi.address]],
-        ])
-        await deploy(this, [["sushiStrategy", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
-        await this.sushiStrategy.transferOwnership(this.bentoBox.address, true, false)
-        await this.sushi.approve(this.bar.address, getBigNumber(1))
-        await this.bar.enter(getBigNumber(1))
+        fixture = await createFixture(deployments, this, async cmd => {
+            await cmd.deploy("sushi", "RevertingERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+            await cmd.deploy("bar", "SushiBarMock", this.sushi.address)
+            await cmd.deploy("sushiStrategy", "SushiStrategy", this.bar.address, this.sushi.address)
+            await this.sushiStrategy.transferOwnership(this.bentoBox.address, true, false)
+            await this.sushi.approve(this.bar.address, getBigNumber(1))
+            await this.bar.enter(getBigNumber(1))
+        })
+        cmd = await fixture()
     })
 
     describe("Strategy", function () {
@@ -61,7 +61,7 @@ describe("StrategyManager", function () {
         })
 
         it("switches to new strategy and exits from old", async function () {
-            await deploy(this, [["sushiStrategy2", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
+            await cmd.deploy("sushiStrategy2", "SushiStrategy", this.bar.address, this.sushi.address)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
@@ -84,7 +84,7 @@ describe("StrategyManager", function () {
 
         it("switches to new strategy and exits from old with profit", async function () {
             await this.sushi.transfer(this.bar.address, getBigNumber(1))
-            await deploy(this, [["sushiStrategy3", this.SushiStrategy, [this.bar.address, this.sushi.address]]])
+            await cmd.deploy("sushiStrategy3", "SushiStrategy", this.bar.address, this.sushi.address)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)

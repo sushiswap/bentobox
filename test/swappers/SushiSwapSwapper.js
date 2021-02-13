@@ -1,19 +1,23 @@
 const { expect } = require("chai")
-const { prepare, getBigNumber, deploymentsFixture } = require("../utilities")
+const { prepare, getBigNumber, createFixture } = require("../utilities")
+
+let cmd, fixture;
 
 describe("SushiSwapSwapper", function () {
     before(async function () {
-        await prepare(this, ["SushiSwapSwapper", "ReturnFalseERC20Mock", "RevertingERC20Mock"])
-    })
-
-    beforeEach(async function () {
-        await deploymentsFixture(this, async (cmd) => {
+        fixture = await createFixture(deployments, this, async cmd => {
             await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
             await cmd.addToken("b", "Token B", "B", 8, this.RevertingERC20Mock)
             await cmd.addPair("sushiSwapPair", this.a, this.b, 50000, 50000)
+    
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+            await cmd.deploy("swapper", "SushiSwapSwapper", this.bentoBox.address, this.factory.address)
         })
+    })
 
-        await this.SushiSwapSwapper.new("swapper", this.bentoBox.address, this.factory.address)
+    beforeEach(async function () {
+        cmd = await fixture()
     })
 
     describe("Swap", function () {

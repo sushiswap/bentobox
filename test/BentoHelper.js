@@ -1,13 +1,16 @@
 const { expect } = require("chai")
-const { prepare } = require("./utilities")
+const { createFixture } = require("./utilities")
+
+let cmd, fixture;
 
 describe("BentoHelper", function () {
     before(async function () {
-        await prepare(this, ["BentoHelper"])
+        fixture = await createFixture(deployments, this, async cmd => {
+            await cmd.deploy("helper", "BentoHelper")
+        })
     })
 
     beforeEach(async function () {
-        this.swapper = await this.BentoHelper.deploy()
-        await this.swapper.deployed()
+        cmd = await fixture()
     })
 })
