@@ -2,11 +2,11 @@ const { ADDRESS_ZERO, setMasterContractApproval, createFixture, getBigNumber, ad
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("MoneySink", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("sushi", "RevertingERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)

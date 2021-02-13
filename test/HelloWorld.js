@@ -1,13 +1,13 @@
 const assert = require("assert")
 const { getBigNumber, setMasterContractApproval, createFixture } = require("./utilities")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("HelloWorld", function () {
     const APPROVAL_AMOUNT = 1000
 
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.addToken("tokenA", "Token A", "A", 18, this.ReturnFalseERC20Mock)

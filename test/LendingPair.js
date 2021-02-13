@@ -15,7 +15,7 @@ const {
 const { LendingPair } = require("./utilities/lendingpair")
 const { defaultAbiCoder } = require("ethers/lib/utils")
 
-let cmd, fixture;
+let cmd, fixture
 
 async function debugInfo(thisObject) {
     console.log("Alice Collateral in Bento", (await thisObject.bentoBox.balanceOf(thisObject.a.address, thisObject.alice.address)).toString())
@@ -46,7 +46,7 @@ async function debugInfo(thisObject) {
 
 describe("Lending Pair", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 
@@ -71,7 +71,7 @@ describe("Lending Pair", function () {
 
             await this.oracle.set(getBigNumber(1, 28))
             const oracleData = await this.oracle.getDataParameter()
-        
+
             await cmd.addLendingPair("pairHelper", this.bentoBox, this.lendingPair, this.a, this.b, this.oracle, oracleData)
 
             // Two different ways to approve the lendingPair

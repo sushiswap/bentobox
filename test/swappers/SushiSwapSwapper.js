@@ -1,15 +1,15 @@
 const { expect } = require("chai")
 const { prepare, getBigNumber, createFixture } = require("../utilities")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("SushiSwapSwapper", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
             await cmd.addToken("b", "Token B", "B", 8, this.RevertingERC20Mock)
             await cmd.addPair("sushiSwapPair", this.a, this.b, 50000, 50000)
-    
+
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.deploy("swapper", "SushiSwapSwapper", this.bentoBox.address, this.factory.address)

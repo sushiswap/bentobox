@@ -2,11 +2,11 @@ const { setMasterContractApproval, createFixture, ADDRESS_ZERO } = require("./ut
 const { expect } = require("chai")
 const { LendingPair } = require("./utilities/lendingpair")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("MasterContractManager", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 

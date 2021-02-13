@@ -1,5 +1,7 @@
 const ethers = require("ethers")
-const { utils: { keccak256, defaultAbiCoder } } = require("ethers")
+const {
+    utils: { keccak256, defaultAbiCoder },
+} = require("ethers")
 const { ecsign } = require("ethereumjs-util")
 
 function addr(address) {
@@ -17,7 +19,12 @@ function getBentoBoxDomainSeparator(address, chainId) {
     return keccak256(
         defaultAbiCoder.encode(
             ["bytes32", "string", "uint256", "address"],
-            [keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V2", chainId, address]
+            [
+                keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")),
+                "BentoBox V2",
+                chainId,
+                address,
+            ]
         )
     )
 }
@@ -217,7 +224,9 @@ class LendingPair {
     }
 
     getApprovalDigest(token, approve, nonce, deadline, chainId = 1) {
-        const PERMIT_TYPEHASH = keccak256(ethers.utils.toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"))
+        const PERMIT_TYPEHASH = keccak256(
+            ethers.utils.toUtf8Bytes("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
+        )
         const DOMAIN_SEPARATOR = this.getDomainSeparator(token.address, chainId)
         const msg = defaultAbiCoder.encode(
             ["bytes32", "address", "address", "uint256", "uint256", "uint256"],

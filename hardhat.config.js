@@ -24,10 +24,10 @@ const test_accounts = {
     accountsBalance: "990000000000000000000",
 }
 
-const accounts = process.env.MNEMONIC && process.env.FUNDER_MNEMONIC ? [
-    ethers.Wallet.fromMnemonic(process.env.MNEMONIC).privateKey,
-    ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).privateKey,
-] : []
+const accounts =
+    process.env.MNEMONIC && process.env.FUNDER_MNEMONIC
+        ? [ethers.Wallet.fromMnemonic(process.env.MNEMONIC).privateKey, ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).privateKey]
+        : []
 
 /*console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.MNEMONIC).address)
 console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).address)
@@ -79,11 +79,11 @@ module.exports = {
     },
     namedAccounts: {
         deployer: {
-            default: 0
+            default: 0,
         },
         funder: {
-            default: 1
-        }
+            default: 1,
+        },
     },
     networks: {
         hardhat: {

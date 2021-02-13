@@ -11,11 +11,11 @@ const {
     lendingPairPermit,
     setMasterContractApproval,
     setLendingPairContractApproval,
-    createFixture
+    createFixture,
 } = require("./utilities")
 const { LendingPair } = require("./utilities/lendingpair")
 
-let cmd, fixture;
+let cmd, fixture
 
 async function balances(thisObject, token, address) {
     address = addr(address)
@@ -82,7 +82,7 @@ rpcToObj = function (rpc_obj, obj) {
 
 describe("Scenario 1", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 

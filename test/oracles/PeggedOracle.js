@@ -3,7 +3,7 @@ const { getBigNumber, createFixture } = require("../utilities")
 
 describe("PeggedOracle", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("oracle", "PeggedOracle")
             this.oracleData = await this.oracle.getDataParameter(getBigNumber(1))
         })

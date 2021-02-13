@@ -8,7 +8,7 @@ describe("CompositeOracle", function () {
         this.ethAmount = getBigNumber(1)
         this.daiAmount = getBigNumber(500)
 
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("sushiToken", "ReturnFalseERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
             await cmd.deploy("ethToken", "ReturnFalseERC20Mock", "WETH", "ETH", 18, getBigNumber("10000000"))
@@ -19,33 +19,33 @@ describe("CompositeOracle", function () {
             let createPairTx = await this.factory.createPair(this.sushiToken.address, this.ethToken.address)
 
             const pairSushiEth = (await createPairTx.wait()).events[0].args.pair
-    
+
             await cmd.getContract("UniswapV2Pair")
             this.pairSushiEth = await this.UniswapV2Pair.attach(pairSushiEth)
-    
+
             await this.sushiToken.transfer(this.pairSushiEth.address, this.sushiAmount)
             await this.ethToken.transfer(this.pairSushiEth.address, this.ethAmount)
-    
+
             await this.pairSushiEth.mint(this.alice.address)
-    
+
             if (this.ethToken.address == (await this.pairSushiEth.token0())) {
                 await cmd.deploy("oracleSushiEth", "SimpleSLPTWAP0Oracle")
             } else {
                 await cmd.deploy("oracleSushiEth", "SimpleSLPTWAP1Oracle")
             }
             this.oracleDataA = await this.oracleSushiEth.getDataParameter(this.pairSushiEth.address)
-    
+
             createPairTx = await this.factory.createPair(this.ethToken.address, this.daiToken.address)
-    
+
             const pairDaiEth = (await createPairTx.wait()).events[0].args.pair
-    
+
             this.pairDaiEth = await this.UniswapV2Pair.attach(pairDaiEth)
-    
+
             await this.daiToken.transfer(this.pairDaiEth.address, this.daiAmount)
             await this.ethToken.transfer(this.pairDaiEth.address, this.ethAmount)
-    
+
             await this.pairDaiEth.mint(this.alice.address)
-    
+
             if (this.daiToken.address == (await this.pairDaiEth.token0())) {
                 await cmd.deploy("oracleDaiEth", "SimpleSLPTWAP0Oracle")
             } else {
@@ -53,7 +53,7 @@ describe("CompositeOracle", function () {
             }
             this.oracleDataB = await this.oracleDaiEth.getDataParameter(this.pairDaiEth.address)
             await cmd.deploy("compositeOracle", "CompositeOracle")
-    
+
             this.compositeOracleData = await this.compositeOracle.getDataParameter(
                 this.oracleSushiEth.address,
                 this.oracleDaiEth.address,

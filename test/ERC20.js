@@ -3,11 +3,11 @@ const { expect, assert } = require("chai")
 const { ADDRESS_ZERO, getApprovalDigest, getDomainSeparator, createFixture } = require("./utilities")
 const { ecsign } = require("ethereumjs-util")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("ERC20", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("token", "ERC20Mock", 10000)
         })
@@ -26,7 +26,11 @@ describe("ERC20", function () {
 
         it("Succeeds in creating over 2^256 - 1 (max) tokens", async function () {
             // 2^256 - 1
-            const token = await cmd.deploy("tokenTest", "ERC20Mock", "115792089237316195423570985008687907853269984665640564039457584007913129639935") 
+            const token = await cmd.deploy(
+                "tokenTest",
+                "ERC20Mock",
+                "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+            )
             expect(await token.totalSupply()).to.be.equal("115792089237316195423570985008687907853269984665640564039457584007913129639935")
         })
     })

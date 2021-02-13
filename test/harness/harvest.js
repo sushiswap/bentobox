@@ -16,7 +16,7 @@ describe("DummyStrategyMock", function () {
     const HARVEST_MAX_AMOUNT = 3
 
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 

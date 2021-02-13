@@ -1,11 +1,11 @@
 const { ADDRESS_ZERO, createFixture } = require("./utilities")
 const { expect } = require("chai")
 
-let cmd, fixture;
+let cmd, fixture
 
 describe("Ownable", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("ownable", "BentoBoxMock", ADDRESS_ZERO)
         })
     })

@@ -16,11 +16,11 @@ const {
 } = require("./utilities")
 
 const { ecsign } = require("ethereumjs-util")
-let cmd, fixture;
+let cmd, fixture
 
 describe("BentoBox", function () {
     before(async function () {
-        fixture = await createFixture(deployments, this, async cmd => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 
@@ -41,31 +41,34 @@ describe("BentoBox", function () {
             await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
             await cmd.deploy("peggedOracle", "PeggedOracle")
 
-            this.a.approve = function(...params) { console.log(params); this.a.approve(...params) }
+            this.a.approve = function (...params) {
+                console.log(params)
+                this.a.approve(...params)
+            }
             await this.a.connect(this.fred).approve(this.bentoBox.address, getBigNumber(130))
             await expect(this.bentoBox.connect(this.fred).deposit(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), 0))
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(100))
                 .to.emit(this.bentoBox, "LogDeposit")
                 .withArgs(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), getBigNumber(100))
-    
+
             this.bentoBox.connect(this.fred).addProfit(this.a.address, getBigNumber(30))
-    
+
             await this.b.connect(this.fred).approve(this.bentoBox.address, getBigNumber(400, 6))
             await expect(this.bentoBox.connect(this.fred).deposit(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), 0))
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(200, 6))
                 .to.emit(this.bentoBox, "LogDeposit")
                 .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), getBigNumber(200, 6))
-    
+
             this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 6))
-    
-            await this.bentoBox.harvest(this.a.address, true, 0)   
-        });
+
+            await this.bentoBox.harvest(this.a.address, true, 0)
+        })
     })
 
     beforeEach(async function () {
-        cmd = await fixture();
+        cmd = await fixture()
     })
 
     describe("Deploy", function () {
