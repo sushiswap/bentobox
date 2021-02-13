@@ -228,7 +228,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
         accrueInfo = _accrueInfo;
     }
 
-    /// @notice Concreate implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
+    /// @notice Concrete implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate Used to cache the `exchangeValue` between calls. Pass `0` for default behaviour.
     function _isSolvent(address user, bool open, uint256 _exchangeRate) internal view returns (bool) {
         // accrue must have already been called!
