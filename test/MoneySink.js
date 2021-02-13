@@ -1,17 +1,19 @@
-const { ADDRESS_ZERO, setMasterContractApproval, prepare, deploy, getBigNumber, advanceTime } = require("./utilities")
+const { ADDRESS_ZERO, setMasterContractApproval, createFixture, getBigNumber, advanceTime } = require("./utilities")
 const { expect } = require("chai")
 const { ethers } = require("hardhat")
 
+let cmd, fixture
+
 describe("MoneySink", function () {
     before(async function () {
-        await prepare(this, ["WETH9Mock", "RevertingERC20Mock", "MoneySink", "BentoBoxMock"])
-        await deploy(this, [
-            ["sushi", this.RevertingERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
-            ["weth9", this.WETH9Mock],
-        ])
-        await deploy(this, [["bentoBox", this.BentoBoxMock, [this.sushi.address]]])
-        await deploy(this, [["moneySink", this.MoneySink, [this.bentoBox.address, this.sushi.address]]])
-        await this.moneySink.transferOwnership(this.bentoBox.address, true, false)
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("sushi", "RevertingERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+            await cmd.deploy("moneySink", "MoneySink", this.bentoBox.address, this.sushi.address)
+            await this.moneySink.transferOwnership(this.bentoBox.address, true, false)
+        })
+        cmd = await fixture()
     })
 
     it("allows to set strategy", async function () {
@@ -53,7 +55,7 @@ describe("MoneySink", function () {
     })
 
     it("switches to new strategy and exits from old", async function () {
-        await deploy(this, [["moneySink2", this.MoneySink, [this.bentoBox.address, this.sushi.address]]])
+        await cmd.deploy("moneySink2", "MoneySink", this.bentoBox.address, this.sushi.address)
         await this.bentoBox.setStrategy(this.sushi.address, this.moneySink2.address)
         await advanceTime(1209600, ethers)
         await this.bentoBox.setStrategy(this.sushi.address, this.moneySink2.address)

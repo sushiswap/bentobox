@@ -1,15 +1,16 @@
 const { expect } = require("chai")
-const { getBigNumber, prepare } = require("../utilities")
+const { getBigNumber, createFixture } = require("../utilities")
 
 describe("PeggedOracle", function () {
     before(async function () {
-        await prepare(this, ["PeggedOracle"])
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("oracle", "PeggedOracle")
+            this.oracleData = await this.oracle.getDataParameter(getBigNumber(1))
+        })
     })
 
     beforeEach(async function () {
-        this.oracle = await this.PeggedOracle.deploy()
-        await this.oracle.deployed()
-        this.oracleData = await this.oracle.getDataParameter(getBigNumber(1))
+        cmd = await fixture()
     })
 
     it("Assigns name to Pegged", async function () {

@@ -1,19 +1,23 @@
 const { expect } = require("chai")
-const { prepare, getBigNumber, deploymentsFixture } = require("../utilities")
+const { prepare, getBigNumber, createFixture } = require("../utilities")
+
+let cmd, fixture
 
 describe("SushiSwapSwapper", function () {
     before(async function () {
-        await prepare(this, ["SushiSwapSwapper", "ReturnFalseERC20Mock", "RevertingERC20Mock"])
-    })
-
-    beforeEach(async function () {
-        await deploymentsFixture(this, async (cmd) => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
             await cmd.addToken("b", "Token B", "B", 8, this.RevertingERC20Mock)
             await cmd.addPair("sushiSwapPair", this.a, this.b, 50000, 50000)
-        })
 
-        await this.SushiSwapSwapper.new("swapper", this.bentoBox.address, this.factory.address)
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+            await cmd.deploy("swapper", "SushiSwapSwapper", this.bentoBox.address, this.factory.address)
+        })
+    })
+
+    beforeEach(async function () {
+        cmd = await fixture()
     })
 
     describe("Swap", function () {
@@ -28,8 +32,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20000000000000000000", "20000000000000000000")
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "1993205109")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("50020000000000000000000", "4998006794891")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "20000000000000000000", "0", "0", "1993205109", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -47,8 +49,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20000000000000000000", "20000000000000000000")
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "1993205109")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("50020000000000000000000", "4998006794891")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "20000000000000000000", "0", "0", "1993205109", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -75,8 +75,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.b.address, this.swapper.address, this.sushiSwapPair.address, "2000000000", "2000000000")
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "19932051098022108783")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("49980067948901977891217", "5002000000000")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "0", "2000000000", "19932051098022108783", "0", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -94,8 +92,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.b.address, this.swapper.address, this.sushiSwapPair.address, "2000000000", "2000000000")
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "19932051098022108783")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("49980067948901977891217", "5002000000000")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "0", "2000000000", "19932051098022108783", "0", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -133,8 +129,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20068207824754776535", "20068207824754776535")
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "2000000000")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("50020068207824754776535", "4998000000000")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "20068207824754776535", "0", "0", "2000000000", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -163,8 +157,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.a.address, this.swapper.address, this.sushiSwapPair.address, "20068207824754776535", "20068207824754776535")
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "2000000000")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("50020068207824754776535", "4998000000000")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "20068207824754776535", "0", "0", "2000000000", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -207,8 +199,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.b.address, this.swapper.address, this.sushiSwapPair.address, "2006820783", "2006820783")
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "20000000000000000000")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("49980000000000000000000", "5002006820783")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "0", "2006820783", "20000000000000000000", "0", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")
@@ -230,8 +220,6 @@ describe("SushiSwapSwapper", function () {
                 .withArgs(this.b.address, this.swapper.address, this.sushiSwapPair.address, "2006820783", "2006820783")
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.sushiSwapPair.address, this.bentoBox.address, "20000000000000000000")
-                .to.emit(this.sushiSwapPair, "Sync")
-                .withArgs("49980000000000000000000", "5002006820783")
                 .to.emit(this.sushiSwapPair, "Swap")
                 .withArgs(this.swapper.address, "0", "2006820783", "20000000000000000000", "0", this.bentoBox.address)
                 .to.emit(this.bentoBox, "LogDeposit")

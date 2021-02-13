@@ -1,25 +1,38 @@
-const DEFAULT_WETH = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
-const ROPSTEN_WETH = "0xc778417E063141139Fce010982780140Aa0cD5Ab"
+const { weth, getBigNumber } = require("../test/utilities")
 
-const WETH_MAP = new Map()
-WETH_MAP.set(1, DEFAULT_WETH)
-WETH_MAP.set(3, ROPSTEN_WETH)
+module.exports = async function (hre) {
+  const { deployer, funder } = await hre.ethers.getNamedSigners()
+  const chainId = await hre.getChainId()
+  if (chainId == 31337) { return }
+  if (!weth(chainId)) {
+    console.log("No WETH address for chain", chainId)
+    return;
+  }
 
-module.exports = async function ({ deployments, getChainId, getNamedAccounts }) {
-  const { deploy } = deployments
+  const gasPrice = await funder.provider.getGasPrice()
+  let multiplier = hre.network.tags.staging ? 2 : 1
+  let finalGasPrice = gasPrice.mul(multiplier)
+  const gasLimit = 5000000
+  if (chainId == "88" || chainId == "89") {
+    finalGasPrice = getBigNumber("10000", 9)
+  }
+  console.log("Gasprice:", gasPrice.toString(), " with multiplier ", multiplier, "final", finalGasPrice.toString())
 
-  const { deployer } = await getNamedAccounts()
+  console.log("Sending native token to fund deployment:", finalGasPrice.mul(gasLimit + 190000).toString())
+  let tx = await funder.sendTransaction({
+    to: deployer.address,
+    value: finalGasPrice.mul(gasLimit + 190000),
+    gasPrice: gasPrice.mul(multiplier)
+  });
+  await tx.wait();
 
-  const chainId = Number(await getChainId())
-
-  const wethAddress = WETH_MAP.has(chainId) ? WETH_MAP.get(chainId) : (await deployments.get("WETH9Mock")).address
-
-  await deploy("BentoBoxMock", {
-    from: deployer,
-    args: [wethAddress],
+  console.log("Deploying contract")
+  tx = await hre.deployments.deploy("BentoBoxV1", {
+    from: deployer.address,
+    args: [weth(chainId)],
     log: true,
     deterministicDeployment: false,
+    gasLimit: gasLimit,
+    gasPrice: finalGasPrice
   })
 }
-
-module.exports.dependencies = ["Mocks"]

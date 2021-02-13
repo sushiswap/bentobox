@@ -9,13 +9,13 @@ const {
     ADDRESS_ZERO,
     advanceTime,
     lendingPairPermit,
-    prepare,
     setMasterContractApproval,
     setLendingPairContractApproval,
-    deploy,
-    deploymentsFixture,
+    createFixture,
 } = require("./utilities")
 const { LendingPair } = require("./utilities/lendingpair")
+
+let cmd, fixture
 
 async function balances(thisObject, token, address) {
     address = addr(address)
@@ -82,28 +82,28 @@ rpcToObj = function (rpc_obj, obj) {
 
 describe("Scenario 1", function () {
     before(async function () {
-        await prepare(this, [
-            "LendingPairMock",
-            "SushiSwapSwapper",
-            "SushiSwapFactoryMock",
-            "SushiSwapPairMock",
-            "ReturnFalseERC20Mock",
-            "RevertingERC20Mock",
-            "OracleMock",
-        ])
-    })
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 
-    it("Sets up fixtures, tokens, etc", async function () {
-        await deploymentsFixture(this, async (cmd) => {
             await cmd.addToken("a", "Token A", "A", 18, this.ReturnFalseERC20Mock)
             await cmd.addToken("b", "Token B", "B", 8, this.RevertingERC20Mock)
             await cmd.addToken("c", "Token C", "C", 6, this.RevertingERC20Mock)
             await cmd.addToken("d", "Token D", "D", 0, this.RevertingERC20Mock)
             await cmd.addPair("ammpairAB", this.a, this.b, 50000, 50000)
             await cmd.addPair("ammpairAC", this.a, this.c, 50000, 50000)
-        })
 
-        this.pairAB = await LendingPair.deploy(this.bentoBox, this.lendingPair, this.LendingPairMock, this.a, this.b, this.oracle)
+            await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
+            await cmd.deploy("oracle", "OracleMock")
+
+            await this.oracle.set(getBigNumber(1, 28))
+            this.oracleData = await this.oracle.getDataParameter()
+        })
+        cmd = await fixture()
+    })
+
+    it("Sets up fixtures, tokens, etc", async function () {
+        await cmd.addLendingPair("pairAB", this.bentoBox, this.lendingPair, this.a, this.b, this.oracle, this.oracleData)
 
         // Two different ways to approve the lendingPair
         await setMasterContractApproval(this.bentoBox, this.alice, this.alice, this.alicePrivateKey, this.lendingPair.address, true)

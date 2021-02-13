@@ -1,17 +1,20 @@
 const { expect } = require("chai")
-const { getBigNumber, prepare, ADDRESS_ZERO } = require("../utilities")
+const { getBigNumber, createFixture, ADDRESS_ZERO } = require("../utilities")
+
+let cmd, fixture
 
 describe("ChainLink Oracle", function () {
     before(async function () {
-        await prepare(this, ["ChainlinkOracle"])
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("oracle", "ChainlinkOracle")
+            const SUSHI_ETH = "0xe572CeF69f43c2E488b33924AF04BDacE19079cf"
+            this.oracleData = await this.oracle.getDataParameter(SUSHI_ETH, ADDRESS_ZERO, getBigNumber(1))
+            this.oracleData2 = await this.oracle.getDataParameter(ADDRESS_ZERO, SUSHI_ETH, 1)
+        })
     })
 
     beforeEach(async function () {
-        this.oracle = await this.ChainlinkOracle.deploy()
-        await this.oracle.deployed()
-        const SUSHI_ETH = "0xe572CeF69f43c2E488b33924AF04BDacE19079cf"
-        this.oracleData = await this.oracle.getDataParameter(SUSHI_ETH, ADDRESS_ZERO, getBigNumber(1))
-        this.oracleData2 = await this.oracle.getDataParameter(ADDRESS_ZERO, SUSHI_ETH, 1)
+        cmd = await fixture()
     })
 
     it("Assigns name to Chainlink", async function () {

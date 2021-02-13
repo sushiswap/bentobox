@@ -1,19 +1,19 @@
 const assert = require("assert")
-const { getBigNumber, prepare, setMasterContractApproval, deploymentsFixture } = require("./utilities")
+const { getBigNumber, setMasterContractApproval, createFixture } = require("./utilities")
+
+let cmd, fixture
 
 describe("HelloWorld", function () {
     const APPROVAL_AMOUNT = 1000
 
     before(async function () {
-        await prepare(this, ["HelloWorld", "ReturnFalseERC20Mock"])
-    })
-
-    it("Setup", async function () {
-        await deploymentsFixture(this, async (cmd) => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.addToken("tokenA", "Token A", "A", 18, this.ReturnFalseERC20Mock)
+            await cmd.deploy("helloWorld", "HelloWorld", this.bentoBox.address, this.tokenA.address)
         })
-
-        await this.HelloWorld.new("helloWorld", this.bentoBox.address, this.tokenA.address)
+        cmd = await fixture()
     })
 
     it("should reject deposit: no token- nor master contract approval", async function () {

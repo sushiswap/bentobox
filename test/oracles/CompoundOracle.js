@@ -1,15 +1,18 @@
 const { expect } = require("chai")
-const { getBigNumber, prepare, ADDRESS_ZERO } = require("../utilities")
+const { getBigNumber, createFixture, ADDRESS_ZERO } = require("../utilities")
+
+let cmd, fixture
 
 describe("Compound Oracle", function () {
     before(async function () {
-        await prepare(this, ["CompoundOracle"])
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("oracle", "CompoundOracle")
+            this.oracleData = await this.oracle.getDataParameter("DAI", "ETH", getBigNumber(1))
+        })
     })
 
     beforeEach(async function () {
-        this.oracle = await this.CompoundOracle.deploy()
-        await this.oracle.deployed()
-        this.oracleData = await this.oracle.getDataParameter("DAI", "ETH", getBigNumber(1))
+        cmd = await fixture()
     })
 
     it("Assigns name to Compound", async function () {

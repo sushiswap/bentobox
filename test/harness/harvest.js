@@ -1,6 +1,6 @@
 const assert = require("assert")
 const { ethers } = require("hardhat")
-const { getBigNumber, advanceTime, prepare, setMasterContractApproval, deploymentsFixture } = require("../utilities")
+const { getBigNumber, advanceTime, setMasterContractApproval, createFixture } = require("../utilities")
 
 async function depositHelper(bentoBox, token, wallet, amount) {
     await bentoBox.deposit(token.address, wallet.address, wallet.address, getBigNumber(amount, await token.decimals()), 0)
@@ -10,22 +10,21 @@ async function withdrawHelper(bentoBox, token, wallet, amount) {
     await bentoBox.withdraw(token.address, wallet.address, wallet.address, getBigNumber(amount, await token.decimals()), 0)
 }
 
-describe("Harvest with DummyStrategyMock", function () {
+describe("DummyStrategyMock", function () {
     const APPROVAL_AMOUNT = 1000000
     const DEPOSIT_AMOUNT = 1000
     const HARVEST_MAX_AMOUNT = 3
 
     before(async function () {
-        await prepare(this, ["ReturnFalseERC20Mock", "DummyStrategyMock"])
-    })
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 
-    it("Setup", async function () {
-        await deploymentsFixture(this, async (cmd) => {
             await cmd.addToken("tokenA", "Token A", "A", 18, this.ReturnFalseERC20Mock)
+            await cmd.deploy("dummyStrategy", "DummyStrategyMock", this.bentoBox.address, this.tokenA.address)
+            await this.tokenA.approve(this.bentoBox.address, getBigNumber(APPROVAL_AMOUNT, await this.tokenA.decimals()))
         })
-
-        await this.DummyStrategyMock.new("dummyStrategy", this.bentoBox.address, this.tokenA.address)
-        await this.tokenA.approve(this.bentoBox.address, getBigNumber(APPROVAL_AMOUNT, await this.tokenA.decimals()))
+        cmd = await fixture()
     })
 
     it("should allow adding of balances to the BentoBox", async function () {
@@ -74,7 +73,7 @@ describe("Harvest with DummyStrategyMock", function () {
         await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
-    it("harvest profit", async function () {
+    it("harvest profit 2", async function () {
         await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
@@ -94,7 +93,7 @@ describe("Harvest with DummyStrategyMock", function () {
         await this.bentoBox.setStrategyTargetPercentage(this.tokenA.address, 0)
     })
 
-    it("harvest", async function () {
+    it("harvest 2", async function () {
         await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
@@ -105,7 +104,7 @@ describe("Harvest with DummyStrategyMock", function () {
         await this.bentoBox.setStrategy(this.tokenA.address, this.dummyStrategy.address)
     })
 
-    it("harvest", async function () {
+    it("harvest 3", async function () {
         await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 
@@ -113,7 +112,7 @@ describe("Harvest with DummyStrategyMock", function () {
         await withdrawHelper(this.bentoBox, this.tokenA, this.alice, DEPOSIT_AMOUNT)
     })
 
-    it("harvest", async function () {
+    it("harvest 4", async function () {
         await this.bentoBox.harvest(this.tokenA.address, true, HARVEST_MAX_AMOUNT)
     })
 

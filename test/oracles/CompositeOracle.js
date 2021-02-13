@@ -1,82 +1,72 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
-const { getBigNumber, roundBN, advanceTime, prepare, deploy } = require("../utilities")
+const { getBigNumber, roundBN, advanceTime, createFixture } = require("../utilities")
 
 describe("CompositeOracle", function () {
     before(async function () {
-        await prepare(this, [
-            "WETH9Mock",
-            "BentoBoxMock",
-            "UniswapV2Pair",
-            "UniswapV2Factory",
-            "ReturnFalseERC20Mock",
-            "SimpleSLPTWAP0Oracle",
-            "SimpleSLPTWAP1Oracle",
-            "CompositeOracle",
-        ])
-
         this.sushiAmount = getBigNumber(400)
         this.ethAmount = getBigNumber(1)
         this.daiAmount = getBigNumber(500)
+
+        fixture = await createFixture(deployments, this, async (cmd) => {
+            await cmd.deploy("weth9", "WETH9Mock")
+            await cmd.deploy("sushiToken", "ReturnFalseERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
+            await cmd.deploy("ethToken", "ReturnFalseERC20Mock", "WETH", "ETH", 18, getBigNumber("10000000"))
+            await cmd.deploy("daiToken", "ReturnFalseERC20Mock", "DAI", "DAI", 18, getBigNumber("10000000"))
+            await cmd.deploy("factory", "UniswapV2Factory", this.alice.address)
+            await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
+
+            let createPairTx = await this.factory.createPair(this.sushiToken.address, this.ethToken.address)
+
+            const pairSushiEth = (await createPairTx.wait()).events[0].args.pair
+
+            await cmd.getContract("UniswapV2Pair")
+            this.pairSushiEth = await this.UniswapV2Pair.attach(pairSushiEth)
+
+            await this.sushiToken.transfer(this.pairSushiEth.address, this.sushiAmount)
+            await this.ethToken.transfer(this.pairSushiEth.address, this.ethAmount)
+
+            await this.pairSushiEth.mint(this.alice.address)
+
+            if (this.ethToken.address == (await this.pairSushiEth.token0())) {
+                await cmd.deploy("oracleSushiEth", "SimpleSLPTWAP0Oracle")
+            } else {
+                await cmd.deploy("oracleSushiEth", "SimpleSLPTWAP1Oracle")
+            }
+            this.oracleDataA = await this.oracleSushiEth.getDataParameter(this.pairSushiEth.address)
+
+            createPairTx = await this.factory.createPair(this.ethToken.address, this.daiToken.address)
+
+            const pairDaiEth = (await createPairTx.wait()).events[0].args.pair
+
+            this.pairDaiEth = await this.UniswapV2Pair.attach(pairDaiEth)
+
+            await this.daiToken.transfer(this.pairDaiEth.address, this.daiAmount)
+            await this.ethToken.transfer(this.pairDaiEth.address, this.ethAmount)
+
+            await this.pairDaiEth.mint(this.alice.address)
+
+            if (this.daiToken.address == (await this.pairDaiEth.token0())) {
+                await cmd.deploy("oracleDaiEth", "SimpleSLPTWAP0Oracle")
+            } else {
+                await cmd.deploy("oracleDaiEth", "SimpleSLPTWAP1Oracle")
+            }
+            this.oracleDataB = await this.oracleDaiEth.getDataParameter(this.pairDaiEth.address)
+            await cmd.deploy("compositeOracle", "CompositeOracle")
+
+            this.compositeOracleData = await this.compositeOracle.getDataParameter(
+                this.oracleSushiEth.address,
+                this.oracleDaiEth.address,
+                this.oracleDataA,
+                this.oracleDataB
+            )
+        })
     })
 
     beforeEach(async function () {
-        await deploy(this, [
-            ["weth9", this.WETH9Mock],
-            ["sushiToken", this.ReturnFalseERC20Mock, ["SUSHI", "SUSHI", 18, getBigNumber("10000000")]],
-            ["ethToken", this.ReturnFalseERC20Mock, ["WETH", "ETH", 18, getBigNumber("10000000")]],
-            ["daiToken", this.ReturnFalseERC20Mock, ["DAI", "DAI", 18, getBigNumber("10000000")]],
-            ["factory", this.UniswapV2Factory, [this.alice.address]],
-        ])
-        await deploy(this, [["bentoBox", this.BentoBoxMock, [this.weth9.address]]])
-
-        let createPairTx = await this.factory.createPair(this.sushiToken.address, this.ethToken.address)
-
-        const pairSushiEth = (await createPairTx.wait()).events[0].args.pair
-
-        this.pairSushiEth = await this.UniswapV2Pair.attach(pairSushiEth)
-
-        await this.sushiToken.transfer(this.pairSushiEth.address, this.sushiAmount)
-        await this.ethToken.transfer(this.pairSushiEth.address, this.ethAmount)
-
-        await this.pairSushiEth.mint(this.alice.address)
-
-        if (this.ethToken.address == (await this.pairSushiEth.token0())) {
-            this.oracleSushiEth = await this.SimpleSLPTWAP0Oracle.deploy()
-        } else {
-            this.oracleSushiEth = await this.SimpleSLPTWAP1Oracle.deploy()
-        }
-        await this.oracleSushiEth.deployed()
-        this.oracleDataA = await this.oracleSushiEth.getDataParameter(this.pairSushiEth.address)
-
-        createPairTx = await this.factory.createPair(this.ethToken.address, this.daiToken.address)
-
-        const pairDaiEth = (await createPairTx.wait()).events[0].args.pair
-
-        this.pairDaiEth = await this.UniswapV2Pair.attach(pairDaiEth)
-
-        await this.daiToken.transfer(this.pairDaiEth.address, this.daiAmount)
-        await this.ethToken.transfer(this.pairDaiEth.address, this.ethAmount)
-
-        await this.pairDaiEth.mint(this.alice.address)
-
-        if (this.daiToken.address == (await this.pairDaiEth.token0())) {
-            this.oracleDaiEth = await this.SimpleSLPTWAP0Oracle.deploy()
-        } else {
-            this.oracleDaiEth = await this.SimpleSLPTWAP1Oracle.deploy()
-        }
-        await this.oracleDaiEth.deployed()
-        this.oracleDataB = await this.oracleDaiEth.getDataParameter(this.pairDaiEth.address)
-        this.compositeOracle = await this.CompositeOracle.deploy()
-        await this.compositeOracle.deployed()
-
-        this.compositeOracleData = await this.compositeOracle.getDataParameter(
-            this.oracleSushiEth.address,
-            this.oracleDaiEth.address,
-            this.oracleDataA,
-            this.oracleDataB
-        )
+        cmd = await fixture()
     })
+
     describe("peek", function () {
         it("should return false on first peek", async function () {
             expect((await this.compositeOracle.peek(this.compositeOracleData))[1]).to.equal("0")
