@@ -251,7 +251,7 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
             ) >=
             // Moved exchangeRate here instead of dividing the other side to preserve more precision
             userBorrowPart[user].mul(_totalBorrow.elastic).mul(_exchangeRate) / _totalBorrow.base;
-    } 
+    }
 
     /// @notice Checks if the user is solvent.
     /// Has an option `open` to check if the user is solvent in an open/closed liquidation case.
