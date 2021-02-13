@@ -41,7 +41,7 @@ async function debugInfo(thisObject) {
     console.log()
     console.log("Alice CollateralShare in Pair", (await thisObject.pairHelper.contract.userCollateralShare(thisObject.alice.address)).toString())
     console.log("Alice BorrowPart in Pair", (await thisObject.pairHelper.contract.userBorrowPart(thisObject.alice.address)).toString())
-    console.log("Alice Solvent", (await thisObject.pairHelper.contract.isSolvent(thisObject.alice.address, false, 0)).toString())
+    console.log("Alice Solvent", (await thisObject.pairHelper.contract.isSolvent(thisObject.alice.address, false)).toString())
 }
 
 describe("Lending Pair", function () {
@@ -445,7 +445,7 @@ describe("Lending Pair", function () {
                 cmd.do(this.pairHelper.contract.borrow, this.alice.address, sansBorrowFee(getBigNumber(75, 8))),
                 cmd.do(this.pairHelper.contract.accrue),
             ])
-            expect(await this.pairHelper.contract.isSolvent(this.alice.address, false, 0)).to.be.false
+            expect(await this.pairHelper.contract.isSolvent(this.alice.address, false)).to.be.false
         })
 
         it("should not report open insolvency due to interest", async function () {
@@ -457,7 +457,7 @@ describe("Lending Pair", function () {
                 cmd.do(this.pairHelper.contract.borrow, this.alice.address, sansBorrowFee(getBigNumber(75, 8))),
                 cmd.do(this.pairHelper.contract.accrue),
             ])
-            expect(await this.pairHelper.contract.isSolvent(this.alice.address, true, 0)).to.be.true
+            expect(await this.pairHelper.contract.isSolvent(this.alice.address, true)).to.be.true
         })
 
         it("should report open insolvency after oracle rate is updated", async function () {
@@ -471,7 +471,7 @@ describe("Lending Pair", function () {
                 cmd.do(this.oracle.set, "11000000000000000000000000000"),
                 cmd.do(this.pairHelper.contract.updateExchangeRate),
             ])
-            expect(await this.pairHelper.contract.isSolvent(this.alice.address, true, 0)).to.be.false
+            expect(await this.pairHelper.contract.isSolvent(this.alice.address, true)).to.be.false
         })
     })
 
@@ -698,13 +698,6 @@ describe("Lending Pair", function () {
     })
 
     describe("Liquidate", function () {
-        it("liquidate should revert with a failing oracle", async function () {
-            await this.oracle.setSuccess(false)
-            await expect(
-                this.pairHelper.contract.liquidate([], [], this.alice.address, "0x0000000000000000000000000000000000000000", true)
-            ).to.be.revertedWith("LendingPair: oracle error")
-        })
-
         it("should not allow open liquidate yet", async function () {
             await this.pairHelper.run((cmd) => [
                 cmd.as(this.bob).approveAsset(getBigNumber(310, 8)),
