@@ -74,7 +74,7 @@ module.exports = {
   docgen: {
     path: './documentation',
     clear: false,
-    runOnCompile: false,
+    runOnCompile: true,
   },
   defaultNetwork: "hardhat",
   etherscan: {
