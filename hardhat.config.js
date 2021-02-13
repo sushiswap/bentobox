@@ -72,7 +72,7 @@ module.exports = {
     // except: []
   },
   docgen: {
-    path: './documentation',
+    path: './docs',
     clear: false,
     runOnCompile: true,
   },
