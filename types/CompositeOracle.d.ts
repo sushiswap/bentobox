@@ -126,16 +126,12 @@ export class CompositeOracle extends Contract {
     peek(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { success: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     "peek(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { success: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     symbol(data: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
@@ -175,12 +171,12 @@ export class CompositeOracle extends Contract {
   peek(
     data: BytesLike,
     overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber] & { success: boolean; amountOut: BigNumber }>;
+  ): Promise<[boolean, BigNumber]>;
 
   "peek(bytes)"(
     data: BytesLike,
     overrides?: CallOverrides
-  ): Promise<[boolean, BigNumber] & { success: boolean; amountOut: BigNumber }>;
+  ): Promise<[boolean, BigNumber]>;
 
   symbol(data: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -190,16 +186,12 @@ export class CompositeOracle extends Contract {
     get(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { status: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     "get(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { status: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     getDataParameter(
       oracle1: string,
@@ -224,16 +216,12 @@ export class CompositeOracle extends Contract {
     peek(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { success: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     "peek(bytes)"(
       data: BytesLike,
       overrides?: CallOverrides
-    ): Promise<
-      [boolean, BigNumber] & { success: boolean; amountOut: BigNumber }
-    >;
+    ): Promise<[boolean, BigNumber]>;
 
     symbol(data: BytesLike, overrides?: CallOverrides): Promise<string>;
 

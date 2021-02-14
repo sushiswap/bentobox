@@ -8,10 +8,19 @@ contract OracleMock is IOracle {
     using BoringMath for uint256;
 
     uint256 public rate;
+    bool public success;
+
+    constructor() public {
+        success = true;
+    }
 
     function set(uint256 rate_) public {
         // The rate can be updated.
         rate = rate_;
+    }
+
+    function setSuccess(bool val) public {
+        success = val;
     }
 
     function getDataParameter() public pure returns (bytes memory) {
@@ -20,12 +29,12 @@ contract OracleMock is IOracle {
 
     // Get the latest exchange rate
     function get(bytes calldata) public override returns (bool, uint256) {
-        return (true, rate);
+        return (success, rate);
     }
 
     // Check the last exchange rate without any state changes
     function peek(bytes calldata) public view override returns (bool, uint256) {
-        return (true, rate);
+        return (success, rate);
     }
 
     function name(bytes calldata) public view override returns (string memory) {

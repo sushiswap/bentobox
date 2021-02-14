@@ -52,6 +52,16 @@ task("accounts", "Prints the list of accounts", async (_, { config }) => {
     }
 })
 
+subtask("compile:solidity:get-compilation-job-for-file", async (_, { config }) => {
+    const compilationJob = await runSuper()
+
+    if (process.env.COVERAGE) {
+        Object.assign(compilationJob.solidityConfig.settings, config.solidityCoverageOverrides)
+    }
+
+    return compilationJob
+})
+
 module.exports = {
     abiExporter: {
         path: "./abi",
@@ -86,10 +96,16 @@ module.exports = {
         },
     },
     networks: {
-        hardhat: {
-            chainId: 31337,
-            test_accounts,
-        },
+        hardhat: Object.assign(
+            {
+                blockGasLimit: 10_000_000,
+                chainId: 31337,
+                test_accounts,
+            },
+            process.env.ALCHEMY_API_KEY
+                ? { forking: { url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, blockNumber: 11829739 } }
+                : {}
+        ),
         mainnet: {
             url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
             accounts,
@@ -280,7 +296,27 @@ module.exports = {
             optimizer: {
                 enabled: true,
                 runs: 256,
+                details: {
+                    peephole: true,
+                    jumpdestRemover: true,
+                    orderLiterals: false,
+                    deduplicate: true,
+                    cse: true,
+                    constantOptimizer: true,
+                    yul: true,
+                    yulDetails: {
+                        stackAllocation: true,
+                    },
+                },
             },
+            metadata: {
+                bytecodeHash: "none",
+            },
+        },
+    },
+    solidityCoverageOverrides: {
+        optimizer: {
+            enabled: false,
         },
     },
     spdxLicenseIdentifier: {

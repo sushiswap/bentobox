@@ -29,6 +29,8 @@ interface OracleMockInterface extends ethers.utils.Interface {
     "peek(bytes)": FunctionFragment;
     "rate()": FunctionFragment;
     "set(uint256)": FunctionFragment;
+    "setSuccess(bool)": FunctionFragment;
+    "success()": FunctionFragment;
     "symbol(bytes)": FunctionFragment;
   };
 
@@ -41,6 +43,8 @@ interface OracleMockInterface extends ethers.utils.Interface {
   encodeFunctionData(functionFragment: "peek", values: [BytesLike]): string;
   encodeFunctionData(functionFragment: "rate", values?: undefined): string;
   encodeFunctionData(functionFragment: "set", values: [BigNumberish]): string;
+  encodeFunctionData(functionFragment: "setSuccess", values: [boolean]): string;
+  encodeFunctionData(functionFragment: "success", values?: undefined): string;
   encodeFunctionData(functionFragment: "symbol", values: [BytesLike]): string;
 
   decodeFunctionResult(functionFragment: "get", data: BytesLike): Result;
@@ -52,6 +56,8 @@ interface OracleMockInterface extends ethers.utils.Interface {
   decodeFunctionResult(functionFragment: "peek", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "rate", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "set", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "setSuccess", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "success", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
 
   events: {};
@@ -141,6 +147,20 @@ export class OracleMock extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
+    setSuccess(
+      val: boolean,
+      overrides?: Overrides
+    ): Promise<ContractTransaction>;
+
+    "setSuccess(bool)"(
+      val: boolean,
+      overrides?: Overrides
+    ): Promise<ContractTransaction>;
+
+    success(overrides?: CallOverrides): Promise<[boolean]>;
+
+    "success()"(overrides?: CallOverrides): Promise<[boolean]>;
+
     symbol(arg0: BytesLike, overrides?: CallOverrides): Promise<[string]>;
 
     "symbol(bytes)"(
@@ -184,6 +204,17 @@ export class OracleMock extends Contract {
     rate_: BigNumberish,
     overrides?: Overrides
   ): Promise<ContractTransaction>;
+
+  setSuccess(val: boolean, overrides?: Overrides): Promise<ContractTransaction>;
+
+  "setSuccess(bool)"(
+    val: boolean,
+    overrides?: Overrides
+  ): Promise<ContractTransaction>;
+
+  success(overrides?: CallOverrides): Promise<boolean>;
+
+  "success()"(overrides?: CallOverrides): Promise<boolean>;
 
   symbol(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
@@ -229,6 +260,14 @@ export class OracleMock extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
+    setSuccess(val: boolean, overrides?: CallOverrides): Promise<void>;
+
+    "setSuccess(bool)"(val: boolean, overrides?: CallOverrides): Promise<void>;
+
+    success(overrides?: CallOverrides): Promise<boolean>;
+
+    "success()"(overrides?: CallOverrides): Promise<boolean>;
+
     symbol(arg0: BytesLike, overrides?: CallOverrides): Promise<string>;
 
     "symbol(bytes)"(
@@ -272,6 +311,14 @@ export class OracleMock extends Contract {
       rate_: BigNumberish,
       overrides?: Overrides
     ): Promise<BigNumber>;
+
+    setSuccess(val: boolean, overrides?: Overrides): Promise<BigNumber>;
+
+    "setSuccess(bool)"(val: boolean, overrides?: Overrides): Promise<BigNumber>;
+
+    success(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "success()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     symbol(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
 
@@ -328,6 +375,20 @@ export class OracleMock extends Contract {
       rate_: BigNumberish,
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
+
+    setSuccess(
+      val: boolean,
+      overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    "setSuccess(bool)"(
+      val: boolean,
+      overrides?: Overrides
+    ): Promise<PopulatedTransaction>;
+
+    success(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "success()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     symbol(
       arg0: BytesLike,

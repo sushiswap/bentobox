@@ -49,7 +49,7 @@ yarn console
 ## Coverage
 
 ```sh
-yarn test:coverage
+yarn coverage
 ```
 
 <https://hardhat.org/plugins/solidity-coverage.html#tasks>
@@ -57,7 +57,7 @@ yarn test:coverage
 ## Gas Usage
 
 ```sh
-yarn test:gas
+yarn gas
 ```
 
 <https://github.com/cgewecke/hardhat-gas-reporter>

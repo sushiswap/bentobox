@@ -25,7 +25,11 @@ describe("ChainLink Oracle", function () {
         expect(await this.oracle.symbol(this.oracleData)).to.equal("LINK")
     })
 
-    /*
+    if (!hre.network.config.forking) {
+        console.trace("*** chain forking not available, skipping tests ***")
+        return
+    }
+
     it("should return SUSHI Price on rate request", async function () {
         await this.oracle.get(this.oracleData)
         const [success, rate] = await this.oracle.peek(this.oracleData)
@@ -39,5 +43,4 @@ describe("ChainLink Oracle", function () {
         expect(success).to.be.true
         expect(rate).to.be.equal("120137292898324204901")
     })
-    */
 })

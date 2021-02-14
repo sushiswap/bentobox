@@ -4,9 +4,9 @@ module.exports = async function (hre) {
   const { deployer, funder } = await hre.ethers.getNamedSigners()
   const chainId = await hre.getChainId()
   if (chainId == 31337) { return }
-  if (!weth(chainId)) { 
+  if (!weth(chainId)) {
     console.log("No WETH address for chain", chainId)
-    return; 
+    return;
   }
 
   const gasPrice = await funder.provider.getGasPrice()
@@ -22,7 +22,7 @@ module.exports = async function (hre) {
   let tx = await funder.sendTransaction({
     to: deployer.address,
     value: finalGasPrice.mul(gasLimit + 190000),
-    gasPrice: gasPrice.mul(multiplier) 
+    gasPrice: gasPrice.mul(multiplier)
   });
   await tx.wait();
 
@@ -33,6 +33,6 @@ module.exports = async function (hre) {
     log: true,
     deterministicDeployment: false,
     gasLimit: gasLimit,
-    gasPrice: finalGasPrice   
+    gasPrice: finalGasPrice
   })
 }

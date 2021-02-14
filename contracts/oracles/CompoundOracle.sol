@@ -52,21 +52,25 @@ contract CompoundOracle is IOracle {
     }
 
     // Get the latest exchange rate
+    /// @inheritdoc IOracle
     function get(bytes calldata data) public override returns (bool, uint256) {
         (string memory collateralSymbol, string memory assetSymbol, uint256 division) = abi.decode(data, (string, string, uint256));
         return (true, uint256(1e36).mul(_getPrice(assetSymbol)) / _getPrice(collateralSymbol) / division);
     }
 
     // Check the last exchange rate without any state changes
+    /// @inheritdoc IOracle
     function peek(bytes calldata data) public view override returns (bool, uint256) {
         (string memory collateralSymbol, string memory assetSymbol, uint256 division) = abi.decode(data, (string, string, uint256));
         return (true, uint256(1e36).mul(_peekPrice(assetSymbol)) / _peekPrice(collateralSymbol) / division);
     }
 
+    /// @inheritdoc IOracle
     function name(bytes calldata) public view override returns (string memory) {
         return "Compound";
     }
 
+    /// @inheritdoc IOracle
     function symbol(bytes calldata) public view override returns (string memory) {
         return "COMP";
     }

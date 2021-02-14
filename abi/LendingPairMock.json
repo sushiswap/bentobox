@@ -1201,6 +1201,11 @@
         "internalType": "bool",
         "name": "success",
         "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "rate",
+        "type": "uint256"
       }
     ],
     "stateMutability": "nonpayable",

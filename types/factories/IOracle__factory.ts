@@ -29,12 +29,12 @@ const _abi = [
     outputs: [
       {
         internalType: "bool",
-        name: "",
+        name: "success",
         type: "bool",
       },
       {
         internalType: "uint256",
-        name: "",
+        name: "rate",
         type: "uint256",
       },
     ],
@@ -72,12 +72,12 @@ const _abi = [
     outputs: [
       {
         internalType: "bool",
-        name: "",
+        name: "success",
         type: "bool",
       },
       {
         internalType: "uint256",
-        name: "",
+        name: "rate",
         type: "uint256",
       },
     ],

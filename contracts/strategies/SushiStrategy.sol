@@ -26,12 +26,14 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     }
 
     // Send the assets to the Strategy and call skim to invest them
+    /// @inheritdoc IStrategy
     function skim(uint256 amount) external override {
         sushi.approve(address(bar), amount);
         bar.enter(amount);
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller
+    /// @inheritdoc IStrategy
     function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
         uint256 share = bar.balanceOf(address(this));
         uint256 totalShares = bar.totalSupply();
@@ -44,6 +46,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
+    /// @inheritdoc IStrategy
     function withdraw(uint256 amount) external override onlyOwner returns (uint256 actualAmount) {
         uint256 totalShares = bar.totalSupply();
         uint256 totalSushi = sushi.balanceOf(address(bar));
@@ -58,6 +61,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     }
 
     // Withdraw all assets in the safest way possible. This shouldn't fail.
+    /// @inheritdoc IStrategy
     function exit(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
