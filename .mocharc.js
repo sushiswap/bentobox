@@ -1,4 +1,4 @@
 module.exports = {
-  require: "hardhat/register",
-  timeout: 20000,
-};
+    require: "hardhat/register",
+    timeout: 20000,
+}
