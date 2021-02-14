@@ -3,11 +3,12 @@ const { weth, getBigNumber } = require("../test/utilities")
 module.exports = async function (hre) {
   const { deployer, funder } = await hre.ethers.getNamedSigners()
   const chainId = await hre.getChainId()
-  if (chainId == 31337) { return }
+  if (chainId == "31337" || hre.network.config.forking) { return }
   if (!weth(chainId)) {
     console.log("No WETH address for chain", chainId)
     return;
   }
+  console.log(chainId, hre.network)
 
   const gasPrice = await funder.provider.getGasPrice()
   let multiplier = hre.network.tags && hre.network.tags.staging ? 2 : 1
