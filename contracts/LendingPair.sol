@@ -230,7 +230,11 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
 
     /// @notice Concrete implementation of `isSolvent`. Includes a third parameter to allow caching `exchangeRate`.
     /// @param _exchangeRate The exchange rate. Used to cache the `exchangeRate` between calls.
-    function _isSolvent(address user, bool open, uint256 _exchangeRate) internal view returns (bool) {
+    function _isSolvent(
+        address user,
+        bool open,
+        uint256 _exchangeRate
+    ) internal view returns (bool) {
         // accrue must have already been called!
         if (userBorrowPart[user] == 0) return true;
         if (totalCollateralShare == 0) return false;
@@ -271,14 +275,17 @@ contract LendingPair is ERC20, BoringOwnable, IMasterContract {
 
     /// @notice Gets the exchange rate. I.e how much collateral to buy 1e18 asset.
     /// This function is supposed to be invoked if needed because Oracle queries can be expensive.
-    /// @return success True if `exchangeRate` was updated.
+    /// @return updated True if `exchangeRate` was updated.
     /// @return rate The new exchange rate.
-    function updateExchangeRate() public returns (bool success, uint256 rate) {
-        (success, rate) = oracle.get(oracleData);
+    function updateExchangeRate() public returns (bool updated, uint256 rate) {
+        (updated, rate) = oracle.get(oracleData);
 
-        if (success) {
+        if (updated) {
             exchangeRate = rate;
             emit LogExchangeRate(rate);
+        } else {
+            // Return the old rate if fetching wasn't successful
+            rate = exchangeRate;
         }
     }
 

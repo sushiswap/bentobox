@@ -10,7 +10,7 @@ module.exports = async function (hre) {
   }
 
   const gasPrice = await funder.provider.getGasPrice()
-  let multiplier = hre.network.tags.staging ? 2 : 1
+  let multiplier = hre.network.tags && hre.network.tags.staging ? 2 : 1
   let finalGasPrice = gasPrice.mul(multiplier)
   const gasLimit = 5000000
   if (chainId == "88" || chainId == "89") {

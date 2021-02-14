@@ -9,6 +9,7 @@ module.exports = {
         useTabs: false,
         singleQuote: false,
         explicitTypes: "always",
+        endOfLine: "lf",
       },
     },
     {
@@ -18,6 +19,7 @@ module.exports = {
         semi: false,
         trailingComma: "es5",
         tabWidth: 4,
+        endOfLine: "lf",
       },
     },
   ],
