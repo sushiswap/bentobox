@@ -418,14 +418,14 @@ export class MasterContractManager extends Contract {
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<void>;
 
     "deploy(address,bytes,bool)"(
       masterContract: string,
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<void>;
 
     masterContractApproved(
       arg0: string,
