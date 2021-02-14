@@ -296,21 +296,6 @@ module.exports = {
             optimizer: {
                 enabled: true,
                 runs: 256,
-                details: {
-                    peephole: true,
-                    jumpdestRemover: true,
-                    orderLiterals: false,
-                    deduplicate: true,
-                    cse: true,
-                    constantOptimizer: true,
-                    yul: true,
-                    yulDetails: {
-                        stackAllocation: true,
-                    },
-                },
-            },
-            metadata: {
-                bytecodeHash: "none",
             },
         },
     },
