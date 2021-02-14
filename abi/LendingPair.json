@@ -1179,7 +1179,7 @@
     "outputs": [
       {
         "internalType": "bool",
-        "name": "success",
+        "name": "updated",
         "type": "bool"
       },
       {

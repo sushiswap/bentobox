@@ -1713,11 +1713,11 @@ export class LendingPairMock extends Contract {
 
     updateExchangeRate(
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
+    ): Promise<[boolean, BigNumber] & { updated: boolean; rate: BigNumber }>;
 
     "updateExchangeRate()"(
       overrides?: CallOverrides
-    ): Promise<[boolean, BigNumber] & { success: boolean; rate: BigNumber }>;
+    ): Promise<[boolean, BigNumber] & { updated: boolean; rate: BigNumber }>;
 
     userBorrowPart(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
