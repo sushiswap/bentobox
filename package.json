@@ -121,6 +121,6 @@
         "typechain-target-ethers-v5": "^5.0.1"
     },
     "dependencies": {
-        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#39fdd3b"
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#0257ecf"
     }
 }
