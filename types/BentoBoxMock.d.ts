@@ -1191,14 +1191,14 @@ export class BentoBoxMock extends Contract {
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<string>;
 
     "deploy(address,bytes,bool)"(
       masterContract: string,
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<void>;
+    ): Promise<string>;
 
     deposit(
       token_: string,
