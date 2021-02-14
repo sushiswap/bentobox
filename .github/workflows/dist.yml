@@ -40,7 +40,7 @@ jobs:
     - name: yarn build
       run: yarn build
 
-     - name: Commit and push if changed
+    - name: Commit and push if changed
       if: success()
       run: |-
         git config --global user.email 'bot@github.action'
