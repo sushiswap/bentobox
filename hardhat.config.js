@@ -63,13 +63,16 @@ subtask("compile:solidity:get-compilation-job-for-file", async (_, { config }) =
 })
 
 module.exports = {
-    abiExporter: {
+    abiExporter: Object.assign(
+      {},
+      process.env.COVERAGE ? {} : {
         path: "./abi",
         clear: true,
         flat: true,
         // only: [],
         // except: []
-    },
+      }
+    ),
     docgen: {
         path: "./documentation",
         clear: false,
@@ -312,10 +315,14 @@ module.exports = {
         project: process.env.TENDERLY_PROJECT,
         username: process.env.TENDERLY_USERNAME,
     },
-    typechain: {
+    typechain: Object.assign(
+      {},
+      process.env.COVERAGE ? {} :
+      {
         outDir: "types",
         target: "ethers-v5",
-    },
+      }
+    ),
     watcher: {
         compile: {
             tasks: ["compile"],
