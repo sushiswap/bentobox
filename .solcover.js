@@ -3,6 +3,7 @@ module.exports = {
     testCommand: "npm test",
     compileCommand: "npm run compile",
     skipFiles: [
+        "cache/",
         "flat/",
         "libraries/",
         "mocks/",
