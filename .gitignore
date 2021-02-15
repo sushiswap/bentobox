@@ -11,4 +11,6 @@ coverage.json
 scripts/make_abi.js
 .env
 yarn-error.log
-.last_conf/*
+.last_confs/*
+.certora_config/*
+.certora_*.json
