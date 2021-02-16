@@ -59,11 +59,8 @@ jobs:
       - name: Verify with Certora - rebase
         run: |
           spec/scripts/runRebase.sh
-<<<<<<< HEAD
           spec/scripts/runBentobox.sh
           spec/scripts/runStrategy.sh
           spec/scripts/runSushiStrategy.sh
-=======
->>>>>>> 06c222a9ed84c5b08e13747725c6546b10a41aeb
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
