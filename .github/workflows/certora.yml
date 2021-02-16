@@ -56,65 +56,8 @@ jobs:
           chmod +x spec/scripts/*.sh
           ./spec/scripts/applyHarnesses.sh
 
-      - name: Verify with Certora - iTokens
+      - name: Verify with Certora - rebase
         run: |
           spec/scripts/runRebase.sh
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
-  verify_other:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python 3.6
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.6
-      - uses: actions/setup-java@v1
-        with:
-          java-version: "11"
-          java-package: jre
-
-      - name: Install dependencies
-        run: |
-          wget https://github.com/ethereum/solidity/releases/download/v0.6.12/solc-static-linux
-          chmod +x solc-static-linux
-          sudo mv solc-static-linux /usr/local/bin/solc          
-          pip3 install certora-cli
-
-      - name: Build
-        run: |
-          npm install
-          chmod +x spec/scripts/*.sh
-
-      - name: Verify with Certora - Privileged operations Controller
-        run: |
-          spec/scripts/privilegedController.sh "Controller Privileged operations check"
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
-      - name: Verify with Certora - Privileged operations iToken
-        run: |
-          spec/scripts/privilegediTokens.sh "iToken Privileged operations check"
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
-      - name: Verify with Certora - Controller
-        run: |
-          spec/scripts/controller.sh "Controller CI run"
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}
-
-      - name: Verify with Certora - reentrancy
-        run: |
-          spec/scripts/reentrancy.sh "reentrancy guard check CI run"
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}    
-          
-      - name: Verify with Certora - flashloan
-        run: |
-          spec/scripts/flashloan.sh "flashloan check CI run"
-        env:
-          CERTORAKEY: ${{ secrets.CERTORAKEY }}    
