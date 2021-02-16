@@ -285,7 +285,7 @@ module.exports = {
     },
     paths: {
         artifacts: "artifacts",
-        cache: "cache",
+        cache: ".cache",
         deploy: "deploy",
         deployments: "deployments",
         imports: "imports",
