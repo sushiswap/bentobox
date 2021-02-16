@@ -1,1 +1,1 @@
-certoraRun spec/harness/RebaseWrapper.sol --verify RebaseWrapper:spec/rebase.spec --solc solc6.12 --cloud --msg "rebase"
+certoraRun spec/harness/RebaseWrapper.sol --verify RebaseWrapper:spec/rebase.spec --msg "rebase"
