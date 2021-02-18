@@ -2,7 +2,7 @@ name: Certora
 
 on:
   push:
-    branches: [master, certora/spec]
+    branches: [master, certora/BentoBoxSpec]
   pull_request:
     branches: [master]
 
@@ -56,7 +56,7 @@ jobs:
           chmod +x spec/scripts/*.sh
           ./spec/scripts/applyHarnesses.sh
 
-      - name: Verify with Certora - rebase
+      - name: Verify with Certora
         run: |
           spec/scripts/runRebase.sh
           spec/scripts/runBentobox.sh
