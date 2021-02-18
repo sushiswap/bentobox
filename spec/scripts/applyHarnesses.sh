@@ -4,6 +4,9 @@ sed -i 's/safeT/t/g' contracts/LendingPair.sol
 # Virtualize functions
 perl -0777 -i -pe 's/\) public allowed\(from\)/\) virtual public allowed\(from\)/g' contracts/BentoBox.sol
 perl -0777 -i -pe 's/\) public \{/\) virtual public \{ /g' contracts/BentoBox.sol
+# De-virtualize constructor
+perl -0777 -i -pe 's/constructor\(IERC20 wethToken_\) virtual public/constructor\(IERC20 wethToken_\) public/g' contracts/BentoBox.sol
+# Virtualize more functions
 perl -0777 -i -pe 's/\) external payable returns \(/\) external virtual payable returns \(/g' node_modules/@boringcrypto/boring-solidity/contracts/BoringBatchable.sol
 perl -0777 -i -pe 's/\) public payable /\) public virtual payable /g' node_modules/@boringcrypto/boring-solidity/contracts/BoringFactory.sol
 # Add transfer function declaration 
