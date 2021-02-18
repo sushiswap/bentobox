@@ -61,3 +61,21 @@ jobs:
           spec/scripts/runRebase.sh
         env:
           CERTORAKEY: ${{ secrets.CERTORAKEY }}
+
+      - name: Verify with Certora - BentoBox
+        run: |
+          spec/scripts/runBentoBox.sh
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+
+      - name: Verify with Certora - Strategy
+        run: |
+          spec/scripts/runStrategy.sh
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
+
+      - name: Verify with Certora - SushiStrategy
+        run: |
+          spec/scripts/runSushiStrategy.sh
+        env:
+          CERTORAKEY: ${{ secrets.CERTORAKEY }}
