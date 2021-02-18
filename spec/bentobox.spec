@@ -29,7 +29,7 @@ methods {
 	
 
 	// strategy code
-	harvest(address balance, address sender) => DISPATCHER(true)  
+	harvest(uint256 balance, address sender) => DISPATCHER(true)  
     skim(uint256 balance) => DISPATCHER(true)
 	harvest(uint256 balance) => DISPATCHER(true)
 	withdraw(uint256 amount, uint256 balance) => DISPATCHER(true)
