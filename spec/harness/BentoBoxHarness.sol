@@ -74,7 +74,7 @@ contract BentoBoxHarness is BentoBox {
 	}
 
 
-	function deploy(address masterContract, bytes calldata data) public override  payable {
+	function deploy(address masterContract, bytes calldata data, bool useCreate2) public override  payable returns (address) {
 
 	}
 
