@@ -4,15 +4,18 @@ require("@nomiclabs/hardhat-etherscan")
 require("@nomiclabs/hardhat-solhint")
 require("@tenderly/hardhat-tenderly")
 require("@nomiclabs/hardhat-waffle")
-require("hardhat-abi-exporter")
 require("hardhat-deploy")
 require("hardhat-deploy-ethers")
 require("hardhat-gas-reporter")
 require("hardhat-spdx-license-identifier")
-require("hardhat-typechain")
 require("hardhat-watcher")
 require("solidity-coverage")
 require("hardhat-docgen")
+
+if (process.env.BUILD_ARTIFACTS) {
+    require("hardhat-abi-exporter")
+    require("hardhat-typechain")
+}
 const { ethers } = require("ethers")
 
 const { normalizeHardhatNetworkAccountsConfig } = require("hardhat/internal/core/providers/util")
@@ -63,18 +66,13 @@ subtask("compile:solidity:get-compilation-job-for-file", async (_, { config }) =
 })
 
 module.exports = {
-    abiExporter: Object.assign(
-        {},
-        process.env.COVERAGE
-            ? {}
-            : {
-                  path: "./abi",
-                  clear: true,
-                  flat: true,
-                  // only: [],
-                  // except: []
-              }
-    ),
+    abiExporter: {
+        path: "./abi",
+        clear: true,
+        flat: true,
+        // only: [],
+        // except: []
+    },
     docgen: {
         path: "./documentation",
         clear: false,
@@ -317,15 +315,10 @@ module.exports = {
         project: process.env.TENDERLY_PROJECT,
         username: process.env.TENDERLY_USERNAME,
     },
-    typechain: Object.assign(
-        {},
-        process.env.COVERAGE
-            ? {}
-            : {
-                  outDir: "types",
-                  target: "ethers-v5",
-              }
-    ),
+    typechain: {
+        outDir: "types",
+        target: "ethers-v5",
+    },
     watcher: {
         compile: {
             tasks: ["compile"],
