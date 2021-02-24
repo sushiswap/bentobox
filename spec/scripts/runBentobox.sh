@@ -3,5 +3,5 @@ certoraRun spec/harness/BentoBoxHarness.sol spec/harness/DummyERC20A.sol spec/ha
 	--settings -copyLoopUnroll=4,-b=4,-ignoreViewFunctions,-enableStorageAnalysis=true,-assumeUnwindCond \
 	--verify BentoBoxHarness:spec/bentobox.spec \
 	--cache bentoBox \
-	--cloud \
+	--staging \
 	--msg "BentoBox" \
