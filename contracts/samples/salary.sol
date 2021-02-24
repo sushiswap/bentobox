@@ -14,9 +14,14 @@ contract Salary is BoringBatchable {
     BentoBox public bentoBox;
 
     event LogCreate(
-        address indexed funder, address indexed recipient, 
+        address indexed funder,
+        address indexed recipient,
         IERC20 indexed token,
-        uint32 cliffTimestamp, uint32 endTimestamp, uint32 cliffPercent, uint128 totalShares, uint256 salaryId
+        uint32 cliffTimestamp,
+        uint32 endTimestamp,
+        uint32 cliffPercent,
+        uint128 totalShares,
+        uint256 salaryId
     );
     event LogWithdraw(uint256 indexed salaryId, address indexed to, uint256 shares);
     event LogCancel(uint256 indexed salaryId, address indexed to, uint256 shares);
@@ -27,10 +32,16 @@ contract Salary is BoringBatchable {
     }
 
     // Included to be able to approve BentoBox and create in the same transaction (using batch)
-    function setBentoBoxApproval(address user, bool approved, uint8 v, bytes32 r, bytes32 s) public {
-        bentoBox.setMasterContractApproval(user, address(this), approved, v, r, s);        
+    function setBentoBoxApproval(
+        address user,
+        bool approved,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        bentoBox.setMasterContractApproval(user, address(this), approved, v, r, s);
     }
-    
+
     ///     now                      cliffTimestamp
     ///      |                             |     endTimestamp
     ///      V                             V          |
@@ -67,13 +78,19 @@ contract Salary is BoringBatchable {
     /// The funder of each salary, separated out for gas optimization
     address[] public funder;
 
-    uint8 private constant MODE_BENTO = 0;       // Use BentoBox balance
-    uint8 private constant MODE_ERC20_SKIM = 1;  // Use ERC20 tokens deposited onto the BentoBox contract
-    uint8 private constant MODE_ERC20 = 2;       // Use ERC20 tokens in the users wallet (transferFrom with approval)
+    uint8 private constant MODE_BENTO = 0; // Use BentoBox balance
+    uint8 private constant MODE_ERC20_SKIM = 1; // Use ERC20 tokens deposited onto the BentoBox contract
+    uint8 private constant MODE_ERC20 = 2; // Use ERC20 tokens in the users wallet (transferFrom with approval)
 
     /// Create a salary
     function create(
-        address recipient, IERC20 token, uint32 cliffTimestamp, uint32 endTimestamp, uint32 cliffPercent, uint8 mode, uint128 amount
+        address recipient,
+        IERC20 token,
+        uint32 cliffTimestamp,
+        uint32 endTimestamp,
+        uint32 cliffPercent,
+        uint8 mode,
+        uint128 amount
     ) public returns (uint256 salaryId, uint256 shares) {
         // Check that the end if after or equal to the cliff
         // If they are equal, all shares become payable at once, use this for a fixed term lockup
@@ -145,7 +162,11 @@ contract Salary is BoringBatchable {
     }
 
     // Withdraw the maximum amount possible for a salaryId
-    function withdraw(uint256 salaryId, address to, bool toBentoBox) public {
+    function withdraw(
+        uint256 salaryId,
+        address to,
+        bool toBentoBox
+    ) public {
         UserSalary memory salary = salaries[salaryId];
         // Only pay out to the recipient
         require(salary.recipient == msg.sender, "Salary: not recipient");
@@ -167,7 +188,11 @@ contract Salary is BoringBatchable {
     }
 
     // Cancel a salary, can only be done by the funder
-    function cancel(uint256 salaryId, address to, bool toBentoBox) public onlyFunder(salaryId) {
+    function cancel(
+        uint256 salaryId,
+        address to,
+        bool toBentoBox
+    ) public onlyFunder(salaryId) {
         uint256 sharesLeft = uint256(salaries[salaryId].shares).sub(salaries[salaryId].withdrawnShares);
         if (toBentoBox) {
             bentoBox.transfer(salaries[salaryId].token, address(this), to, sharesLeft);
