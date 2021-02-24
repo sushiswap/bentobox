@@ -4,5 +4,5 @@ spec/harness/Owner.sol \
 --link SushiStrategyHarness:sushi=DummyERC20A SushiStrategyHarness:owner=Owner \
 --verify SushiStrategyHarness:spec/strategy.spec \
 --cloud \
---settings -ciMode \
+--settings -ciMode=true \
 --msg "sushiStrategy"
