@@ -833,16 +833,16 @@ describe("BentoBox", function () {
 
         it("revert on request to batch flashloan at bento protocol limit", async function () {
             await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
-            const maxLoan = computationalLimit.toString()
+            const maxLoan = bentoProtocolLimit.toString()
             await expect(this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [maxLoan], "0x"))
-                .to.be.revertedWith("BoringMath: Mul Overflow")
+                .to.be.revertedWith("BoringERC20: Transfer failed")
         })
 
         it("revert on request to batch flashloan at computational limit", async function () {
             await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
-            const maxLoan = bentoProtocolLimit.toString()
+            const maxLoan = computationalLimit.toString()
             await expect(this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [maxLoan], "0x"))
-                .to.be.revertedWith("BoringERC20: Transfer failed")
+                .to.be.revertedWith("BoringMath: Mul Overflow")
         })
     })
 
