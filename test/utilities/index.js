@@ -105,7 +105,6 @@ async function setMasterContractApproval(bentoBox, from, user, privateKey, maste
         )
 }
 
-
 function sansSafetyAmount(amount) {
     return amount.sub(BigNumber.from(100000))
 }

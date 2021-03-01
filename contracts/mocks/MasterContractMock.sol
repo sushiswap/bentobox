@@ -8,7 +8,7 @@ import "../BentoBox.sol";
 contract MasterContractMock is IMasterContract {
     BentoBox public immutable bentoBox;
 
-    constructor (BentoBox _bentoBox) public {
+    constructor(BentoBox _bentoBox) public {
         bentoBox = _bentoBox;
     }
 
@@ -16,7 +16,7 @@ contract MasterContractMock is IMasterContract {
         bentoBox.deposit(token, msg.sender, address(this), 0, amount);
     }
 
-    function init(bytes calldata) external payable override{
+    function init(bytes calldata) external payable override {
         return;
     }
 }
