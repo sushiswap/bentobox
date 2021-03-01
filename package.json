@@ -81,7 +81,6 @@
     },
     "homepage": "https://github.com/sushiswap/bentobox#readme",
     "devDependencies": {
-        "@boringcrypto/boring-solidity": "github:boringcrypto/BoringSolidity#0257ecf",
         "@codechecks/client": "^0.1.10",
         "@nomiclabs/hardhat-ethers": "^2.0.1",
         "@nomiclabs/hardhat-etherscan": "^2.1.1",
@@ -123,5 +122,7 @@
         "typechain": "^4.0.1",
         "typechain-target-ethers-v5": "^5.0.1"
     },
-    "dependencies": {}
+    "dependencies": {
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#0257ecf"
+    }
 }
