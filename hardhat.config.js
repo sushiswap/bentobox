@@ -101,7 +101,7 @@ module.exports = {
     networks: {
         hardhat: Object.assign(
             {
-                blockGasLimit: 10_000_000,
+                blockGasLimit: 10000000,
                 chainId: 31337,
                 test_accounts,
             },

@@ -44,8 +44,7 @@ describe("BentoBox", function () {
             await this.bentoBox.setStrategyTargetPercentage(this.a.address, 20)
 
             await cmd.deploy("erc20", "ERC20Mock", 10000000)
-            await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
-            await cmd.deploy("peggedOracle", "PeggedOracle")
+            await cmd.deploy("masterContractMock", "MasterContractMock", this.bentoBox.address)
 
             this.a.approve = function (...params) {
                 console.log(params)
@@ -79,14 +78,9 @@ describe("BentoBox", function () {
 
     describe("Deploy", function () {
         it("Emits LogDeploy event with correct arguments", async function () {
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            await expect(this.bentoBox.deploy(this.lendingPair.address, data, true)).to.emit(this.bentoBox, "LogDeploy")
+            await expect(this.bentoBox.deploy(this.masterContractMock.address, data, true)).to.emit(this.bentoBox, "LogDeploy")
         })
     })
 
@@ -653,42 +647,30 @@ describe("BentoBox", function () {
         })
 
         it("does not allow clone contract calls if MasterContract is not approved", async function () {
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
+            let deployTx = await this.bentoBox.deploy(this.masterContractMock.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
-            let pair = await this.lendingPair.attach(cloneAddress)
+            let pair = await this.masterContractMock.attach(cloneAddress)
 
             await this.a.approve(this.bentoBox.address, 1)
 
-            await expect(pair.addAsset(this.bob.address, false, 1)).to.be.revertedWith("BentoBox: Transfer not approved")
+            await expect(pair.deposit(this.a.address, 1)).to.be.revertedWith("BentoBox: Transfer not approved")
         })
 
         it("allow clone contract calls if MasterContract is approved", async function () {
-            await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
-            await setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.lendingPair.address, true, true)
+            await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
+            await setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.masterContractMock.address, true, true)
 
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
+            let deployTx = await this.bentoBox.deploy(this.masterContractMock.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
-            let pair = await this.lendingPair.attach(cloneAddress)
+            let pair = await this.masterContractMock.attach(cloneAddress)
 
             await this.a.approve(this.bentoBox.address, 2)
 
-            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 1)
-
-            await pair.addCollateral(this.alice.address, false, 1)
+            await pair.deposit(this.a.address, 1)
 
             expect(await this.bentoBox.balanceOf(this.a.address, pair.address)).to.be.equal(1)
         })

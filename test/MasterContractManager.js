@@ -1,6 +1,5 @@
 const { setMasterContractApproval, createFixture, ADDRESS_ZERO } = require("./utilities")
 const { expect } = require("chai")
-const { LendingPair } = require("./utilities/lendingpair")
 
 let cmd, fixture
 
@@ -10,7 +9,7 @@ describe("MasterContractManager", function () {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
 
-            await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
+            await cmd.deploy("masterContractMock", "MasterContractMock", this.bentoBox.address)
             await cmd.deploy("badMaster", "MaliciousMasterContractMock")
         })
     })
@@ -21,19 +20,19 @@ describe("MasterContractManager", function () {
 
     describe("Master Contract Approved", function () {
         it("Returns false for pair which has not been set", async function () {
-            expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.alice.address)).to.be.false
+            expect(await this.bentoBox.masterContractApproved(this.masterContractMock.address, this.alice.address)).to.be.false
         })
 
         it("Returns true for pair which has been set", async function () {
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.lendingPair.address, true, false)
+            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, true, false)
 
-            expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.carol.address)).to.be.true
+            expect(await this.bentoBox.masterContractApproved(this.masterContractMock.address, this.carol.address)).to.be.true
         })
     })
 
     describe("whitelist Master Contract", function () {
         it("Reverts if caller is not the owner", async function () {
-            await expect(this.bentoBox.connect(this.bob).whitelistMasterContract(this.lendingPair.address, true)).to.be.revertedWith(
+            await expect(this.bentoBox.connect(this.bob).whitelistMasterContract(this.masterContractMock.address, true)).to.be.revertedWith(
                 "Ownable: caller is not the owner"
             )
         })
@@ -46,8 +45,8 @@ describe("MasterContractManager", function () {
         })
 
         it("Allows to WhiteList MasterContract", async function () {
-            await this.bentoBox.connect(this.alice).whitelistMasterContract(this.lendingPair.address, true)
-            expect(await this.bentoBox.whitelistedMasterContracts(this.lendingPair.address)).to.be.true
+            await this.bentoBox.connect(this.alice).whitelistMasterContract(this.masterContractMock.address, true)
+            expect(await this.bentoBox.whitelistedMasterContracts(this.masterContractMock.address)).to.be.true
         })
     })
 
@@ -65,9 +64,9 @@ describe("MasterContractManager", function () {
         })
 
         it("Reverts with user not equal to sender", async function () {
-            await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
+            await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
             await expect(
-                setMasterContractApproval(this.bentoBox, this.carol, this.alice, "", this.lendingPair.address, true, true)
+                setMasterContractApproval(this.bentoBox, this.carol, this.alice, "", this.masterContractMock.address, true, true)
             ).to.be.revertedWith("MasterCMgr: user not sender")
         })
 
@@ -80,20 +79,20 @@ describe("MasterContractManager", function () {
         })
 
         it("Emits LogSetMasterContractApproval event with correct arguments", async function () {
-            await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
-            await expect(setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.lendingPair.address, true, true))
+            await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
+            await expect(setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.masterContractMock.address, true, true))
                 .to.emit(this.bentoBox, "LogSetMasterContractApproval")
-                .withArgs(this.lendingPair.address, this.alice.address, true)
+                .withArgs(this.masterContractMock.address, this.alice.address, true)
         })
 
         it("Should allow to retract approval of masterContract", async function () {
-            await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
+            await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
 
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.lendingPair.address, true, true)
+            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, true, true)
 
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.lendingPair.address, false, true)
+            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, false, true)
 
-            expect(await this.bentoBox.masterContractApproved(this.lendingPair.address, this.alice.address)).to.be.false
+            expect(await this.bentoBox.masterContractApproved(this.masterContractMock.address, this.alice.address)).to.be.false
         })
     })
 
@@ -103,7 +102,7 @@ describe("MasterContractManager", function () {
             await expect(
                 this.bentoBox.setMasterContractApproval(
                     "0x0000000000000000000000000000000000000000",
-                    this.lendingPair.address,
+                    this.masterContractMock.address,
                     true,
                     0,
                     test,
@@ -113,7 +112,7 @@ describe("MasterContractManager", function () {
         })
         it("Reverts if signature is incorrect", async function () {
             await expect(
-                setMasterContractApproval(this.bentoBox, this.bob, this.bob, this.carolPrivateKey, this.lendingPair.address, true, false)
+                setMasterContractApproval(this.bentoBox, this.bob, this.bob, this.carolPrivateKey, this.masterContractMock.address, true, false)
             ).to.be.revertedWith("MasterCMgr: Invalid Signature")
         })
     })

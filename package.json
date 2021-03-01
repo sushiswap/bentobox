@@ -117,7 +117,6 @@
         "solhint": "^3.3.2",
         "solhint-plugin-prettier": "^0.0.5",
         "solidity-coverage": "^0.7.15",
-        "truffle-hdwallet-provider": "^1.0.17",
         "ts-generator": "^0.1.1",
         "typechain": "^4.0.1",
         "typechain-target-ethers-v5": "^5.0.1"
