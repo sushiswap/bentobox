@@ -18,10 +18,10 @@ const BENTOBOX_MASTER_APPROVAL_TYPEHASH = keccak256(
 function getBentoBoxDomainSeparator(address, chainId) {
     return keccak256(
         defaultAbiCoder.encode(
-            ["bytes32", "string", "uint256", "address"],
+            ["bytes32", "bytes32", "uint256", "address"],
             [
                 keccak256(ethers.utils.toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")),
-                "BentoBox V2",
+                keccak256(ethers.utils.toUtf8Bytes("BentoBox V1")),
                 chainId,
                 address,
             ]
@@ -32,10 +32,12 @@ function getBentoBoxDomainSeparator(address, chainId) {
 function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, chainId = 1) {
     const DOMAIN_SEPARATOR = getBentoBoxDomainSeparator(bentoBox.address, chainId)
     const msg = defaultAbiCoder.encode(
-        ["bytes32", "string", "address", "address", "bool", "uint256"],
+        ["bytes32", "bytes32", "address", "address", "bool", "uint256"],
         [
             BENTOBOX_MASTER_APPROVAL_TYPEHASH,
-            approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
+            approved
+                ? keccak256(ethers.utils.toUtf8Bytes("Give FULL access to funds in (and approved to) BentoBox?"))
+                : keccak256(ethers.utils.toUtf8Bytes("Revoke access to BentoBox?")),
             user.address,
             masterContractAddress,
             approved,
