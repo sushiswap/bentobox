@@ -10,8 +10,8 @@
 */
 
 methods {
-    getElastic() returns (uint256) envfree;
-    getBase() returns (uint256) envfree;
+    getElastic() returns (uint128) envfree;
+    getBase() returns (uint128) envfree;
 
     toBase(uint256 elastic, bool roundUp) returns (uint256 base) envfree;
     toBaseFloor(uint256 elastic) returns (uint256 base) envfree;
