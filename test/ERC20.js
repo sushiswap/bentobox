@@ -227,10 +227,6 @@ describe("ERC20", function () {
 
     describe("Permit", function () {
         // This is a test of our utility function.
-        it("Returns correct DOMAIN_SEPARATOR for token and chainId", async function () {
-            expect(await this.token.DOMAIN_SEPARATOR()).to.be.equal(getDomainSeparator(this.token.address, this.bob.provider._network.chainId))
-        })
-
         it("Reverts when address zero is passed as alice argument", async function () {
             const nonce = await this.token.nonces(this.carol.address)
 
