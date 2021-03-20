@@ -12,7 +12,7 @@
 // Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
-// Version 10-Feb-2021
+// Version 20-Mar-2021
 
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
@@ -21,7 +21,7 @@ pragma experimental ABIEncoderV2;
 // solhint-disable not-rely-on-time
 // solhint-disable no-inline-assembly
 
-// File @boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol@v1.2.0
 // License-Identifier: MIT
 
 interface IERC20 {
@@ -36,7 +36,7 @@ interface IERC20 {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    // EIP 2612
+    /// @notice EIP 2612
     function permit(
         address owner,
         address spender,
@@ -52,6 +52,12 @@ interface IERC20 {
 // License-Identifier: MIT
 
 interface IFlashBorrower {
+    /// @notice The flashloan callback. `amount` + `fee` needs to repayed to msg.sender before this call returns.
+    /// @param sender The address of the invoker of this flashloan.
+    /// @param token The address of the token that is loaned.
+    /// @param amount of the `token` that is loaned.
+    /// @param fee The fee that needs to be paid on top for this loan. Needs to be the same as `token`.
+    /// @param data Additional data that was passed to the flashloan function.
     function onFlashLoan(
         address sender,
         IERC20 token,
@@ -62,6 +68,12 @@ interface IFlashBorrower {
 }
 
 interface IBatchFlashBorrower {
+    /// @notice The callback for batched flashloans. Every amount + fee needs to repayed to msg.sender before this call returns.
+    /// @param sender The address of the invoker of this flashloan.
+    /// @param tokens Array of addresses for ERC-20 tokens that is loaned.
+    /// @param amounts A one-to-one map to `tokens` that is loaned.
+    /// @param fees A one-to-one map to `tokens` that needs to be paid on top for each loan. Needs to be the same token.
+    /// @param data Additional data that was passed to the flashloan function.
     function onBatchFlashLoan(
         address sender,
         IERC20[] calldata tokens,
@@ -84,21 +96,30 @@ interface IWETH {
 // License-Identifier: MIT
 
 interface IStrategy {
-    // Send the assets to the Strategy and call skim to invest them
+    /// @notice Send the assets to the Strategy and call skim to invest them.
+    /// @param amount The amount of tokens to invest.
     function skim(uint256 amount) external;
 
-    // Harvest any profits made converted to the asset and pass them to the caller
+    /// @notice Harvest any profits made converted to the asset and pass them to the caller.
+    /// @param balance The amount of tokens the caller thinks it has invested.
+    /// @param sender The address of the initiator of this transaction. Can be used for reimbursements, etc.
+    /// @return amountAdded The delta (+profit or -loss) that occured in contrast to `balance`.
     function harvest(uint256 balance, address sender) external returns (int256 amountAdded);
 
-    // Withdraw assets. The returned amount can differ from the requested amount due to rounding.
-    // The actualAmount should be very close to the amount. The difference should NOT be used to report a loss. That's what harvest is for.
+    /// @notice Withdraw assets. The returned amount can differ from the requested amount due to rounding.
+    /// @dev The `actualAmount` should be very close to the amount.
+    /// The difference should NOT be used to report a loss. That's what harvest is for.
+    /// @param amount The requested amount the caller wants to withdraw.
+    /// @return actualAmount The real amount that is withdrawn.
     function withdraw(uint256 amount) external returns (uint256 actualAmount);
 
-    // Withdraw all assets in the safest way possible. This shouldn't fail.
+    /// @notice Withdraw all assets in the safest way possible. This shouldn't fail.
+    /// @param balance The amount of tokens the caller thinks it has invested.
+    /// @return amountAdded The delta (+profit or -loss) that occured in contrast to `balance`.
     function exit(uint256 balance) external returns (int256 amountAdded);
 }
 
-// File @boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol@v1.2.0
 // License-Identifier: MIT
 
 library BoringERC20 {
@@ -108,21 +129,11 @@ library BoringERC20 {
     bytes4 private constant SIG_TRANSFER = 0xa9059cbb; // transfer(address,uint256)
     bytes4 private constant SIG_TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
 
-    function safeSymbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_SYMBOL));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
-
-    function safeName(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_NAME));
-        return success && data.length > 0 ? abi.decode(data, (string)) : "???";
-    }
-
-    function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_DECIMALS));
-        return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
-    }
-
+    /// @notice Provides a safe ERC20.transfer version for different ERC-20 implementations.
+    /// Reverts on a failed transfer.
+    /// @param token The address of the ERC-20 token.
+    /// @param to Transfer tokens to.
+    /// @param amount The token amount.
     function safeTransfer(
         IERC20 token,
         address to,
@@ -132,6 +143,12 @@ library BoringERC20 {
         require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
     }
 
+    /// @notice Provides a safe ERC20.transferFrom version for different ERC-20 implementations.
+    /// Reverts on a failed transfer.
+    /// @param token The address of the ERC-20 token.
+    /// @param from Transfer tokens from.
+    /// @param to Transfer tokens to.
+    /// @param amount The token amount.
     function safeTransferFrom(
         IERC20 token,
         address from,
@@ -143,10 +160,11 @@ library BoringERC20 {
     }
 }
 
-// File @boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol@v1.2.0
 // License-Identifier: MIT
 
-// a library for performing overflow-safe math, updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math)
+/// @notice A library for performing overflow-/underflow-safe math,
+/// updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math).
 library BoringMath {
     function add(uint256 a, uint256 b) internal pure returns (uint256 c) {
         require((c = a + b) >= b, "BoringMath: Add Overflow");
@@ -176,6 +194,7 @@ library BoringMath {
     }
 }
 
+/// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint128.
 library BoringMath128 {
     function add(uint128 a, uint128 b) internal pure returns (uint128 c) {
         require((c = a + b) >= b, "BoringMath: Add Overflow");
@@ -186,6 +205,7 @@ library BoringMath128 {
     }
 }
 
+/// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint64.
 library BoringMath64 {
     function add(uint64 a, uint64 b) internal pure returns (uint64 c) {
         require((c = a + b) >= b, "BoringMath: Add Overflow");
@@ -196,6 +216,7 @@ library BoringMath64 {
     }
 }
 
+/// @notice A library for performing overflow-/underflow-safe addition and subtraction on uint32.
 library BoringMath32 {
     function add(uint32 a, uint32 b) internal pure returns (uint32 c) {
         require((c = a + b) >= b, "BoringMath: Add Overflow");
@@ -206,7 +227,7 @@ library BoringMath32 {
     }
 }
 
-// File @boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol@v1.2.0
 // License-Identifier: MIT
 
 struct Rebase {
@@ -214,10 +235,12 @@ struct Rebase {
     uint128 base;
 }
 
+/// @notice A rebasing library using overflow-/underflow-safe math.
 library RebaseLibrary {
     using BoringMath for uint256;
     using BoringMath128 for uint128;
 
+    /// @notice Calculates the base value in relationship to `elastic` and `total`.
     function toBase(
         Rebase memory total,
         uint256 elastic,
@@ -233,6 +256,7 @@ library RebaseLibrary {
         }
     }
 
+    /// @notice Calculates the elastic value in relationship to `base` and `total`.
     function toElastic(
         Rebase memory total,
         uint256 base,
@@ -248,6 +272,9 @@ library RebaseLibrary {
         }
     }
 
+    /// @notice Add `elastic` to `total` and doubles `total.base`.
+    /// @return (Rebase) The new total.
+    /// @return base in relationship to `elastic`.
     function add(
         Rebase memory total,
         uint256 elastic,
@@ -259,6 +286,9 @@ library RebaseLibrary {
         return (total, base);
     }
 
+    /// @notice Sub `base` from `total` and update `total.elastic`.
+    /// @return (Rebase) The new total.
+    /// @return elastic in relationship to `base`.
     function sub(
         Rebase memory total,
         uint256 base,
@@ -270,6 +300,7 @@ library RebaseLibrary {
         return (total, elastic);
     }
 
+    /// @notice Add `elastic` and `base` to `total`.
     function add(
         Rebase memory total,
         uint256 elastic,
@@ -280,6 +311,7 @@ library RebaseLibrary {
         return total;
     }
 
+    /// @notice Subtract `elastic` and `base` to `total`.
     function sub(
         Rebase memory total,
         uint256 elastic,
@@ -290,16 +322,20 @@ library RebaseLibrary {
         return total;
     }
 
+    /// @notice Add `elastic` to `total` and update storage.
+    /// @return newElastic Returns updated `elastic`.
     function addElastic(Rebase storage total, uint256 elastic) internal returns (uint256 newElastic) {
         newElastic = total.elastic = total.elastic.add(elastic.to128());
     }
 
+    /// @notice Subtract `elastic` from `total` and update storage.
+    /// @return newElastic Returns updated `elastic`.
     function subElastic(Rebase storage total, uint256 elastic) internal returns (uint256 newElastic) {
         newElastic = total.elastic = total.elastic.sub(elastic.to128());
     }
 }
 
-// File @boringcrypto/boring-solidity/contracts/BoringOwnable.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/BoringOwnable.sol@v1.2.0
 // License-Identifier: MIT
 
 // Source: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol + Claimable.sol
@@ -313,13 +349,17 @@ contract BoringOwnableData {
 contract BoringOwnable is BoringOwnableData {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-    address private constant ZERO_ADDRESS = address(0);
-
+    /// @notice `owner` defaults to msg.sender on construction.
     constructor() public {
         owner = msg.sender;
-        emit OwnershipTransferred(ZERO_ADDRESS, msg.sender);
+        emit OwnershipTransferred(address(0), msg.sender);
     }
 
+    /// @notice Transfers ownership to `newOwner`. Either directly or claimable by the new pending owner.
+    /// Can only be invoked by the current `owner`.
+    /// @param newOwner Address of the new owner.
+    /// @param direct True if `newOwner` should be set immediately. False if `newOwner` needs to use `claimOwnership`.
+    /// @param renounce Allows the `newOwner` to be `address(0)` if `direct` and `renounce` is True. Has no effect otherwise.
     function transferOwnership(
         address newOwner,
         bool direct,
@@ -327,18 +367,19 @@ contract BoringOwnable is BoringOwnableData {
     ) public onlyOwner {
         if (direct) {
             // Checks
-            require(newOwner != ZERO_ADDRESS || renounce, "Ownable: zero address");
+            require(newOwner != address(0) || renounce, "Ownable: zero address");
 
             // Effects
             emit OwnershipTransferred(owner, newOwner);
             owner = newOwner;
-            pendingOwner = ZERO_ADDRESS;
+            pendingOwner = address(0);
         } else {
             // Effects
             pendingOwner = newOwner;
         }
     }
 
+    /// @notice Needs to be called by `pendingOwner` to claim ownership.
     function claimOwnership() public {
         address _pendingOwner = pendingOwner;
 
@@ -348,39 +389,50 @@ contract BoringOwnable is BoringOwnableData {
         // Effects
         emit OwnershipTransferred(owner, _pendingOwner);
         owner = _pendingOwner;
-        pendingOwner = ZERO_ADDRESS;
+        pendingOwner = address(0);
     }
 
+    /// @notice Only allows the `owner` to execute the function.
     modifier onlyOwner() {
         require(msg.sender == owner, "Ownable: caller is not the owner");
         _;
     }
 }
 
-// File @boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol@v1.2.0
 // License-Identifier: MIT
 
 interface IMasterContract {
+    /// @notice Init function that gets called from `BoringFactory.deploy`.
+    /// Also kown as the constructor for cloned contracts.
+    /// Any ETH send to `BoringFactory.deploy` ends up here.
+    /// @param data Can be abi encoded arguments or anything else.
     function init(bytes calldata data) external payable;
 }
 
-// File @boringcrypto/boring-solidity/contracts/BoringFactory.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/BoringFactory.sol@v1.2.0
 // License-Identifier: MIT
 
 contract BoringFactory {
     event LogDeploy(address indexed masterContract, bytes data, address indexed cloneAddress);
 
-    mapping(address => address) public masterContractOf; // Mapping from clone contracts to their masterContract
+    /// @notice Mapping from clone contracts to their masterContract.
+    mapping(address => address) public masterContractOf;
 
-    // Deploys a given master Contract as a clone.
+    /// @notice Deploys a given master Contract as a clone.
+    /// Any ETH transferred with this call is forwarded to the new clone.
+    /// Emits `LogDeploy`.
+    /// @param masterContract The address of the contract to clone.
+    /// @param data Additional abi encoded calldata that is passed to the new clone via `IMasterContract.init`.
+    /// @param useCreate2 Creates the clone by using the CREATE2 opcode, in this case `data` will be used as salt.
+    /// @return cloneAddress Address of the created clone contract.
     function deploy(
         address masterContract,
         bytes calldata data,
         bool useCreate2
-    ) public payable {
+    ) public payable returns (address cloneAddress) {
         require(masterContract != address(0), "BoringFactory: No masterContract");
         bytes20 targetBytes = bytes20(masterContract); // Takes the first 20 bytes of the masterContract's address
-        address cloneAddress; // Address where the clone contract will reside.
 
         if (useCreate2) {
             // each masterContract has different code already. So clones are distinguished by their data only.
@@ -419,11 +471,11 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     event LogSetMasterContractApproval(address indexed masterContract, address indexed user, bool approved);
     event LogRegisterProtocol(address indexed protocol);
 
-    // masterContract to user to approval state
+    /// @notice masterContract to user to approval state
     mapping(address => mapping(address => bool)) public masterContractApproved;
-    // masterContract to whitelisted state for approval without signed message
+    /// @notice masterContract to whitelisted state for approval without signed message
     mapping(address => bool) public whitelistedMasterContracts;
-    // user nonces for masterContract approvals
+    /// @notice user nonces for masterContract approvals
     mapping(address => uint256) public nonces;
 
     bytes32 private constant DOMAIN_SEPARATOR_SIGNATURE_HASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
@@ -433,21 +485,38 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
 
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private immutable DOMAIN_SEPARATOR;
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+    // solhint-disable-next-line var-name-mixedcase
+    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;
 
     constructor() public {
         uint256 chainId;
         assembly {
             chainId := chainid()
         }
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, keccak256("BentoBox V1"), chainId, address(this)));
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator(DOMAIN_SEPARATOR_CHAIN_ID = chainId);
     }
 
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, keccak256("BentoBox V1"), chainId, address(this)));
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        return chainId == DOMAIN_SEPARATOR_CHAIN_ID ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(chainId);
+    }
+
+    /// @notice Other contracts need to register with this master contract so that users can approve them for the BentoBox.
     function registerProtocol() public {
         masterContractOf[msg.sender] = msg.sender;
         emit LogRegisterProtocol(msg.sender);
     }
 
+    /// @notice Enables or disables a contract for approval without signed message.
     function whitelistMasterContract(address masterContract, bool approved) public onlyOwner {
         // Checks
         require(masterContract != address(0), "MasterCMgr: Cannot approve 0");
@@ -457,6 +526,13 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         emit LogWhiteListMasterContract(masterContract, approved);
     }
 
+    /// @notice Approves or revokes a `masterContract` access to `user` funds.
+    /// @param user The address of the user that approves or revokes access.
+    /// @param masterContract The address who gains or loses access.
+    /// @param approved If True approves access. If False revokes access.
+    /// @param v Part of the signature. (See EIP-191)
+    /// @param r Part of the signature. (See EIP-191)
+    /// @param s Part of the signature. (See EIP-191)
     // F4 - Check behaviour for all function arguments when wrong or extreme
     // F4: Don't allow masterContract 0 to be approved. Unknown contracts will have a masterContract of 0.
     // F4: User can't be 0 for signed approvals because the recoveredAddress will be 0 if ecrecover fails
@@ -492,7 +568,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
                 keccak256(
                     abi.encodePacked(
                         EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA,
-                        DOMAIN_SEPARATOR,
+                        DOMAIN_SEPARATOR(),
                         keccak256(
                             abi.encode(
                                 APPROVAL_SIGNATURE_HASH,
@@ -517,10 +593,12 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     }
 }
 
-// File @boringcrypto/boring-solidity/contracts/BoringBatchable.sol@v1.1.0
+// File @boringcrypto/boring-solidity/contracts/BoringBatchable.sol@v1.2.0
 // License-Identifier: MIT
 
 contract BaseBoringBatchable {
+    /// @dev Helper function to extract a useful revert message from a failed call.
+    /// If the returned data is malformed or not correctly abi encoded then this call can fail itself.
     function _getRevertMsg(bytes memory _returnData) internal pure returns (string memory) {
         // If the _res length is less than 68, then the transaction failed silently (without a revert message)
         if (_returnData.length < 68) return "Transaction reverted silently";
@@ -532,6 +610,11 @@ contract BaseBoringBatchable {
         return abi.decode(_returnData, (string)); // All that remains is the revert string
     }
 
+    /// @notice Allows batched call to self (this contract).
+    /// @param calls An array of inputs for each call.
+    /// @param revertOnFail If True then reverts after a failed call and stops doing further calls.
+    /// @return successes An array indicating the success of a call, mapped one-to-one to `calls`.
+    /// @return results An array with the returned data of each function call, mapped one-to-one to `calls`.
     // F1: External is ok here because this is the batch function, adding it to a batch makes no sense
     // F2: Calls in the batch may be payable, delegatecall operates in the same context, so each call in the batch has access to msg.value
     // C3: The length of the loop is fully under user control, so can't be exploited
@@ -549,6 +632,8 @@ contract BaseBoringBatchable {
 }
 
 contract BoringBatchable is BaseBoringBatchable {
+    /// @notice Call wrapper that performs `ERC20.permit` on `token`.
+    /// Lookup `IERC20.permit`.
     // F6: Parameters can be used front-run the permit and the user's permit will fail (due to nonce or other revert)
     //     if part of a batch this could be used to grief once as the second call would not need the permit
     function permitToken(
@@ -649,12 +734,12 @@ contract BentoBoxV1 is MasterContractManager, BoringBatchable {
     // *** MODIFIERS *** //
     // ***************** //
 
-    // Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
-    // If 'from' is msg.sender, it's allowed.
-    // If 'from' is the BentoBox itself, it's allowed. Any ETH, token balances (above the known balances) or BentoBox balances
-    // can be taken by anyone.
-    // This is to enable skimming, not just for deposits, but also for withdrawals or transfers, enabling better composability.
-    // If 'from' is a clone of a masterContract AND the 'from' address has approved that masterContract, it's allowed.
+    /// Modifier to check if the msg.sender is allowed to use funds belonging to the 'from' address.
+    /// If 'from' is msg.sender, it's allowed.
+    /// If 'from' is the BentoBox itself, it's allowed. Any ETH, token balances (above the known balances) or BentoBox balances
+    /// can be taken by anyone.
+    /// This is to enable skimming, not just for deposits, but also for withdrawals or transfers, enabling better composability.
+    /// If 'from' is a clone of a masterContract AND the 'from' address has approved that masterContract, it's allowed.
     modifier allowed(address from) {
         if (from != msg.sender && from != address(this)) {
             // From is sender or you are skimming
@@ -669,6 +754,8 @@ contract BentoBoxV1 is MasterContractManager, BoringBatchable {
     // *** INTERNAL FUNCTIONS *** //
     // ************************** //
 
+    /// @dev Returns the total balance of `token` this contracts holds,
+    /// plus the total amount this contract thinks the strategy holds.
     function _tokenBalanceOf(IERC20 token) internal view returns (uint256 amount) {
         amount = token.balanceOf(address(this)).add(strategyData[token].balance);
     }

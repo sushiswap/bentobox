@@ -24,7 +24,15 @@ describe("MasterContractManager", function () {
         })
 
         it("Returns true for pair which has been set", async function () {
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, true, false)
+            await setMasterContractApproval(
+                this.bentoBox,
+                this.carol,
+                this.carol,
+                this.carolPrivateKey,
+                this.masterContractMock.address,
+                true,
+                false
+            )
 
             expect(await this.bentoBox.masterContractApproved(this.masterContractMock.address, this.carol.address)).to.be.true
         })
@@ -88,9 +96,25 @@ describe("MasterContractManager", function () {
         it("Should allow to retract approval of masterContract", async function () {
             await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
 
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, true, true)
+            await setMasterContractApproval(
+                this.bentoBox,
+                this.carol,
+                this.carol,
+                this.carolPrivateKey,
+                this.masterContractMock.address,
+                true,
+                true
+            )
 
-            await setMasterContractApproval(this.bentoBox, this.carol, this.carol, this.carolPrivateKey, this.masterContractMock.address, false, true)
+            await setMasterContractApproval(
+                this.bentoBox,
+                this.carol,
+                this.carol,
+                this.carolPrivateKey,
+                this.masterContractMock.address,
+                false,
+                true
+            )
 
             expect(await this.bentoBox.masterContractApproved(this.masterContractMock.address, this.alice.address)).to.be.false
         })

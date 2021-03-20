@@ -25,14 +25,29 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         keccak256("SetMasterContractApproval(string warning,address user,address masterContract,bool approved,uint256 nonce)");
 
     // solhint-disable-next-line var-name-mixedcase
-    bytes32 private immutable DOMAIN_SEPARATOR;
+    bytes32 private immutable _DOMAIN_SEPARATOR;
+    // solhint-disable-next-line var-name-mixedcase
+    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;
 
     constructor() public {
         uint256 chainId;
         assembly {
             chainId := chainid()
         }
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, keccak256("BentoBox V1"), chainId, address(this)));
+        _DOMAIN_SEPARATOR = _calculateDomainSeparator(DOMAIN_SEPARATOR_CHAIN_ID = chainId);
+    }
+
+    function _calculateDomainSeparator(uint256 chainId) private view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, keccak256("BentoBox V1"), chainId, address(this)));
+    }
+
+    // solhint-disable-next-line func-name-mixedcase
+    function DOMAIN_SEPARATOR() public view returns (bytes32) {
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        return chainId == DOMAIN_SEPARATOR_CHAIN_ID ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(chainId);
     }
 
     /// @notice Other contracts need to register with this master contract so that users can approve them for the BentoBox.
@@ -93,7 +108,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
                 keccak256(
                     abi.encodePacked(
                         EIP191_PREFIX_FOR_EIP712_STRUCTURED_DATA,
-                        DOMAIN_SEPARATOR,
+                        DOMAIN_SEPARATOR(),
                         keccak256(
                             abi.encode(
                                 APPROVAL_SIGNATURE_HASH,
