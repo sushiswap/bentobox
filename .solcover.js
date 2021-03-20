@@ -9,6 +9,7 @@ module.exports = {
         "interfaces/",
         "./oracles/ChainlinkOracle.sol",
         "./oracles/CompoundOracle.sol",
+        "./samples/salary.sol",
         "BentoHelper.sol",
     ],
     providerOptions: {

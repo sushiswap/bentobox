@@ -26,7 +26,7 @@ which led to the creation of an internal audit checklist (see checks.txt in the 
 
 Contracts are covered 100% by tests.
 
-Formal verification is done using Certora.
+Formal verification is done using Certora. All reported issues were fixed.
 
 ## Licence
 

@@ -440,7 +440,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
         assembly {
             chainId := chainid()
         }
-        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, "BentoBox V2", chainId, address(this)));
+        DOMAIN_SEPARATOR = keccak256(abi.encode(DOMAIN_SEPARATOR_SIGNATURE_HASH, keccak256("BentoBox V1"), chainId, address(this)));
     }
 
     function registerProtocol() public {
@@ -496,7 +496,9 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
                         keccak256(
                             abi.encode(
                                 APPROVAL_SIGNATURE_HASH,
-                                approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
+                                approved
+                                    ? keccak256("Give FULL access to funds in (and approved to) BentoBox?")
+                                    : keccak256("Revoke access to BentoBox?"),
                                 user,
                                 masterContract,
                                 approved,
