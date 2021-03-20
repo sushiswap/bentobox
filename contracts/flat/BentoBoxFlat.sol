@@ -129,7 +129,6 @@ library BoringERC20 {
     bytes4 private constant SIG_TRANSFER = 0xa9059cbb; // transfer(address,uint256)
     bytes4 private constant SIG_TRANSFER_FROM = 0x23b872dd; // transferFrom(address,address,uint256)
 
-
     /// @notice Provides a safe ERC20.transfer version for different ERC-20 implementations.
     /// Reverts on a failed transfer.
     /// @param token The address of the ERC-20 token.
@@ -488,7 +487,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private immutable _DOMAIN_SEPARATOR;
     // solhint-disable-next-line var-name-mixedcase
-    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;    
+    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;
 
     constructor() public {
         uint256 chainId;
@@ -504,7 +503,10 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
 
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        uint256 chainId; assembly {chainId := chainid()}
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
         return chainId == DOMAIN_SEPARATOR_CHAIN_ID ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(chainId);
     }
 

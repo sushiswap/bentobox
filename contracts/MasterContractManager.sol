@@ -27,7 +27,7 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private immutable _DOMAIN_SEPARATOR;
     // solhint-disable-next-line var-name-mixedcase
-    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;    
+    uint256 private immutable DOMAIN_SEPARATOR_CHAIN_ID;
 
     constructor() public {
         uint256 chainId;
@@ -43,7 +43,10 @@ contract MasterContractManager is BoringOwnable, BoringFactory {
 
     // solhint-disable-next-line func-name-mixedcase
     function DOMAIN_SEPARATOR() public view returns (bytes32) {
-        uint256 chainId; assembly {chainId := chainid()}
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
         return chainId == DOMAIN_SEPARATOR_CHAIN_ID ? _DOMAIN_SEPARATOR : _calculateDomainSeparator(chainId);
     }
 
