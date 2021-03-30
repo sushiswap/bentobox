@@ -12,6 +12,8 @@
 // Copyright (c) 2021 BoringCrypto - All rights reserved
 // Twitter: @Boring_Crypto
 
+// Special thanks to Keno for all his hard work and support
+
 // Version 20-Mar-2021
 
 pragma solidity 0.6.12;
