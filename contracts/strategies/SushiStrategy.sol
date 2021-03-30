@@ -65,7 +65,7 @@ contract SushiStrategy is IStrategy, BoringOwnable {
     function exit(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
         uint256 share = bar.balanceOf(address(this));
         bar.leave(share);
-        
+
         uint256 amount = sushi.balanceOf(address(this));
         amountAdded = int256(amount) - int256(balance);
         sushi.safeTransfer(owner, amount);
