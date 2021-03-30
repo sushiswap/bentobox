@@ -59,7 +59,6 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
     IERC20 public immutable compToken;
     IERC20 public immutable weth;
     IFactory public immutable factory;
-    uint256 public impactDivisor;
     bool public exited;
 
     constructor(
@@ -76,11 +75,8 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         cToken = cToken_;
         compToken = compToken_;
         weth = weth_;
-        impactDivisor = 10;
-    }
 
-    function setImpactDivisor(uint256 impactDivisor_) public onlyOwner {
-        impactDivisor = impactDivisor_;
+        token_.approve(address(cToken_), type(uint256).max);
     }
 
     modifier onlyBentobox {
@@ -89,58 +85,56 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         _;
     }
 
-    function _swap(
-        address fromToken,
-        address toToken,
-        uint256 amountIn,
+    function _swapAll(
+        IERC20 fromToken,
+        IERC20 toToken,
         address to
     ) internal returns (uint256 amountOut) {
-        IPair pair = IPair(factory.getPair(fromToken, toToken));
+        IPair pair = IPair(factory.getPair(address(fromToken), address(toToken)));
         require(address(pair) != address(0), "CompoundStrategy: Cannot convert");
 
+        uint256 amountIn = fromToken.balanceOf(address(this));
         (uint256 reserve0, uint256 reserve1, ) = pair.getReserves();
         uint256 amountInWithFee = amountIn.mul(997);
-        if (fromToken == pair.token0()) {
+        IERC20(fromToken).safeTransfer(address(pair), amountIn);
+        if (fromToken < toToken) {
             amountOut = amountIn.mul(997).mul(reserve1) / reserve0.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
             pair.swap(0, amountOut, to, new bytes(0));
-            require(amountIn < reserve0 / impactDivisor, "CompoundStrategy: Impact");
         } else {
             amountOut = amountIn.mul(997).mul(reserve0) / reserve1.mul(1000).add(amountInWithFee);
-            IERC20(fromToken).safeTransfer(address(pair), amountIn);
             pair.swap(amountOut, 0, to, new bytes(0));
-            require(amountIn < reserve1 / impactDivisor, "CompoundStrategy: Impact");
         }
     }
 
     // Send the assets to the Strategy and call skim to invest them
     /// @inheritdoc IStrategy
     function skim(uint256 amount) external override onlyBentobox {
-        token.approve(address(cToken), amount);
         require(cToken.mint(amount) == 0, "CompoundStrategy: mint error");
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller
     /// @inheritdoc IStrategy
-    function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256 amountAdded) {
+    function harvest(uint256 balance, address) external override onlyBentobox returns (int256 amountAdded) {
         // Get the amount of tokens that the cTokens currently represent
         uint256 tokenBalance = cToken.balanceOfUnderlying(address(this));
-        // Find out how much has been added from compounding interest.
-        // If it's negative due to rounding (near impossible), just revert. Should be positive soon enough.
-        uint256 amountAdded_ = tokenBalance.sub(balance);
         // Convert enough cToken to take out the profit
-        require(cToken.redeemUnderlying(amountAdded_) == 0, "CompoundStrategy: profit fail");
+        // If the amount is negative due to rounding (near impossible), just revert. Should be positive soon enough.
+        require(cToken.redeemUnderlying(tokenBalance.sub(balance)) == 0, "CompoundStrategy: profit fail");
+
+        // Find out how much has been added (+ sitting on the contract from harvestCOMP)
+        uint256 amountAdded_ = token.balanceOf(address(this));
         // Transfer the profit to the bentobox, the amountAdded at this point matches the amount transferred
         cToken.safeTransfer(bentobox, amountAdded_);
 
-        // To prevent flash loan sandwich attacks to 'steal' the profit, only the owner can harvest the COMP
-        if (sender == owner) {
-            // Swap all COMP to WETH
-            _swap(address(compToken), address(weth), compToken.balanceOf(address(this)), address(this));
-            // Swap all WETH to token and deliver it to the bentobox. Add the amountOut to the amountAdded.
-            amountAdded_ = amountAdded_.add(_swap(address(weth), address(token), weth.balanceOf(address(this)), bentobox));
-        }
         return int256(amountAdded_);
+    }
+
+    function harvestCOMP(uint256 minAmount) public onlyOwner {
+        // To prevent flash loan sandwich attacks to 'steal' the profit, only the owner can harvest the COMP
+        // Swap all COMP to WETH
+        _swapAll(compToken, weth, address(this));
+        // Swap all WETH to token and deliver it to the bentobox. Add the amountOut to the amountAdded.
+        require(_swapAll(weth, token, address(this)) >= minAmount, "CompoundStrategy: not enough");
     }
 
     // Withdraw assets.
