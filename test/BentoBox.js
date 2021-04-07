@@ -18,6 +18,12 @@ const {
 const { ecsign } = require("ethereumjs-util")
 let cmd, fixture
 
+// extreme volumes to explicitly test flashmint overflow vectors
+const bigInt = require("big-integer")
+const extremeValidVolume = bigInt(2).pow(127)
+const bentoProtocolLimit = bigInt(2).pow(128).minus(1)
+const computationalLimit = bigInt(2).pow(256).minus(1)
+
 describe("BentoBox", function () {
     before(async function () {
         fixture = await createFixture(deployments, this, async (cmd) => {
@@ -38,8 +44,7 @@ describe("BentoBox", function () {
             await this.bentoBox.setStrategyTargetPercentage(this.a.address, 20)
 
             await cmd.deploy("erc20", "ERC20Mock", 10000000)
-            await cmd.deploy("lendingPair", "LendingPairMock", this.bentoBox.address)
-            await cmd.deploy("peggedOracle", "PeggedOracle")
+            await cmd.deploy("masterContractMock", "MasterContractMock", this.bentoBox.address)
 
             this.a.approve = function (...params) {
                 console.log(params)
@@ -73,14 +78,9 @@ describe("BentoBox", function () {
 
     describe("Deploy", function () {
         it("Emits LogDeploy event with correct arguments", async function () {
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            await expect(this.bentoBox.deploy(this.lendingPair.address, data, true)).to.emit(this.bentoBox, "LogDeploy")
+            await expect(this.bentoBox.deploy(this.masterContractMock.address, data, true)).to.emit(this.bentoBox, "LogDeploy")
         })
     })
 
@@ -94,6 +94,12 @@ describe("BentoBox", function () {
             expect(await this.bento.toShare(this.a.address, 1000, true)).to.be.equal(1000)
             expect(await this.bento.toShare(this.a.address, 1, true)).to.be.equal(1)
             expect(await this.bento.toShare(this.a.address, 0, true)).to.be.equal(0)
+            expect(await this.bento.toShare(this.a.address, extremeValidVolume.toString(), false)).to.be.equal(extremeValidVolume.toString())
+            expect(await this.bento.toShare(this.a.address, bentoProtocolLimit.toString(), false)).to.be.equal(bentoProtocolLimit.toString())
+            expect(await this.bento.toShare(this.a.address, computationalLimit.toString(), false)).to.be.equal(computationalLimit.toString())
+            expect(await this.bento.toShare(this.a.address, extremeValidVolume.toString(), true)).to.be.equal(extremeValidVolume.toString())
+            expect(await this.bento.toShare(this.a.address, bentoProtocolLimit.toString(), true)).to.be.equal(bentoProtocolLimit.toString())
+            expect(await this.bento.toShare(this.a.address, computationalLimit.toString(), true)).to.be.equal(computationalLimit.toString())
         })
 
         it("Should convert amount to Shares", async function () {
@@ -105,6 +111,12 @@ describe("BentoBox", function () {
             expect(await this.bento.toAmount(this.a.address, 1000, true)).to.be.equal(1000)
             expect(await this.bento.toAmount(this.a.address, 1, true)).to.be.equal(1)
             expect(await this.bento.toAmount(this.a.address, 0, true)).to.be.equal(0)
+            expect(await this.bento.toAmount(this.a.address, extremeValidVolume.toString(), false)).to.be.equal(extremeValidVolume.toString())
+            expect(await this.bento.toAmount(this.a.address, bentoProtocolLimit.toString(), false)).to.be.equal(bentoProtocolLimit.toString())
+            expect(await this.bento.toAmount(this.a.address, computationalLimit.toString(), false)).to.be.equal(computationalLimit.toString())
+            expect(await this.bento.toAmount(this.a.address, extremeValidVolume.toString(), true)).to.be.equal(extremeValidVolume.toString())
+            expect(await this.bento.toAmount(this.a.address, bentoProtocolLimit.toString(), true)).to.be.equal(bentoProtocolLimit.toString())
+            expect(await this.bento.toAmount(this.a.address, computationalLimit.toString(), true)).to.be.equal(computationalLimit.toString())
         })
 
         it("Should convert at ratio", async function () {
@@ -127,6 +139,34 @@ describe("BentoBox", function () {
             expect(await this.bento.toShare(this.a.address, 1, true)).to.be.equal(1)
             expect(await this.bento.toShare(this.a.address, 0, false)).to.be.equal(0)
             expect(await this.bento.toShare(this.a.address, 0, true)).to.be.equal(0)
+
+            expect(await this.bento.toShare(this.a.address, extremeValidVolume.toString(), false)).to.be.equal(
+                bigInt(extremeValidVolume).multiply(100).divide(166).toString()
+            )
+            expect(await this.bento.toShare(this.a.address, bentoProtocolLimit.toString(), false)).to.be.equal(
+                bigInt(bentoProtocolLimit).multiply(100).divide(166).toString()
+            )
+            await expect(this.bento.toShare(this.a.address, computationalLimit.toString(), false)).to.be.revertedWith("BoringMath: Mul Overflow")
+        })
+    })
+
+    describe("Extreme approvals", function () {
+        it("approval succeeds with extreme but valid amount", async function () {
+            await expect(this.a.approve(this.bento.address, extremeValidVolume.toString()))
+                .to.emit(this.a, "Approval")
+                .withArgs(this.alice.address, this.bento.address, extremeValidVolume.toString())
+        })
+
+        it("approval succeeds with bento protocol limit", async function () {
+            await expect(this.a.approve(this.bento.address, bentoProtocolLimit.toString()))
+                .to.emit(this.a, "Approval")
+                .withArgs(this.alice.address, this.bento.address, bentoProtocolLimit.toString())
+        })
+
+        it("approval succeeds with computational limit", async function () {
+            await expect(this.a.approve(this.bento.address, computationalLimit.toString()))
+                .to.emit(this.a, "Approval")
+                .withArgs(this.alice.address, this.bento.address, computationalLimit.toString())
         })
     })
 
@@ -141,6 +181,27 @@ describe("BentoBox", function () {
             )
         })
 
+        it("Reverts on deposit - extreme volume at computational limit", async function () {
+            await this.a.approve(this.bentoBox.address, computationalLimit.toString())
+            await expect(
+                this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, computationalLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Mul Overflow")
+        })
+
+        it("Reverts on deposit - extreme volume at bento protocol limit", async function () {
+            await this.a.approve(this.bentoBox.address, bentoProtocolLimit.toString())
+            await expect(
+                this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, bentoProtocolLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Add Overflow")
+        })
+
+        it("Reverts on deposit - extreme volume, below bento protocol limit, but above available reserves", async function () {
+            await this.a.approve(this.bentoBox.address, extremeValidVolume.toString())
+            await expect(
+                this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, extremeValidVolume.toString(), 0)
+            ).to.be.revertedWith("BoringERC20: TransferFrom failed")
+        })
+
         it("Reverts without approval", async function () {
             await this.a.connect(this.bob).approve(this.bentoBox.address, 1000)
             await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 100, 0)).to.be.revertedWith(
@@ -149,6 +210,12 @@ describe("BentoBox", function () {
             await expect(this.bentoBox.deposit(this.a.address, this.alice.address, this.bob.address, 100, 0)).to.be.revertedWith(
                 "BoringERC20: TransferFrom failed"
             )
+            await expect(
+                this.bentoBox.deposit(this.a.address, this.alice.address, this.bob.address, bentoProtocolLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Add Overflow")
+            await expect(
+                this.bentoBox.deposit(this.a.address, this.alice.address, this.bob.address, computationalLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Mul Overflow")
             await expect(this.bentoBox.connect(this.bob).deposit(this.b.address, this.bob.address, this.bob.address, 100, 0)).to.be.revertedWith(
                 "BoringERC20: TransferFrom failed"
             )
@@ -324,6 +391,22 @@ describe("BentoBox", function () {
             )
         })
 
+        it("Reverts when attempting to withdraw an amount at computational limit (where deposit was valid)", async function () {
+            await this.a.approve(this.bentoBox.address, computationalLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+            await expect(
+                this.bentoBox.withdraw(this.a.address, this.alice.address, this.alice.address, computationalLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Mul Overflow")
+        })
+
+        it("Reverts when attempting to withdraw an amount at bento protocol limit (where deposit was valid)", async function () {
+            await this.a.approve(this.bentoBox.address, bentoProtocolLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+            await expect(
+                this.bentoBox.withdraw(this.a.address, this.alice.address, this.alice.address, bentoProtocolLimit.toString(), 0)
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
         it("Mutates balanceOf of Token and BentoBox correctly", async function () {
             const startBal = await this.a.balanceOf(this.alice.address)
             await this.a.approve(this.bentoBox.address, getBigNumber(130))
@@ -420,6 +503,24 @@ describe("BentoBox", function () {
             )
         })
 
+        it("Reverts when attempting to transfer amount below bento protocol limit but above balance", async function () {
+            await expect(
+                this.bentoBox.connect(this.bob).transfer(this.a.address, this.bob.address, this.alice.address, extremeValidVolume.toString())
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
+        it("Reverts when attempting to transfer bento protocol limit", async function () {
+            await expect(
+                this.bentoBox.connect(this.bob).transfer(this.a.address, this.bob.address, this.alice.address, bentoProtocolLimit.toString())
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
+        it("Reverts when attempting to transfer computational limit", async function () {
+            await expect(
+                this.bentoBox.connect(this.bob).transfer(this.a.address, this.bob.address, this.alice.address, computationalLimit.toString())
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
         it("Mutates balanceOf for from and to correctly", async function () {
             await this.a.approve(this.bentoBox.address, getBigNumber(100))
             await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(100), 0)
@@ -461,6 +562,66 @@ describe("BentoBox", function () {
             expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address)).to.equal(1)
             expect(await this.bentoBox.balanceOf(this.a.address, this.carol.address)).to.equal(1)
         })
+
+        it("revert on multiple transfer at bento protocol limit from alice to both bob and carol", async function () {
+            await this.a.approve(this.bentoBox.address, bentoProtocolLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+
+            await expect(
+                this.bentoBox.transferMultiple(
+                    this.a.address,
+                    this.alice.address,
+                    [this.bob.address, this.carol.address],
+                    [bentoProtocolLimit.toString(), bentoProtocolLimit.toString()],
+                    { from: this.alice.address }
+                )
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
+        it("revert on multiple transfer at bento protocol limit from alice to bob only", async function () {
+            await this.a.approve(this.bentoBox.address, bentoProtocolLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+
+            await expect(
+                this.bentoBox.transferMultiple(
+                    this.a.address,
+                    this.alice.address,
+                    [this.bob.address, this.carol.address],
+                    [bentoProtocolLimit.toString(), getBigNumber(1)],
+                    { from: this.alice.address }
+                )
+            ).to.be.revertedWith("BoringMath: Underflow")
+        })
+
+        it("revert on multiple transfer at computational limit from alice to both bob and carol", async function () {
+            await this.a.approve(this.bentoBox.address, computationalLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+
+            await expect(
+                this.bentoBox.transferMultiple(
+                    this.a.address,
+                    this.alice.address,
+                    [this.bob.address, this.carol.address],
+                    [computationalLimit.toString(), computationalLimit.toString()],
+                    { from: this.alice.address }
+                )
+            ).to.be.revertedWith("BoringMath: Add Overflow")
+        })
+
+        it("revert on multiple transfer at computational limit from alice to bob only", async function () {
+            await this.a.approve(this.bentoBox.address, computationalLimit.toString())
+            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, getBigNumber(1), 0)
+
+            await expect(
+                this.bentoBox.transferMultiple(
+                    this.a.address,
+                    this.alice.address,
+                    [this.bob.address, this.carol.address],
+                    [computationalLimit.toString(), getBigNumber(1)],
+                    { from: this.alice.address }
+                )
+            ).to.be.revertedWith("BoringMath: Add Overflow")
+        })
     })
 
     describe("Skim", function () {
@@ -488,6 +649,20 @@ describe("BentoBox", function () {
             expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
         })
 
+        it("should not allow skimming at bento protocol limit", async function () {
+            await this.a.transfer(this.bentoBox.address, bentoProtocolLimit.toString())
+
+            expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
+
+            await expect(
+                this.bentoBox
+                    .connect(this.bob)
+                    .deposit(this.a.address, this.bentoBox.address, this.bob.address, bigInt(bentoProtocolLimit).add(1).toString(), 0)
+            ).to.be.revertedWith("BentoBox: Skim too much")
+
+            expect(await this.bentoBox.balanceOf(this.a.address, this.bob.address), "bob should have no tokens").to.be.equal(0)
+        })
+
         it("Emits LogDeposit event with expected arguments", async function () {
             await this.a.transfer(this.bentoBox.address, 100)
 
@@ -507,42 +682,30 @@ describe("BentoBox", function () {
         })
 
         it("does not allow clone contract calls if MasterContract is not approved", async function () {
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
+            let deployTx = await this.bentoBox.deploy(this.masterContractMock.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
-            let pair = await this.lendingPair.attach(cloneAddress)
+            let pair = await this.masterContractMock.attach(cloneAddress)
 
             await this.a.approve(this.bentoBox.address, 1)
 
-            await expect(pair.addAsset(this.bob.address, false, 1)).to.be.revertedWith("BentoBox: Transfer not approved")
+            await expect(pair.deposit(this.a.address, 1)).to.be.revertedWith("BentoBox: Transfer not approved")
         })
 
         it("allow clone contract calls if MasterContract is approved", async function () {
-            await this.bentoBox.whitelistMasterContract(this.lendingPair.address, true)
-            await setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.lendingPair.address, true, true)
+            await this.bentoBox.whitelistMasterContract(this.masterContractMock.address, true)
+            await setMasterContractApproval(this.bentoBox, this.alice, this.alice, "", this.masterContractMock.address, true, true)
 
-            const data = await this.lendingPair.getInitData(
-                this.a.address,
-                this.b.address,
-                this.peggedOracle.address,
-                await this.peggedOracle.getDataParameter("0")
-            )
+            const data = "0x00"
 
-            let deployTx = await this.bentoBox.deploy(this.lendingPair.address, data, true)
+            let deployTx = await this.bentoBox.deploy(this.masterContractMock.address, data, true)
             const cloneAddress = (await deployTx.wait()).events[0].args.cloneAddress
-            let pair = await this.lendingPair.attach(cloneAddress)
+            let pair = await this.masterContractMock.attach(cloneAddress)
 
             await this.a.approve(this.bentoBox.address, 2)
 
-            await this.bentoBox.deposit(this.a.address, this.alice.address, this.alice.address, 0, 1)
-
-            await pair.addCollateral(this.alice.address, false, 1)
+            await pair.deposit(this.a.address, 1)
 
             expect(await this.bentoBox.balanceOf(this.a.address, pair.address)).to.be.equal(1)
         })
@@ -652,6 +815,22 @@ describe("BentoBox", function () {
             )
         })
 
+        it("revert on request to flashloan at bento protocol limit", async function () {
+            await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
+            const maxLoan = bentoProtocolLimit.toString()
+            await expect(
+                this.bentoBox.flashLoan(this.flashLoaner.address, this.flashLoaner.address, this.a.address, maxLoan, "0x")
+            ).to.be.revertedWith("BoringERC20: Transfer failed")
+        })
+
+        it("revert on request to flashloan at computational limit", async function () {
+            await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
+            const maxLoan = computationalLimit.toString()
+            await expect(
+                this.bentoBox.flashLoan(this.flashLoaner.address, this.flashLoaner.address, this.a.address, maxLoan, "0x")
+            ).to.be.revertedWith("BoringMath: Mul Overflow")
+        })
+
         it("should allow flashloan with skimable amount on BentoBox", async function () {
             await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
             await this.a.transfer(this.bentoBox.address, getBigNumber(20))
@@ -669,6 +848,22 @@ describe("BentoBox", function () {
             expect(await this.bentoBox.toAmount(this.a.address, getBigNumber(100), false)).to.be.equal(
                 getBigNumber(130).add(maxLoan.mul(5).div(10000))
             )
+        })
+
+        it("revert on request to batch flashloan at bento protocol limit", async function () {
+            await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
+            const maxLoan = bentoProtocolLimit.toString()
+            await expect(
+                this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [maxLoan], "0x")
+            ).to.be.revertedWith("BoringERC20: Transfer failed")
+        })
+
+        it("revert on request to batch flashloan at computational limit", async function () {
+            await this.a.transfer(this.flashLoaner.address, getBigNumber(2))
+            const maxLoan = computationalLimit.toString()
+            await expect(
+                this.bentoBox.batchFlashLoan(this.flashLoaner.address, [this.flashLoaner.address], [this.a.address], [maxLoan], "0x")
+            ).to.be.revertedWith("BoringMath: Mul Overflow")
         })
     })
 

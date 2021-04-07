@@ -5,7 +5,6 @@ const {
 const { ecsign } = require("ethereumjs-util")
 const { deployments, ethers } = require("hardhat")
 const { BN } = require("bn.js")
-const { LendingPair } = require("./lendingpair")
 
 const ADDRESS_ZERO = "0x0000000000000000000000000000000000000000"
 const BASE_TEN = 10
@@ -56,8 +55,13 @@ function getApprovalMsg(tokenAddress, approve, nonce, deadline) {
 function getBentoBoxDomainSeparator(address, chainId) {
     return keccak256(
         defaultAbiCoder.encode(
-            ["bytes32", "string", "uint256", "address"],
-            [keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")), "BentoBox V2", chainId, address]
+            ["bytes32", "bytes32", "uint256", "address"],
+            [
+                keccak256(toUtf8Bytes("EIP712Domain(string name,uint256 chainId,address verifyingContract)")),
+                keccak256(toUtf8Bytes("BentoBox V1")),
+                chainId,
+                address,
+            ]
         )
     )
 }
@@ -65,10 +69,12 @@ function getBentoBoxDomainSeparator(address, chainId) {
 function getBentoBoxApprovalDigest(bentoBox, user, masterContractAddress, approved, nonce, chainId = 1) {
     const DOMAIN_SEPARATOR = getBentoBoxDomainSeparator(bentoBox.address, chainId)
     const msg = defaultAbiCoder.encode(
-        ["bytes32", "string", "address", "address", "bool", "uint256"],
+        ["bytes32", "bytes32", "address", "address", "bool", "uint256"],
         [
             BENTOBOX_MASTER_APPROVAL_TYPEHASH,
-            approved ? "Give FULL access to funds in (and approved to) BentoBox?" : "Revoke access to BentoBox?",
+            approved
+                ? keccak256(toUtf8Bytes("Give FULL access to funds in (and approved to) BentoBox?"))
+                : keccak256(toUtf8Bytes("Revoke access to BentoBox?")),
             user.address,
             masterContractAddress,
             approved,
@@ -104,40 +110,6 @@ async function setMasterContractApproval(bentoBox, from, user, privateKey, maste
             "0x0000000000000000000000000000000000000000000000000000000000000000",
             "0x0000000000000000000000000000000000000000000000000000000000000000"
         )
-}
-
-async function setLendingPairContractApproval(bentoBox, user, privateKey, lendingPair, approved) {
-    const nonce = await bentoBox.nonces(user.address)
-
-    const digest = getBentoBoxApprovalDigest(bentoBox, user, lendingPair.address, approved, nonce, user.provider._network.chainId)
-    const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
-
-    return await lendingPair.connect(user).setApproval(user.address, approved, v, r, s)
-}
-
-async function lendingPairPermit(bentoBox, token, user, privateKey, lendingPair, amount) {
-    const nonce = await token.nonces(user.address)
-
-    const deadline = (await user.provider._internalBlockNumber).respTime + 10000
-
-    const digest = await getApprovalDigest(
-        token,
-        {
-            owner: user.address,
-            spender: bentoBox.address,
-            value: amount,
-        },
-        nonce,
-        deadline,
-        user.provider._network.chainId
-    )
-    const { v, r, s } = ecsign(Buffer.from(digest.slice(2), "hex"), Buffer.from(privateKey.replace("0x", ""), "hex"))
-
-    return await lendingPair.connect(user).permitToken(token.address, user.address, bentoBox.address, amount, deadline, v, r, s)
-}
-
-function sansBorrowFee(amount) {
-    return amount.mul(BigNumber.from(2000)).div(BigNumber.from(2001))
 }
 
 function sansSafetyAmount(amount) {
@@ -319,27 +291,7 @@ async function createFixture(deployments, thisObject, stepsFunction) {
                 await token.transfer(thisObject.fred.address, getBigNumber(1000, decimals))
                 return token
             },
-            addPair: async function (var_name, tokenA, tokenB, amountA, amountB) {
-                const createPairTx = await thisObject.factory.createPair(addr(tokenA), addr(tokenB))
-                const pair = (await createPairTx.wait()).events[0].args.pair
-                const SushiSwapPairMock = await ethers.getContractFactory("SushiSwapPairMock")
-                const sushiSwapPair = await SushiSwapPairMock.attach(pair)
-                addContract(thisObject, var_name, sushiSwapPair)
-
-                await tokenA.transfer(sushiSwapPair.address, getBigNumber(amountA, await tokenA.decimals()))
-                await tokenB.transfer(sushiSwapPair.address, getBigNumber(amountB, await tokenB.decimals()))
-
-                await sushiSwapPair.mint(thisObject.alice.address)
-                return sushiSwapPair
-            },
-            addLendingPair: async function (var_name, bentoBox, masterContract, asset, collateral, oracle, oracleData) {
-                const helper = await LendingPair.deploy(bentoBox, masterContract, masterContract.factory, asset, collateral, oracle, oracleData)
-                addContract(thisObject, var_name, helper)
-                return helper
-            },
         }
-
-        await deployFunction("factory", "SushiSwapFactoryMock")
 
         await stepsFunction(cmd)
         return cmd
@@ -397,11 +349,8 @@ module.exports = {
     getApprovalMsg,
     getBentoBoxDomainSeparator,
     getBentoBoxApprovalDigest,
-    lendingPairPermit,
     getSignedMasterContractApprovalData,
     setMasterContractApproval,
-    setLendingPairContractApproval,
-    sansBorrowFee,
     sansSafetyAmount,
     encodePrice,
     roundBN,

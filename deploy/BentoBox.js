@@ -8,7 +8,7 @@ module.exports = async function (hre) {
     console.log("No WETH address for chain", chainId)
     return;
   }
-  console.log(chainId, hre.network)
+  console.log(chainId)
 
   const gasPrice = await funder.provider.getGasPrice()
   let multiplier = hre.network.tags && hre.network.tags.staging ? 2 : 1

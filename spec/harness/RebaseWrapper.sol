@@ -10,11 +10,11 @@ contract RebaseWrapper {
 
 	Rebase public rebase;
 
-    function getElastic() public view returns (uint256) {
+    function getElastic() public view returns (uint128) {
         return rebase.elastic;
     }
 
-    function getBase() public view returns (uint256) {
+    function getBase() public view returns (uint128) {
         return rebase.base;
     }
 
