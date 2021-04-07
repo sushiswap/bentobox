@@ -24,6 +24,7 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface BentoBoxInterface extends ethers.utils.Interface {
   functions: {
+    "DOMAIN_SEPARATOR()": FunctionFragment;
     "balanceOf(address,address)": FunctionFragment;
     "batch(bytes[],bool)": FunctionFragment;
     "batchFlashLoan(address,address[],address[],uint256[],bytes)": FunctionFragment;
@@ -56,6 +57,10 @@ interface BentoBoxInterface extends ethers.utils.Interface {
     "withdraw(address,address,address,uint256,uint256)": FunctionFragment;
   };
 
+  encodeFunctionData(
+    functionFragment: "DOMAIN_SEPARATOR",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "balanceOf",
     values: [string, string]
@@ -174,6 +179,10 @@ interface BentoBoxInterface extends ethers.utils.Interface {
     values: [string, string, string, BigNumberish, BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "DOMAIN_SEPARATOR",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "batch", data: BytesLike): Result;
   decodeFunctionResult(
@@ -336,6 +345,10 @@ export class BentoBox extends Contract {
   interface: BentoBoxInterface;
 
   functions: {
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
+
+    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<[string]>;
+
     balanceOf(
       arg0: string,
       arg1: string,
@@ -720,6 +733,10 @@ export class BentoBox extends Contract {
     ): Promise<ContractTransaction>;
   };
 
+  DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
+
+  "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
+
   balanceOf(
     arg0: string,
     arg1: string,
@@ -1094,6 +1111,10 @@ export class BentoBox extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
+
+    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
+
     balanceOf(
       arg0: string,
       arg1: string,
@@ -1639,6 +1660,10 @@ export class BentoBox extends Contract {
   };
 
   estimateGas: {
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<BigNumber>;
+
     balanceOf(
       arg0: string,
       arg1: string,
@@ -2005,6 +2030,12 @@ export class BentoBox extends Contract {
   };
 
   populateTransaction: {
+    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "DOMAIN_SEPARATOR()"(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     balanceOf(
       arg0: string,
       arg1: string,
