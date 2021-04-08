@@ -2,6 +2,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
+/* TO-DO
+- use minimal proxy for tamago tokens
+- make generalized NFT fractionalization tool? (i.e., fully erc20.... so lose some gas savings)
+*/
+
 /// @notice Interface for BENTO deposit and withdraw.
 interface IBentoBridge {
     function balanceOf(IERC20, address) external view returns (uint256);
@@ -72,26 +77,26 @@ contract Tamago {
     
     struct Tama {
         IERC721Wrap nft;
-        uint256 tokenId;
-        uint256 ctrlSupply;
-        uint256 totalSupply;
+        uint64 tokenId;
+        uint64 ctrlSupply;
+        uint128 totalSupply;
     }
     
     constructor() public {
         bento.registerProtocol();
     }
     
-    function wrapNFT(IERC721Wrap nft, uint256 tokenId, uint256 ctrlSupply, uint256 totalSupply) external returns (IERC20 wrapper) {
+    function wrapNFT(IERC721Wrap nft, uint64 tokenId, uint64 ctrlSupply, uint128 totalSupply) external returns (IERC20 wrapper) {
         nft.transferFrom(msg.sender, address(this), tokenId);
         wrapper = new TamagoToken(totalSupply);
         tamas[wrapper] = Tama(nft, tokenId, ctrlSupply, totalSupply);
-        bento.deposit(wrapper, address(this), msg.sender, 0, totalSupply);
+        bento.deposit(wrapper, address(this), msg.sender, totalSupply, 0);
     }
     
     function unwrapNFT(IERC20 wrapper) external {
         Tama storage tama = tamas[wrapper];
         require(bento.balanceOf(wrapper, msg.sender) >= tama.ctrlSupply, "!ctrlSupply");
-        //bento.withdraw(wrapper, address(this), msg.sender, 0, tama.totalSupply);
+        bento.withdraw(wrapper, address(this), msg.sender, tama.totalSupply, 0);
         tama.nft.transferFrom(address(this), msg.sender, tama.tokenId);
     }
 }
