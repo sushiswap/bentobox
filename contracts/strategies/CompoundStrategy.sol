@@ -7,6 +7,8 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable not-rely-on-time
+// solhint-disable no-empty-blocks
+// solhint-disable avoid-tx-origin
 
 interface IFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
@@ -82,6 +84,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
     modifier onlyBentobox {
         // Only the bentobox can call harvest on this strategy
         require(msg.sender == bentobox, "CompoundStrategy: only bento");
+        require(!exited, "CompoundStrategy: exited");
         _;
     }
 
@@ -114,7 +117,9 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
 
     // Harvest any profits made converted to the asset and pass them to the caller
     /// @inheritdoc IStrategy
-    function harvest(uint256 balance, address) external override onlyBentobox returns (int256 amountAdded) {
+    function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256 amountAdded) {
+        // To prevent anyone from using flash loans to 'steal' part of the profits, only EOA is allowed to call harvest
+        require(sender == tx.origin, "CompoundStrategy: EOA only");
         // Get the amount of tokens that the cTokens currently represent
         uint256 tokenBalance = cToken.balanceOfUnderlying(address(this));
         // Convert enough cToken to take out the profit
@@ -133,7 +138,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         // To prevent flash loan sandwich attacks to 'steal' the profit, only the owner can harvest the COMP
         // Swap all COMP to WETH
         _swapAll(compToken, weth, address(this));
-        // Swap all WETH to token and deliver it to the bentobox. Add the amountOut to the amountAdded.
+        // Swap all WETH to token and leave it on the contract to be swept up in the next harvest
         require(_swapAll(weth, token, address(this)) >= minAmount, "CompoundStrategy: not enough");
     }
 
@@ -158,11 +163,11 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
 
         // Check that the cToken contract has enough balance to pay out in full
         if (tokenBalance <= available) {
-            // If there are more tokens available than our full position, take all based on cToken balance
-            require(cToken.redeem(cToken.balanceOf(address(this))) == 0, "CompoundStrategy: redeem fail");
+            // If there are more tokens available than our full position, take all based on cToken balance (continue if unsuccesful)
+            try cToken.redeem(cToken.balanceOf(address(this))) {} catch {}
         } else {
-            // Otherwise redeem all available and take a loss on the missing amount
-            require(cToken.redeemUnderlying(available) == 0, "CompoundStrategy: redeem fail");
+            // Otherwise redeem all available and take a loss on the missing amount (continue if unsuccesful)
+            try cToken.redeemUnderlying(available) {} catch {}
         }
 
         // Check balance of token on the contract
