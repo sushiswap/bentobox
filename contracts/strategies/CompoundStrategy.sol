@@ -129,7 +129,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         // Find out how much has been added (+ sitting on the contract from harvestCOMP)
         uint256 amountAdded_ = token.balanceOf(address(this));
         // Transfer the profit to the bentobox, the amountAdded at this point matches the amount transferred
-        cToken.safeTransfer(bentobox, amountAdded_);
+        token.safeTransfer(bentobox, amountAdded_);
 
         return int256(amountAdded_);
     }
@@ -175,7 +175,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         // Calculate tokens added (or lost)
         amountAdded = int256(amount) - int256(balance);
         // Transfer all tokens to bentobox
-        token.safeTransfer(owner, amount);
+        token.safeTransfer(bentobox, amount);
         // Flag as exited, allowing the owner to manually deal with any amounts available later
         exited = true;
     }
