@@ -107,19 +107,6 @@
   },
   {
     "inputs": [],
-    "name": "DOMAIN_SEPARATOR",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "claimOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -144,13 +131,7 @@
       }
     ],
     "name": "deploy",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "cloneAddress",
-        "type": "address"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "payable",
     "type": "function"
   },

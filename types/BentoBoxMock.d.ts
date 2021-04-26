@@ -24,7 +24,6 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface BentoBoxMockInterface extends ethers.utils.Interface {
   functions: {
-    "DOMAIN_SEPARATOR()": FunctionFragment;
     "addProfit(address,uint256)": FunctionFragment;
     "balanceOf(address,address)": FunctionFragment;
     "batch(bytes[],bool)": FunctionFragment;
@@ -58,10 +57,6 @@ interface BentoBoxMockInterface extends ethers.utils.Interface {
     "withdraw(address,address,address,uint256,uint256)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "DOMAIN_SEPARATOR",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "addProfit",
     values: [string, BigNumberish]
@@ -184,10 +179,6 @@ interface BentoBoxMockInterface extends ethers.utils.Interface {
     values: [string, string, string, BigNumberish, BigNumberish]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "DOMAIN_SEPARATOR",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "addProfit", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "batch", data: BytesLike): Result;
@@ -351,10 +342,6 @@ export class BentoBoxMock extends Contract {
   interface: BentoBoxMockInterface;
 
   functions: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<[string]>;
-
     addProfit(
       token: string,
       amount: BigNumberish,
@@ -751,10 +738,6 @@ export class BentoBoxMock extends Contract {
     ): Promise<ContractTransaction>;
   };
 
-  DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-  "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
-
   addProfit(
     token: string,
     amount: BigNumberish,
@@ -1141,10 +1124,6 @@ export class BentoBoxMock extends Contract {
   ): Promise<ContractTransaction>;
 
   callStatic: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
-
     addProfit(
       token: string,
       amount: BigNumberish,
@@ -1702,10 +1681,6 @@ export class BentoBoxMock extends Contract {
   };
 
   estimateGas: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<BigNumber>;
-
     addProfit(
       token: string,
       amount: BigNumberish,
@@ -2084,12 +2059,6 @@ export class BentoBoxMock extends Contract {
   };
 
   populateTransaction: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    "DOMAIN_SEPARATOR()"(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     addProfit(
       token: string,
       amount: BigNumberish,

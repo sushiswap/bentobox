@@ -43,13 +43,7 @@
       }
     ],
     "name": "deploy",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "cloneAddress",
-        "type": "address"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "payable",
     "type": "function"
   },
