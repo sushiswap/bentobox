@@ -143,14 +143,14 @@ export class BoringFactory extends Contract {
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<void>;
 
     "deploy(address,bytes,bool)"(
       masterContract: string,
       data: BytesLike,
       useCreate2: boolean,
       overrides?: CallOverrides
-    ): Promise<string>;
+    ): Promise<void>;
 
     masterContractOf(arg0: string, overrides?: CallOverrides): Promise<string>;
 

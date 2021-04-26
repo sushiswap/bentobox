@@ -24,7 +24,6 @@ import { TypedEventFilter, TypedEvent, TypedListener } from "./commons";
 
 interface MasterContractManagerInterface extends ethers.utils.Interface {
   functions: {
-    "DOMAIN_SEPARATOR()": FunctionFragment;
     "claimOwnership()": FunctionFragment;
     "deploy(address,bytes,bool)": FunctionFragment;
     "masterContractApproved(address,address)": FunctionFragment;
@@ -39,10 +38,6 @@ interface MasterContractManagerInterface extends ethers.utils.Interface {
     "whitelistedMasterContracts(address)": FunctionFragment;
   };
 
-  encodeFunctionData(
-    functionFragment: "DOMAIN_SEPARATOR",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "claimOwnership",
     values?: undefined
@@ -86,10 +81,6 @@ interface MasterContractManagerInterface extends ethers.utils.Interface {
     values: [string]
   ): string;
 
-  decodeFunctionResult(
-    functionFragment: "DOMAIN_SEPARATOR",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "claimOwnership",
     data: BytesLike
@@ -189,10 +180,6 @@ export class MasterContractManager extends Contract {
   interface: MasterContractManagerInterface;
 
   functions: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<[string]>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<[string]>;
-
     claimOwnership(overrides?: Overrides): Promise<ContractTransaction>;
 
     "claimOwnership()"(overrides?: Overrides): Promise<ContractTransaction>;
@@ -309,10 +296,6 @@ export class MasterContractManager extends Contract {
     ): Promise<[boolean]>;
   };
 
-  DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-  "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
-
   claimOwnership(overrides?: Overrides): Promise<ContractTransaction>;
 
   "claimOwnership()"(overrides?: Overrides): Promise<ContractTransaction>;
@@ -426,10 +409,6 @@ export class MasterContractManager extends Contract {
   ): Promise<boolean>;
 
   callStatic: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
-
     claimOwnership(overrides?: CallOverrides): Promise<void>;
 
     "claimOwnership()"(overrides?: CallOverrides): Promise<void>;
@@ -584,10 +563,6 @@ export class MasterContractManager extends Contract {
   };
 
   estimateGas: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<BigNumber>;
-
     claimOwnership(overrides?: Overrides): Promise<BigNumber>;
 
     "claimOwnership()"(overrides?: Overrides): Promise<BigNumber>;
@@ -705,12 +680,6 @@ export class MasterContractManager extends Contract {
   };
 
   populateTransaction: {
-    DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    "DOMAIN_SEPARATOR()"(
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     claimOwnership(overrides?: Overrides): Promise<PopulatedTransaction>;
 
     "claimOwnership()"(overrides?: Overrides): Promise<PopulatedTransaction>;
