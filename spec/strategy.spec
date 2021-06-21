@@ -3,7 +3,6 @@
     This file is run on symbolicStrategy via script/_runStrategt.sh
 	And on SushiStrategy via scripts/_runSushiStrategt.sh
 */
-
 /*
     Declaration of contracts used in the sepc 
 */
@@ -20,7 +19,6 @@ using Receiver as receiverInstance
 methods {
 	leave(uint256 share) => NONDET
 	receiver() returns (address) envfree
-	tokenInstance.balanceOf(address account) returns (uint256) envfree
 	compareLEzero(int256 x) returns (bool) envfree
 	compareLTzero(int256 x) returns (bool) envfree
 	compareGEzero(int256 x) returns (bool) envfree
@@ -43,17 +41,15 @@ definition MAX_UNSIGNED_INT() returns uint256 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
 definition MAX_INT() returns int256 = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
 definition MIN_INT() returns int256 = 0x8000000000000000000000000000000000000000000000000000000000000000;
 
-rule integrityHarvest(uint256 balance, uint256 strategyBalanceBefore) {
+/* Transfers excess tokens above balance. On a positive profit, BentoBox’s balance increases and the return value is the profit above balance. On negative profit, the negative profit is returned. */
+rule integrityHarvest(uint256 balance) {
 	require receiver() == receiverInstance;
-	
-	require strategyBalanceBefore == tokenInstance.balanceOf(currentContract);
-	uint256 balanceBefore = tokenInstance.balanceOf(receiverInstance);
-	
 	env e;
+	uint256 balanceBefore = tokenInstance.balanceOf(receiverInstance);
+
 	int256 amountAdded = harvest(e, balance,_);
 
 	require amountAdded < MIN_INT();
-	uint256 strategyBalanceAfter = tokenInstance.balanceOf(currentContract);
 	uint256 balanceAfter = tokenInstance.balanceOf(receiverInstance);
 	
 	if (compareGTzero(amountAdded)) {
@@ -63,43 +59,69 @@ rule integrityHarvest(uint256 balance, uint256 strategyBalanceBefore) {
 		// strategy made loss
 		assert balanceBefore == balanceAfter, "balance should not change if profit is negative";
 	}
-	
 }
 
-rule integrityWithdraw(uint256 amount, uint256 balance) {
+/* A withdraw operation increases the BentoBox’s balance by the withdrawn amount */
+rule integrityWithdraw(uint256 amount) {
 	require receiver() == receiverInstance;
 	
-	uint256 strategyBalanceBefore = tokenInstance.balanceOf(currentContract);
 	uint256 balanceBefore = tokenInstance.balanceOf(receiverInstance);
 	
 	env e;
-	uint256 amountAdded = withdraw(e, amount);
+	uint256 actualAmount = withdraw(e, amount);
 	
-	uint256 strategyBalanceAfter = tokenInstance.balanceOf(currentContract);
 	uint256 balanceAfter = tokenInstance.balanceOf(receiverInstance);
 
-	mathint t = balanceBefore + amountAdded;
+	mathint t = balanceBefore + actualAmount;
 	require t <= MAX_UNSIGNED_INT();
 	
-	assert strategyBalanceAfter == strategyBalanceBefore - amountAdded, "strategy balance is not correct";
-	assert balanceAfter == balanceBefore + amountAdded, "wrong balance transfered to receiver";
+	assert balanceAfter == balanceBefore + actualAmount, "wrong balance transfered to receiver";
 }
 
+rule strategyIntegrityWithdraw(uint256 amount) {
+	require receiver() == receiverInstance;
+	
+	uint256 strategyBalanceBefore = tokenInstance.balanceOf(currentContract);
+
+	env e;
+	uint256 actualAmount = withdraw(e, amount);
+
+	mathint t = strategyBalanceBefore - actualAmount;
+	require t >= 0;
+	
+	uint256 strategyBalanceAfter = tokenInstance.balanceOf(currentContract);
+
+	assert strategyBalanceAfter == strategyBalanceBefore - actualAmount, "strategy balance is not correct";
+}
+
+/* The exit operation transfers all of the strategy's assets to BentoBox */
 rule integrityExit(uint256 balance) {
 	require receiver() == receiverInstance;
 
-	uint256 strategyBalanceBefore = tokenInstance.balanceOf(currentContract);
 	uint256 balanceBefore = tokenInstance.balanceOf(receiverInstance);
 	
 	env e;
 	int256 amountAdded = exit(e, balance);
 	
-	uint256 strategyBalanceBAfter = tokenInstance.balanceOf(currentContract);
 	uint256 balanceAfter = tokenInstance.balanceOf(receiverInstance);
 
 	mathint t = balanceBefore + balance;
 	require t <= MAX_UNSIGNED_INT();
 	uint256 expectedBalance = balanceBefore + balance;
 	assert checkAplusBeqC(expectedBalance, amountAdded, balanceAfter), "wrong balance transfered to receiver";
-	assert compareLTzero(amountAdded) => strategyBalanceBefore < balance , "did not send all availaible tokens";
+}
+
+rule strategyIntegrityExit(uint256 balance) {
+	uint256 strategyBalanceBefore = tokenInstance.balanceOf(currentContract);
+	
+	env e;
+	int256 amountAdded = exit(e, balance);
+
+	assert compareLTzero(amountAdded) => strategyBalanceBefore < balance,
+	"exit returned a negative amountAdded, but there was a positive profit w.r.t. balance";
+
+	uint256 strategyBalanceAfter = tokenInstance.balanceOf(currentContract);
+	
+	
+	assert strategyBalanceAfter == 0, "did not send all available tokens to receiver";
 }
