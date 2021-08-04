@@ -329,7 +329,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     function harvest(uint256 balance, address sender) public override onlyBentobox returns (int256 amountAdded) {
         // @dev To prevent anyone from using flash loans to 'steal' part of the profits, only EOA is allowed to call harvest.
         require(sender == owner, "AaveStrategy: not owner"); // permission check
-        require(IBentoBoxMinimal(bentobox).totals(underlying).elastic <= maxShare, "AaveStrategy: mmm sandwiched"); // sandwich check
+        require(IBentoBoxMinimal(bentobox).totals(underlying).elastic <= maxShare, "AaveStrategy: sandwiched"); // sandwich check
         // @dev Get the amount of tokens that the aTokens currently represent.
         uint256 tokenBalance = IERC20(aToken).safeBalanceOf(address(this));
         // @dev Convert enough aToken to take out the profit.
@@ -384,7 +384,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     ) public onlyOwner returns (bool success) {
         // @dev After exited, the owner can perform ANY call. This is to rescue any funds that didn't get released during exit or
         // got earned afterwards due to vesting or airdrops, etc.
-        require(exited, "AaveStrategy: Not exited");
+        require(exited, "AaveStrategy: not exited");
         (success, ) = to.call{value: value}(data);
     }
     
@@ -396,7 +396,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     ) public onlyOwner returns (uint256[] memory amounts) {
         uint256 amountIn = IERC20(path[0]).safeBalanceOf(address(this));
         amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
+        require(amounts[amounts.length - 1] >= amountOutMin, "AaveStrategy: insufficient output");
         IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]);
         _swap(amounts, path, address(this));
         emit LogConvert(
@@ -409,11 +409,11 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     }
     
     function _swap(uint256[] memory amounts, address[] memory path, address _to) internal {
-        for (uint i; i < path.length - 1; i++) {
+        for (uint256 i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0,) = UniswapV2Library.sortTokens(input, output);
-            uint amountOut = amounts[i + 1];
-            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
+            uint256 amountOut = amounts[i + 1];
+            (uint256 amount0Out, uint256 amount1Out) = input == token0 ? (uint256(0), amountOut) : (amountOut, uint256(0));
             address to = i < path.length - 2 ? UniswapV2Library.pairFor(factory, output, path[i + 2]) : _to;
             IUniswapV2Pair(UniswapV2Library.pairFor(factory, input, output)).swap(
                 amount0Out, amount1Out, to, new bytes(0)
