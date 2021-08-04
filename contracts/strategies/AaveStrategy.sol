@@ -4,12 +4,12 @@ pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "https://github.com/sushiswap/bentobox/blob/master/contracts/interfaces/IStrategy.sol";
-import "https://github.com/sushiswap/sushiswap/blob/MakerV3/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
-import "https://github.com/sushiswap/sushiswap/blob/MakerV3/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
+import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
+import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
 import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/BoringOwnable.sol";
 import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/libraries/BoringMath.sol";
 import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/libraries/BoringERC20.sol";
-import "https://github.com/sushiswap/sushiswap/blob/MakerV3/contracts/uniswapv2/libraries/UniswapV2Library.sol";
+import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/libraries/UniswapV2Library.sol";
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable not-rely-on-time
@@ -253,44 +253,15 @@ interface IBentoBoxMinimal {
     ) external;
 }
 
-interface IFactory {
-    function getPair(address tokenA, address tokenB) external view returns (address pair);
-}
-
-interface IPair {
-    function totalSupply() external view returns (uint256);
-
-    function balanceOf(address owner) external view returns (uint256);
-
-    function token0() external view returns (address);
-
-    function token1() external view returns (address);
-
-    function getReserves()
-        external
-        view
-        returns (
-            uint112 reserve0,
-            uint112 reserve1,
-            uint32 blockTimestampLast
-        );
-
-    function swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to,
-        bytes calldata data
-    ) external;
-}
-
 contract AaveStrategy is IStrategy, BoringOwnable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
     using BoringERC20 for IaToken;
     
     address public immutable aave;
-    address public immutable aaveToken;
+    address public immutable aToken;
     IBentoBoxMinimal public immutable bentobox;
+    address public immutable factory;
     address public immutable underlying;
     bool public exited;
     uint256 public maxShare;
@@ -305,14 +276,16 @@ contract AaveStrategy is IStrategy, BoringOwnable {
 
     constructor(
         address aave_,
+        address factory_,
         IBentoBoxMinimal bentobox_,
         address underlying_
     ) public {
         aave = aave_;
         bentobox = bentobox_;
+        factory = factory_;
         underlying = underlying_;
         IERC20(underlying_).approve(aave_, type(uint256).max);
-        aaveToken = IaToken(aave_).getReserveData(underlying_).aTokenAddress;
+        aToken = IaToken(aave_).getReserveData(underlying_).aTokenAddress;
     }
 
     modifier onlyBentobox {
@@ -358,7 +331,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         require(sender == owner, "AaveStrategy: not owner"); // permission check
         require(IBentoBoxMinimal(bentobox).totals(underlying).elastic <= maxShare, "AaveStrategy: mmm sandwiched"); // sandwich check
         // @dev Get the amount of tokens that the aTokens currently represent.
-        uint256 tokenBalance = IERC20(underlying).safeBalanceOf(address(this));
+        uint256 tokenBalance = IERC20(aToken).safeBalanceOf(address(this));
         // @dev Convert enough aToken to take out the profit.
         // If the amount is negative due to rounding (near impossible), just revert (should be positive soon enough).
         IaToken(aave).withdraw(underlying, tokenBalance.sub(balance), address(this));
@@ -383,9 +356,9 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     /// @inheritdoc IStrategy
     function exit(uint256 balance) external override onlyBentobox returns (int256 amountAdded) {
         // @dev Get the amount of tokens that the aTokens currently represent.
-        uint256 tokenBalance = IERC20(underlying).safeBalanceOf(address(this));
-        // @dev Get the actual token balance of the cToken contract.
-        uint256 available = IERC20(underlying).safeBalanceOf(underlying);
+        uint256 tokenBalance = IERC20(aToken).safeBalanceOf(address(this));
+        // @dev Get the actual token balance of the aToken contract.
+        uint256 available = IERC20(underlying).safeBalanceOf(aToken);
         // @dev Check that the aToken contract has enough balance to pay out in full.
         if (tokenBalance <= available) {
             // @dev If there are more tokens available than our full position, take all based on aToken balance (continue if unsuccessful).
@@ -420,8 +393,9 @@ contract AaveStrategy is IStrategy, BoringOwnable {
     function swapExactTokensForTokens(
         uint256 amountOutMin,
         address[] calldata path
-    ) public onlyOwner returns (uint[] memory amounts) {
-        amounts = UniswapV2Library.getAmountsOut(factory, IERC20(path[0]).safeBalanceOf(address(this)), path);
+    ) public onlyOwner returns (uint256[] memory amounts) {
+        uint256 amountIn = IERC20(path[0]).safeBalanceOf(address(this));
+        amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
         require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
         IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]);
         _swap(amounts, path, address(this));
@@ -434,7 +408,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         );
     }
     
-    function _swap(uint256[] memory amounts, address[] memory path, address _to) internal virtual {
+    function _swap(uint256[] memory amounts, address[] memory path, address _to) internal {
         for (uint i; i < path.length - 1; i++) {
             (address input, address output) = (path[i], path[i + 1]);
             (address token0,) = UniswapV2Library.sortTokens(input, output);
