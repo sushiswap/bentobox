@@ -3,13 +3,11 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "https://github.com/sushiswap/bentobox/blob/master/contracts/interfaces/IStrategy.sol";
-import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/interfaces/IUniswapV2Factory.sol";
-import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/interfaces/IUniswapV2Pair.sol";
-import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/BoringOwnable.sol";
-import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/libraries/BoringMath.sol";
-import "https://github.com/boringcrypto/BoringSolidity/blob/master/contracts/libraries/BoringERC20.sol";
-import "https://github.com/sushiswap/sushiswap/blob/master/contracts/uniswapv2/libraries/UniswapV2Library.sol";
+import "../interfaces/IStrategy.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
+import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
+import "@sushiswap/core/contracts/uniswapv2/libraries/UniswapV2Library.sol";
 
 // solhint-disable avoid-low-level-calls
 // solhint-disable not-rely-on-time
@@ -64,194 +62,6 @@ interface IStakedAave {
   function claimRewards(address to, uint256 amount) external;
 }
 
-// File @boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol@v1.2.0
-// License-Identifier: MIT
-
-struct Rebase {
-    uint128 elastic;
-    uint128 base;
-}
-
-/// @notice A rebasing library using overflow-/underflow-safe math.
-library RebaseLibrary {
-    using BoringMath for uint256;
-    using BoringMath128 for uint128;
-
-    /// @notice Calculates the base value in relationship to `elastic` and `total`.
-    function toBase(
-        Rebase memory total,
-        uint256 elastic,
-        bool roundUp
-    ) internal pure returns (uint256 base) {
-        if (total.elastic == 0) {
-            base = elastic;
-        } else {
-            base = elastic.mul(total.base) / total.elastic;
-            if (roundUp && base.mul(total.elastic) / total.base < elastic) {
-                base = base.add(1);
-            }
-        }
-    }
-
-    /// @notice Calculates the elastic value in relationship to `base` and `total`.
-    function toElastic(
-        Rebase memory total,
-        uint256 base,
-        bool roundUp
-    ) internal pure returns (uint256 elastic) {
-        if (total.base == 0) {
-            elastic = base;
-        } else {
-            elastic = base.mul(total.elastic) / total.base;
-            if (roundUp && elastic.mul(total.base) / total.elastic < base) {
-                elastic = elastic.add(1);
-            }
-        }
-    }
-
-    /// @notice Add `elastic` to `total` and doubles `total.base`.
-    /// @return (Rebase) The new total.
-    /// @return base in relationship to `elastic`.
-    function add(
-        Rebase memory total,
-        uint256 elastic,
-        bool roundUp
-    ) internal pure returns (Rebase memory, uint256 base) {
-        base = toBase(total, elastic, roundUp);
-        total.elastic = total.elastic.add(elastic.to128());
-        total.base = total.base.add(base.to128());
-        return (total, base);
-    }
-
-    /// @notice Sub `base` from `total` and update `total.elastic`.
-    /// @return (Rebase) The new total.
-    /// @return elastic in relationship to `base`.
-    function sub(
-        Rebase memory total,
-        uint256 base,
-        bool roundUp
-    ) internal pure returns (Rebase memory, uint256 elastic) {
-        elastic = toElastic(total, base, roundUp);
-        total.elastic = total.elastic.sub(elastic.to128());
-        total.base = total.base.sub(base.to128());
-        return (total, elastic);
-    }
-
-    /// @notice Add `elastic` and `base` to `total`.
-    function add(
-        Rebase memory total,
-        uint256 elastic,
-        uint256 base
-    ) internal pure returns (Rebase memory) {
-        total.elastic = total.elastic.add(elastic.to128());
-        total.base = total.base.add(base.to128());
-        return total;
-    }
-
-    /// @notice Subtract `elastic` and `base` to `total`.
-    function sub(
-        Rebase memory total,
-        uint256 elastic,
-        uint256 base
-    ) internal pure returns (Rebase memory) {
-        total.elastic = total.elastic.sub(elastic.to128());
-        total.base = total.base.sub(base.to128());
-        return total;
-    }
-
-    /// @notice Add `elastic` to `total` and update storage.
-    /// @return newElastic Returns updated `elastic`.
-    function addElastic(Rebase storage total, uint256 elastic) internal returns (uint256 newElastic) {
-        newElastic = total.elastic = total.elastic.add(elastic.to128());
-    }
-
-    /// @notice Subtract `elastic` from `total` and update storage.
-    /// @return newElastic Returns updated `elastic`.
-    function subElastic(Rebase storage total, uint256 elastic) internal returns (uint256 newElastic) {
-        newElastic = total.elastic = total.elastic.sub(elastic.to128());
-    }
-}
-
-/// @notice Minimal interface for BentoBox token vault interactions - `token` is aliased as `address` from `IERC20` for code simplicity.
-interface IBentoBoxMinimal {
-    /// @notice Balance per ERC-20 token per account in shares.
-    function balanceOf(address, address) external view returns (uint256);
-
-    /// @notice Deposit an amount of `token` represented in either `amount` or `share`.
-    /// @param token_ The ERC-20 token to deposit.
-    /// @param from which account to pull the tokens.
-    /// @param to which account to push the tokens.
-    /// @param amount Token amount in native representation to deposit.
-    /// @param share Token amount represented in shares to deposit. Takes precedence over `amount`.
-    /// @return amountOut The amount deposited.
-    /// @return shareOut The deposited amount repesented in shares.
-    function deposit(
-        address token_,
-        address from,
-        address to,
-        uint256 amount,
-        uint256 share
-    ) external payable returns (uint256 amountOut, uint256 shareOut);
-
-    /// @notice Withdraws an amount of `token` from a user account.
-    /// @param token_ The ERC-20 token to withdraw.
-    /// @param from which user to pull the tokens.
-    /// @param to which user to push the tokens.
-    /// @param amount of tokens. Either one of `amount` or `share` needs to be supplied.
-    /// @param share Like above, but `share` takes precedence over `amount`.
-    function withdraw(
-        address token_,
-        address from,
-        address to,
-        uint256 amount,
-        uint256 share
-    ) external returns (uint256 amountOut, uint256 shareOut);
-
-    /// @notice Transfer shares from a user account to another one.
-    /// @param token The ERC-20 token to transfer.
-    /// @param from which user to pull the tokens.
-    /// @param to which user to push the tokens.
-    /// @param share The amount of `token` in shares.
-    function transfer(
-        address token,
-        address from,
-        address to,
-        uint256 share
-    ) external;
-
-    /// @dev Helper function to represent an `amount` of `token` in shares.
-    /// @param token The ERC-20 token.
-    /// @param amount The `token` amount.
-    /// @param roundUp If the result `share` should be rounded up.
-    /// @return share The token amount represented in shares.
-    function toShare(
-        address token,
-        uint256 amount,
-        bool roundUp
-    ) external view returns (uint256 share);
-
-    /// @dev Helper function to represent shares back into the `token` amount.
-    /// @param token The ERC-20 token.
-    /// @param share The amount of shares.
-    /// @param roundUp If the result should be rounded up.
-    /// @return amount The share amount back into native representation.
-    function toAmount(
-        address token,
-        uint256 share,
-        bool roundUp
-    ) external view returns (uint256 amount);
-
-    /// @notice Registers this contract so that users can approve it for the BentoBox.
-    function registerProtocol() external;
-    
-    function totals(address token) external view returns (Rebase memory);
-    
-    function harvest(
-        address token,
-        bool balance,
-        uint256 maxChangeAmount
-    ) external;
-}
 
 contract AaveStrategy is IStrategy, BoringOwnable {
     using BoringMath for uint256;
@@ -281,11 +91,11 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         address underlying_
     ) public {
         aave = aave_;
-        bentobox = bentobox_;
         factory = factory_;
+        bentobox = bentobox_;
         underlying = underlying_;
         IERC20(underlying_).approve(aave_, type(uint256).max);
-        aToken = IaToken(aave_).getReserveData(underlying_).aTokenAddress;
+        aToken = IaToken(aaveLendingPool).getReserveData(underlying_).aTokenAddress;
     }
 
     modifier onlyBentobox {
@@ -312,23 +122,22 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         stkAave.claimRewards(address(this), amount);
     }
     /// **** ///
-    
-    function preHarvest(uint256 maxBentoTokenShare, bool balance, uint256 maxChangeAmount) external onlyOwner {
-        maxShare = maxBentoTokenShare;
-        bentobox.harvest(underlying, balance, maxChangeAmount);
-    }
 
     /// @notice Send the assets to the Strategy and call skim to invest them.
     /// @inheritdoc IStrategy
     function skim(uint256 amount) external override onlyBentobox {
         IaToken(aave).deposit(underlying, amount, address(this), 0);
     }
+    
+    function safeHarvest(uint256 maxBentoTokenShare, bool rebalance, uint256 maxChangeAmount) external onlyOwner {
+        maxShare = maxBentoTokenShare;
+        bentobox.harvest(underlying, rebalance, maxChangeAmount);
+    }
 
     /// @notice Harvest any profits made converted to the asset and pass them to the caller.
     /// @inheritdoc IStrategy
     function harvest(uint256 balance, address sender) public override onlyBentobox returns (int256 amountAdded) {
-        // @dev To prevent anyone from using flash loans to 'steal' part of the profits, only EOA is allowed to call harvest.
-        require(sender == owner, "AaveStrategy: not owner"); // permission check
+        require(sender == address(this), "AaveStrategy: wrong sender"); // permission check
         require(IBentoBoxMinimal(bentobox).totals(underlying).elastic <= maxShare, "AaveStrategy: sandwiched"); // sandwich check
         // @dev Get the amount of tokens that the aTokens currently represent.
         uint256 tokenBalance = IERC20(aToken).safeBalanceOf(address(this));
