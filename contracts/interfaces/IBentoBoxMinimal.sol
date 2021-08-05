@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: UNLICENSED
+
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
 
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringRebase.sol";
 
@@ -73,9 +76,9 @@ interface IBentoBoxMinimal {
 
     /// @notice Registers this contract so that users can approve it for the BentoBox.
     function registerProtocol() external;
-    
+
     function totals(address token) external view returns (Rebase memory);
-    
+
     function harvest(
         address token,
         bool balance,
