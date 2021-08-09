@@ -49,14 +49,12 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     }
 
     modifier onlyBentobox() {
-        // @dev Only BentoBox can call harvest on this strategy.
         require(msg.sender == address(bentoBox), "BentoBox Strategy: only bento");
         require(!exited, "BentoBox Strategy: exited");
         _;
     }
 
     modifier onlyExecutor() {
-        // @dev Only executors can call safeHarvest on this strategy.
         require(strategyExecutors[msg.sender], "BentoBox Strategy: only executor");
         _;
     }
@@ -80,17 +78,23 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @param maxBalance The maximum balance of the underlying token that is allowed to be in BentoBox.
     /// @param rebalance Whether BentoBox should rebalance the strategy assets to acheive it's target allocation.
     /// @param maxChangeAmount When rebalancing - the maximum amount that can be deposited or withdrawn from a strategy.
+    /// @param harvestRewards Whether we should also harvest any rewards the strategy has.
+    /// @dev maxBalance can be set to 0 to keep the previous value.
     /// @dev maxChangeAmount can be set to 0 to allow for full rebalancing.
+    /// @dev Only executors can call safeHarvest on this strategy.
     function safeHarvest(
         uint256 maxBalance,
         bool rebalance,
-        uint256 maxChangeAmount
+        uint256 maxChangeAmount,
+        bool harvestRewards
     ) external onlyExecutor {
-        maxBentoBoxBalance = maxBalance;
+        if (harvestRewards) _harvestRewards();
+        if (maxBalance > 0) maxBentoBoxBalance = maxBalance;
         bentoBox.harvest(address(underlying), rebalance, maxChangeAmount);
     }
 
     /// @inheritdoc IStrategy
+    /// @dev Only BentoBox can call harvest on this strategy.
     function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256) {
         /** @dev Ensures that (1) the caller was this contract (called through the safeHarvest function)
 		    and (2) that we are not being frontrun by a large BentoBox deposit when harvesting profits.
@@ -105,9 +109,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
 
             if (amount >= 0) {
                 // we made some profit
-                if (contractBalance > 0) {
-                    IERC20(underlying).safeTransfer(address(bentoBox), contractBalance);
-                }
+                if (contractBalance > 0) IERC20(underlying).safeTransfer(address(bentoBox), contractBalance);
                 return int256(contractBalance);
             } else if (contractBalance > 0) {
                 // we might have made a loss
@@ -130,6 +132,10 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         }
         return int256(0);
     }
+
+    /// @notice Harvests any rewards and rebalances them to the underlying token
+    /// @dev Doesn't need to be overriden if we don't expect any rewards.
+    function _harvestRewards() internal virtual {}
 
     /// @notice Harvest any profits made and transfer them to address(this) or report a loss
     /// @param balance The amount of tokens that have been invested.

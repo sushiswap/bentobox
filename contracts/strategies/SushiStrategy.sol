@@ -12,7 +12,7 @@ interface ISushiBar is IERC20 {
 }
 
 contract SushiStrategy is BaseStrategy {
-    ISushiBar private immutable sushiBar;
+    ISushiBar public immutable sushiBar;
 
     constructor(
         IERC20 _underlying,
@@ -33,9 +33,7 @@ contract SushiStrategy is BaseStrategy {
     function _harvest(uint256 balance) internal override returns (int256) {
         uint256 keep = toShare(balance);
         uint256 total = sushiBar.balanceOf(address(this));
-        if (total > keep) {
-            sushiBar.leave(total - keep);
-        }
+        if (total > keep) sushiBar.leave(total - keep);
         // xSUSHI can't report a loss so no need to check for keep < total case
         return int256(0);
     }

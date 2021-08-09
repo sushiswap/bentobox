@@ -50,7 +50,7 @@ describe("StrategyManager", function () {
 
         it("safeHarvest reverts if not called by executor", async function () {
             await expect(
-                this.sushiStrategy.connect(this.bob).safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
+                this.sushiStrategy.connect(this.bob).safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0, false)
             ).to.be.revertedWith("BentoBox Strategy: only executor")
         })
 
@@ -70,10 +70,10 @@ describe("StrategyManager", function () {
 
         it("rebalances correctly after SushiBar makes money", async function () {
             await this.sushi.transfer(this.bar.address, getBigNumber(10))
-            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic.sub(1), true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic.sub(1), true, 0, false)
             expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal("8000000000000000000")
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("2000000000000000000")
-            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0, false)
             expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal("15111111111111111112")
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3777777777777777778")
         })
@@ -97,9 +97,9 @@ describe("StrategyManager", function () {
         })
 
         it("rebalances correctly after a withdraw from BentoBox", async function () {
-            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0, false)
             await this.bentoBox.withdraw(this.sushi.address, this.alice.address, this.alice.address, "3677777777777777778", 0)
-            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0, false)
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3042222222222222220")
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("15211111111111111110")
         })
