@@ -1,73 +1,59 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
-import "../interfaces/IStrategy.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
-import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 
-// solhint-disable not-rely-on-time
+pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
+
+import "./BaseStrategy.sol";
 
 interface ISushiBar is IERC20 {
     function enter(uint256 _amount) external;
-
     function leave(uint256 _share) external;
 }
 
-contract SushiStrategy is IStrategy, BoringOwnable {
-    using BoringMath for uint256;
-    using BoringERC20 for IERC20;
+contract SushiStrategy is BaseStrategy {
 
-    IERC20 private immutable sushi;
-    ISushiBar private immutable bar;
+	ISushiBar private immutable sushiBar;
 
-    constructor(ISushiBar bar_, IERC20 sushi_) public {
-        bar = bar_;
-        sushi = sushi_;
-    }
+	constructor(
+		IERC20 _underlying,
+        IBentoBoxMinimal _bentoBox,
+        address _factory,
+		address _strategyExecutor,
+        ISushiBar _sushiBar,
+		address[][] memory paths
+    ) public BaseStrategy(_underlying, _bentoBox, _factory, _strategyExecutor, paths) {
+		sushiBar = _sushiBar;
+		_underlying.approve(address(_sushiBar), type(uint256).max);
+	}
 
-    // Send the assets to the Strategy and call skim to invest them
-    /// @inheritdoc IStrategy
-    function skim(uint256 amount) external override {
-        sushi.approve(address(bar), amount);
-        bar.enter(amount);
-    }
+	function _skim(uint256 amount) internal override {
+		sushiBar.enter(amount);	
+	}
 
-    // Harvest any profits made converted to the asset and pass them to the caller
-    /// @inheritdoc IStrategy
-    function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
-        uint256 share = bar.balanceOf(address(this));
-        uint256 totalShares = bar.totalSupply();
-        uint256 totalSushi = sushi.balanceOf(address(bar));
-        uint256 keepShare = balance.mul(totalShares) / totalSushi;
-        uint256 harvestShare = share.sub(keepShare);
-        bar.leave(harvestShare);
-        amountAdded = int256(sushi.balanceOf(address(this)));
-        sushi.safeTransfer(owner, uint256(amountAdded)); // Add as profit
-    }
+	function _harvest(uint256 balance) internal override returns (int256) {
+        uint256 keep = toShare(balance);
+		uint256 total = sushiBar.balanceOf(address(this));
+		if (total > keep) {
+			sushiBar.leave(total - keep);
+		}
+		// xSUSHI can't report a loss so no need to check for keep < total case
+		return int256(0);
+	}
 
-    // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
-    /// @inheritdoc IStrategy
-    function withdraw(uint256 amount) external override onlyOwner returns (uint256 actualAmount) {
-        uint256 totalShares = bar.totalSupply();
-        uint256 totalSushi = sushi.balanceOf(address(bar));
-        uint256 withdrawShare = amount.mul(totalShares) / totalSushi;
-        uint256 share = bar.balanceOf(address(this));
-        if (withdrawShare > share) {
-            withdrawShare = share;
-        }
-        bar.leave(withdrawShare);
-        actualAmount = sushi.balanceOf(address(this));
-        sushi.safeTransfer(owner, actualAmount);
-    }
+	function _withdraw(uint256 amount) internal override {
+        uint256 requested = toShare(amount);
+		uint256 actual = sushiBar.balanceOf(address(this));
+        sushiBar.leave(requested > actual ? actual : requested);
+	}
 
-    // Withdraw all assets in the safest way possible. This shouldn't fail.
-    /// @inheritdoc IStrategy
-    function exit(uint256 balance) external override onlyOwner returns (int256 amountAdded) {
-        uint256 share = bar.balanceOf(address(this));
-        bar.leave(share);
+	function _exit() internal override {
+        sushiBar.leave(sushiBar.balanceOf(address(this)));
+	}
 
-        uint256 amount = sushi.balanceOf(address(this));
-        amountAdded = int256(amount) - int256(balance);
-        sushi.safeTransfer(owner, amount);
-    }
+	function toShare(uint256 amount) internal view returns (uint256) {
+		uint256 totalShares = sushiBar.totalSupply();
+        uint256 totalSushi = underlying.safeBalanceOf(address(sushiBar));
+		return amount.mul(totalShares) / totalSushi;
+	}
+
 }

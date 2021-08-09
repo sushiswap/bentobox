@@ -11,10 +11,11 @@ describe("StrategyManager", function () {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.deploy("bar", "SushiBarMock", this.sushi.address)
-            await cmd.deploy("sushiStrategy", "SushiStrategy", this.bar.address, this.sushi.address)
-            await this.sushiStrategy.transferOwnership(this.bentoBox.address, true, false)
+            await cmd.deploy("sushiStrategy", "SushiStrategy", this.sushi.address, this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", this.alice.address, this.bar.address, [])
             await this.sushi.approve(this.bar.address, getBigNumber(1))
             await this.bar.enter(getBigNumber(1))
+            await this.sushiStrategy.toggleStrategyExecutor(this.alice.address)
         })
         cmd = await fixture()
     })
@@ -39,6 +40,13 @@ describe("StrategyManager", function () {
             )
         })
 
+        it("safeHarvest reverts if not called by executor", async function () {
+            await expect(this.sushiStrategy.connect(this.bob).safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0))
+                .to.be.revertedWith(
+                    "BentoBox Strategy: only executor"
+                )
+        })
+
         it("should rebalance the token", async function () {
             await this.sushi.approve(this.bentoBox.address, getBigNumber(10))
             await this.bentoBox.deposit(this.sushi.address, this.alice.address, this.alice.address, getBigNumber(10), 0)
@@ -55,13 +63,17 @@ describe("StrategyManager", function () {
 
         it("rebalances correctly after SushiBar makes money", async function () {
             await this.sushi.transfer(this.bar.address, getBigNumber(10))
-            await this.bentoBox.harvest(this.sushi.address, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic.sub(1), true, 0)
+            expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal("8000000000000000000")
+            expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("2000000000000000000")
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
             expect((await this.bentoBox.strategyData(this.sushi.address)).balance).to.be.equal("15111111111111111112")
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3777777777777777778")
         })
 
         it("switches to new strategy and exits from old", async function () {
-            await cmd.deploy("sushiStrategy2", "SushiStrategy", this.bar.address, this.sushi.address)
+            await cmd.deploy("sushiStrategy2", "SushiStrategy", this.sushi.address, this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", this.alice.address, this.bar.address, [])
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
@@ -69,27 +81,31 @@ describe("StrategyManager", function () {
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("18888888888888888888")
         })
 
-        it("SushiStrategy does not allow to draw a too high share", async function () {
-            await this.sushiStrategy2.withdraw(getBigNumber(1))
-        })
-
         it("rebalances correctly after a withdraw from BentoBox", async function () {
-            await this.sushiStrategy2.transferOwnership(this.bentoBox.address, true, false)
-            await this.bentoBox.harvest(this.sushi.address, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
             await this.bentoBox.withdraw(this.sushi.address, this.alice.address, this.alice.address, "3677777777777777778", 0)
-            await this.bentoBox.harvest(this.sushi.address, true, 0)
+            await this.sushiStrategy.safeHarvest((await this.bentoBox.totals(this.sushi.address)).elastic, true, 0)
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("3042222222222222220")
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("15211111111111111110")
         })
 
         it("switches to new strategy and exits from old with profit", async function () {
             await this.sushi.transfer(this.bar.address, getBigNumber(1))
-            await cmd.deploy("sushiStrategy3", "SushiStrategy", this.bar.address, this.sushi.address)
+            await cmd.deploy("sushiStrategy3", "SushiStrategy", this.sushi.address, this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", this.alice.address, this.bar.address, [])
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
             expect(await this.sushi.balanceOf(this.bentoBox.address)).to.be.equal("16063274198568316213")
             expect((await this.bentoBox.totals(this.sushi.address)).elastic).to.be.equal("16063274198568316213")
+        })
+
+        it("stores valid path", async function () {
+            const fakePath = ["0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"]
+            await cmd.deploy("sushiStrategy4", "SushiStrategy", this.sushi.address, this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac", this.alice.address, this.bar.address, [fakePath]);
+            const hash = ethers.utils.keccak256(ethers.utils.solidityPack(["address[][]"], [[fakePath]]));
+            expect(await this.sushiStrategy4.allowedPaths(hash)).to.be.true
         })
     })
 })

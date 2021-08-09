@@ -3,8 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../interfaces/IStrategy.sol";
-import "../interfaces/IBentoBoxMinimal.sol";
+import "../../interfaces/IStrategy.sol";
+import "../../interfaces/IBentoBoxMinimal.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
@@ -89,7 +89,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         bentobox = bentobox_;
         underlying = underlying_;
         IERC20(underlying_).approve(aave_, type(uint256).max);
-        aToken = IaToken(aaveLendingPool).getReserveData(underlying_).aTokenAddress;
+        aToken = IaToken(aave_).getReserveData(underlying_).aTokenAddress;
     }
 
     modifier onlyBentobox {
