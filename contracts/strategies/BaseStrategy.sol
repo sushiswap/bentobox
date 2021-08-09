@@ -77,7 +77,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @notice Harvest profits while preventing a sandwich attack exploit.
     /// @param maxBalance The maximum balance of the underlying token that is allowed to be in BentoBox.
     /// @param rebalance Whether BentoBox should rebalance the strategy assets to acheive it's target allocation.
-    /// @param maxChangeAmount When rebalancing - the maximum amount that can be deposited or withdrawn from a strategy.
+    /// @param maxChangeAmount When rebalancing - the maximum amount that will be deposited to or withdrawn from a strategy.
     /// @param harvestRewards Whether we should also harvest any rewards the strategy has.
     /// @dev maxBalance can be set to 0 to keep the previous value.
     /// @dev maxChangeAmount can be set to 0 to allow for full rebalancing.
@@ -97,9 +97,9 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @dev Only BentoBox can call harvest on this strategy.
     function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256) {
         /** @dev Ensures that (1) the caller was this contract (called through the safeHarvest function)
-		    and (2) that we are not being frontrun by a large BentoBox deposit when harvesting profits.
+		        and (2) that we are not being frontrun by a large BentoBox deposit when harvesting profits.
 		    @dev Don't revert if conditions aren't met in order to allow
-		    BentoBox to continiue execution as it might need to do a rebalance. */
+		        BentoBox to continiue execution as it might need to do a rebalance. */
         if (sender == address(this) && IBentoBoxMinimal(bentoBox).totals(address(underlying)).elastic <= maxBentoBoxBalance) {
             /** @dev We might also have some underlying tokens in the contract from before so the amount
                 returned by the internal _harvest function isn't necessary the final profit/loss amount */

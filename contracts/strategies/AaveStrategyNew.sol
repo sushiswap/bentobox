@@ -51,10 +51,10 @@ contract AaveStrategyNew is BaseStrategy {
         ILendingPool _aaveLendingPool,
         IERC20 _underlying,
         IBentoBoxMinimal _bentoBox,
-        address _factory,
         address _strategyExecutor,
+        address _factory,
         address[][] memory paths
-    ) public BaseStrategy(_underlying, _bentoBox, _factory, _strategyExecutor, paths) {
+    ) public BaseStrategy(_underlying, _bentoBox, _strategyExecutor, _factory, paths) {
         aaveLendingPool = _aaveLendingPool;
         aToken = IERC20(_aaveLendingPool.getReserveData(address(_underlying)).aTokenAddress);
         _underlying.approve(address(_aaveLendingPool), type(uint256).max);

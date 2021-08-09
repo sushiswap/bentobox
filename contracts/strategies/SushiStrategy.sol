@@ -17,11 +17,11 @@ contract SushiStrategy is BaseStrategy {
     constructor(
         IERC20 _underlying,
         IBentoBoxMinimal _bentoBox,
-        address _factory,
         address _strategyExecutor,
+        address _factory,
         ISushiBar _sushiBar,
         address[][] memory paths
-    ) public BaseStrategy(_underlying, _bentoBox, _factory, _strategyExecutor, paths) {
+    ) public BaseStrategy(_underlying, _bentoBox, _strategyExecutor, _factory, paths) {
         sushiBar = _sushiBar;
         _underlying.approve(address(_sushiBar), type(uint256).max);
     }
