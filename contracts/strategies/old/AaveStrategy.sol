@@ -92,7 +92,7 @@ contract AaveStrategy is IStrategy, BoringOwnable {
         aToken = IaToken(aave_).getReserveData(underlying_).aTokenAddress;
     }
 
-    modifier onlyBentobox {
+    modifier onlyBentobox() {
         // @dev Only the bentobox can call harvest on this strategy.
         require(msg.sender == address(bentobox), "AaveStrategy: only bento");
         require(!exited, "AaveStrategy: exited");

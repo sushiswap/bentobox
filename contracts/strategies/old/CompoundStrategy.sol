@@ -81,7 +81,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         token_.approve(address(cToken_), type(uint256).max);
     }
 
-    modifier onlyBentobox {
+    modifier onlyBentobox() {
         // Only the bentobox can call harvest on this strategy
         require(msg.sender == bentobox, "CompoundStrategy: only bento");
         require(!exited, "CompoundStrategy: exited");
