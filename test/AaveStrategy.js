@@ -5,19 +5,18 @@ const { ethers, network } = require("hardhat")
 let cmd, fixture
 
 describe.only("AaveStrategy", function () {
-
     const lendingPool = "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9"
     const factory = "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac"
     const _usdc = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
     const _aUsdc = "0xbcca60bb61934080951369a648fb03df4f96263c"
-
+    const incentiveControler = "0x357D51124f59836DeD84c8a1730D72B749d8BC23"
     before(async function () {
-        fixture = await createFixture(deployments, this, async (cmd,) => {
+        fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("sushi", "RevertingERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.deploy("bar", "SushiBarMock", this.sushi.address)
-            await cmd.deploy("aaveStrategy", "AaveStrategyNew", lendingPool, _usdc, this.bentoBox.address, this.alice.address, factory, [])
+            await cmd.deploy("aaveStrategy", "AaveStrategy", lendingPool, incentiveControler, [_usdc, this.bentoBox.address, this.alice.address, factory, "0x0000000000000000000000000000000000000000"])
         })
         cmd = await fixture()
 
@@ -25,18 +24,18 @@ describe.only("AaveStrategy", function () {
         this.aUsdc = tokenFactory.attach(_aUsdc)
         this.usdc = tokenFactory.attach(_usdc)
 
-        // get some mainnet usdc to alice - send from 0x39AA which has a bunch of usdc
-        const usdcWhale = "0x39AA39c021dfbaE8faC545936693aC917d5E7563";
-        await network.provider.request({ method: "hardhat_impersonateAccount", params: [usdcWhale] });
-        await network.provider.send("hardhat_setBalance", [usdcWhale, "0x1000000000000000000",]);
+        // get some mainnet usdc to alice
+        const usdcWhale = "0x39AA39c021dfbaE8faC545936693aC917d5E7563"
+        await network.provider.request({ method: "hardhat_impersonateAccount", params: [usdcWhale] })
+        await network.provider.send("hardhat_setBalance", [usdcWhale, "0x1000000000000000000"])
         const signer = await ethers.getSigner(usdcWhale)
-        await this.usdc.connect(signer).transfer(this.alice.address, getBigNumber(10000000, 6),) // 10 million
+        await this.usdc.connect(signer).transfer(this.alice.address, getBigNumber(10000000, 6)) // 10 million
         await this.usdc.approve(this.bentoBox.address, getBigNumber(10000000, 6))
     })
 
     it("allows to set strategy", async function () {
-        expect((await this.usdc.balanceOf(this.alice.address)).gt(0), "Mainnet not forked");
-        expect((await this.usdc.balanceOf(_aUsdc)).gt(0), "Mainnet not forked");
+        expect((await this.usdc.balanceOf(this.alice.address)).gt(0), "Mainnet not forked")
+        expect((await this.usdc.balanceOf(_aUsdc)).gt(0), "Mainnet not forked")
         await this.bentoBox.setStrategy(_usdc, this.aaveStrategy.address)
         expect(await this.bentoBox.pendingStrategy(_usdc)).to.be.equal(this.aaveStrategy.address)
         await advanceTime(1209600, ethers)
@@ -70,7 +69,7 @@ describe.only("AaveStrategy", function () {
     })
 
     it("exits", async function () {
-        await cmd.deploy("aaveStrategy2", "AaveStrategyNew", lendingPool, _usdc, this.bentoBox.address, this.alice.address, factory, [])
+        await cmd.deploy("aaveStrategy2", "AaveStrategy", lendingPool, incentiveControler, [_usdc, this.bentoBox.address, this.alice.address, factory, "0x0000000000000000000000000000000000000000"])
         await this.bentoBox.setStrategy(_usdc, this.aaveStrategy2.address)
         await advanceTime(1209600, ethers)
         await this.bentoBox.setStrategy(_usdc, this.aaveStrategy2.address)
@@ -78,5 +77,4 @@ describe.only("AaveStrategy", function () {
         const elastic = (await this.bentoBox.totals(_usdc)).elastic
         expect(balance.eq(elastic))
     })
-
 })

@@ -15,15 +15,11 @@ contract SushiStrategy is BaseStrategy {
     ISushiBar public immutable sushiBar;
 
     constructor(
-        IERC20 _underlying,
-        IBentoBoxMinimal _bentoBox,
-        address _strategyExecutor,
-        address _factory,
         ISushiBar _sushiBar,
-        address[][] memory paths
-    ) public BaseStrategy(_underlying, _bentoBox, _strategyExecutor, _factory, paths) {
+        BaseStrategyParams memory baseStrategyParams
+    ) public BaseStrategy(baseStrategyParams) {
         sushiBar = _sushiBar;
-        _underlying.approve(address(_sushiBar), type(uint256).max);
+        baseStrategyParams.underlying.approve(address(_sushiBar), type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {

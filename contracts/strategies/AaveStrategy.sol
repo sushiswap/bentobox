@@ -43,21 +43,49 @@ interface ILendingPool {
     function getReserveData(address asset) external view returns (DataTypes.ReserveData memory);
 }
 
-contract AaveStrategyNew is BaseStrategy {
-    ILendingPool public immutable aaveLendingPool;
-    IERC20 public immutable aToken;
+interface IAaveIncentivesController {
+  	function setClaimer(address user, address claimer) external;
+	function getClaimer(address user) external view returns (address);
+  	function configureAssets(address[] calldata assets, uint256[] calldata emissionsPerSecond)
+    	external;
+	function handleAction(
+		address asset,
+		uint256 userBalance,
+		uint256 totalSupply
+	) external;
+	function getRewardsBalance(address[] calldata assets, address user)
+		external
+		view
+		returns (uint256);
+	function claimRewards(
+		address[] calldata assets,
+		uint256 amount,
+		address to
+	) external returns (uint256);
+	function claimRewardsOnBehalf(
+		address[] calldata assets,
+		uint256 amount,
+		address user,
+		address to
+	) external returns (uint256);
+	function getUserUnclaimedRewards(address user) external view returns (uint256);
+}
 
-    constructor(
+contract AaveStrategy is BaseStrategy {
+    
+	ILendingPool public immutable aaveLendingPool;
+    IERC20 public immutable aToken;
+	IAaveIncentivesController public immutable incentiveControler;
+    
+	constructor(
         ILendingPool _aaveLendingPool,
-        IERC20 _underlying,
-        IBentoBoxMinimal _bentoBox,
-        address _strategyExecutor,
-        address _factory,
-        address[][] memory paths
-    ) public BaseStrategy(_underlying, _bentoBox, _strategyExecutor, _factory, paths) {
+		IAaveIncentivesController _incentiveControler,
+        BaseStrategyParams memory baseStrategyParams
+    ) public BaseStrategy(baseStrategyParams) {
         aaveLendingPool = _aaveLendingPool;
-        aToken = IERC20(_aaveLendingPool.getReserveData(address(_underlying)).aTokenAddress);
-        _underlying.approve(address(_aaveLendingPool), type(uint256).max);
+		incentiveControler = _incentiveControler;
+        aToken = IERC20(_aaveLendingPool.getReserveData(address(baseStrategyParams.underlying)).aTokenAddress);
+        baseStrategyParams.underlying.approve(address(_aaveLendingPool), type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {
@@ -68,7 +96,6 @@ contract AaveStrategyNew is BaseStrategy {
         uint256 currentBalance = IERC20(aToken).safeBalanceOf(address(this));
         amountAdded = int256(currentBalance) - int256(balance);
         if (amountAdded > 0) aaveLendingPool.withdraw(address(underlying), currentBalance - balance, address(this));
-        /// @dev compiler error when using uint256(amountAdded) instead of currentBalance - balance ¯\_(ツ)_/¯
     }
 
     function _withdraw(uint256 amount) internal override {
@@ -88,6 +115,6 @@ contract AaveStrategyNew is BaseStrategy {
     }
 
     function _harvestRewards() internal override {
-        // TODO
+        
     }
 }

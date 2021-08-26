@@ -63,7 +63,7 @@ interface IStakedAave {
     function claimRewards(address to, uint256 amount) external;
 }
 
-contract AaveStrategy is IStrategy, BoringOwnable {
+contract AaveStrategyOld is IStrategy, BoringOwnable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
     using BoringERC20 for IaToken;
