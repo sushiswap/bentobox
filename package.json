@@ -90,6 +90,8 @@
         "@tenderly/hardhat-tenderly": "^1.0.10",
         "@uniswap/lib": "^2.2.0-alpha",
         "@uniswap/v2-core": "^1.0.1",
+        "@yearn/yearn-vaults": "github:yearn/yearn-vaults#bfcf7383eea17d7ce135f5b1ab2a4e2e88e149c9",
+        "@openzeppelin": "github:OpenZeppelin/openzeppelin-contracts#3.1.0",
         "big-integer": "^1.6.48",
         "chai": "^4.3.0",
         "coveralls": "^3.1.0",

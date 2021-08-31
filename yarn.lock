@@ -23,9 +23,9 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
-"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#8f2b54f645a7844ae266cc50dc3ae4c125c7b9fc":
-  version "1.2.0"
-  resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/8f2b54f645a7844ae266cc50dc3ae4c125c7b9fc"
+"@boringcrypto/boring-solidity@boringcrypto/BoringSolidity#77f3752c4bcf47cb7f8e8140ac8cd626b1151ad3":
+  version "1.2.3"
+  resolved "https://codeload.github.com/boringcrypto/BoringSolidity/tar.gz/77f3752c4bcf47cb7f8e8140ac8cd626b1151ad3"
 
 "@codechecks/client@^0.1.10":
   version "0.1.10"
@@ -884,6 +884,10 @@
     "@types/sinon-chai" "^3.2.3"
     "@types/web3" "1.0.19"
 
+"@openzeppelin@github:OpenZeppelin/openzeppelin-contracts#3.1.0":
+  version "3.1.0"
+  resolved "https://codeload.github.com/OpenZeppelin/openzeppelin-contracts/tar.gz/de99bccbfd4ecd19d7369d01b070aa72c64423c9"
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -1398,6 +1402,10 @@
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@yarnpkg/lockfile/-/lockfile-1.1.0.tgz#e77a97fbd345b76d83245edcd17d393b1b41fb31"
   integrity sha512-GpSwvyXOcOOlV70vbnzjj4fW5xW/FdUF6nQEt1ENy7m4ZCczi1+/buVUPAqmGfqznsORNFzUMjctTIp8a9tuCQ==
+
+"@yearn/yearn-vaults@github:yearn/yearn-vaults#bfcf7383eea17d7ce135f5b1ab2a4e2e88e149c9":
+  version "0.0.0"
+  resolved "https://codeload.github.com/yearn/yearn-vaults/tar.gz/bfcf7383eea17d7ce135f5b1ab2a4e2e88e149c9"
 
 abbrev@1:
   version "1.1.1"
