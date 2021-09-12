@@ -11,22 +11,17 @@ describe.only("StrategyManager", function () {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
             await cmd.deploy("bar", "SushiBarMock", this.sushi.address)
-            await cmd.deploy(
-                "sushiStrategy",
-                "SushiStrategy",
-                this.bar.address,
-                [
-                    this.sushi.address,
-                    this.bentoBox.address,
-                    this.alice.address,
-                    "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
-                    "0x0000000000000000000000000000000000000000"
-                ],
-            )
+            await cmd.deploy("sushiStrategy", "SushiStrategy", this.bar.address, [
+                this.sushi.address,
+                this.bentoBox.address,
+                this.alice.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
+                "0x0000000000000000000000000000000000000000",
+            ])
             await cmd.deploy("combineHarvester", "CombineHarvester")
             await this.sushi.approve(this.bar.address, getBigNumber(1))
             await this.bar.enter(getBigNumber(1))
-            await this.sushiStrategy.setStrategyExecutor(this.combineHarvester.address, true);
+            await this.sushiStrategy.setStrategyExecutor(this.combineHarvester.address, true)
         })
         cmd = await fixture()
     })
@@ -64,7 +59,8 @@ describe.only("StrategyManager", function () {
                     [(await this.bentoBox.totals(this.sushi.address)).elastic],
                     [true],
                     [0],
-                    [false])
+                    [false]
+                )
             )
         })
 
@@ -93,18 +89,13 @@ describe.only("StrategyManager", function () {
         })
 
         it("switches to new strategy and exits from old", async function () {
-            await cmd.deploy(
-                "sushiStrategy2",
-                "SushiStrategy",
-                this.bar.address,
-                [
-                    this.sushi.address,
-                    this.bentoBox.address,
-                    "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
-                    this.alice.address,
-                    "0x0000000000000000000000000000000000000000"
-                ]
-            )
+            await cmd.deploy("sushiStrategy2", "SushiStrategy", this.bar.address, [
+                this.sushi.address,
+                this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
+                this.alice.address,
+                "0x0000000000000000000000000000000000000000",
+            ])
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy2.address)
@@ -122,18 +113,13 @@ describe.only("StrategyManager", function () {
 
         it("switches to new strategy and exits from old with profit", async function () {
             await this.sushi.transfer(this.bar.address, getBigNumber(1))
-            await cmd.deploy(
-                "sushiStrategy3",
-                "SushiStrategy",
-                this.bar.address,
-                [
-                    this.sushi.address,
-                    this.bentoBox.address,
-                    "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
-                    this.alice.address,
-                    "0x0000000000000000000000000000000000000000"
-                ],
-            )
+            await cmd.deploy("sushiStrategy3", "SushiStrategy", this.bar.address, [
+                this.sushi.address,
+                this.bentoBox.address,
+                "0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac",
+                this.alice.address,
+                "0x0000000000000000000000000000000000000000",
+            ])
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)
             await advanceTime(1209600, ethers)
             await this.bentoBox.setStrategy(this.sushi.address, this.sushiStrategy3.address)

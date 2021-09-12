@@ -4,9 +4,8 @@ const { ethers, network } = require("hardhat")
 
 let cmd, fixture
 
-// !! forking must be set to polygon 
+// !! forking must be set to polygon
 describe.only("AavePolygonStrategy", async function () {
-
     // polygon addresses
     const lendingPool = "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf"
     const factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4"
@@ -17,7 +16,6 @@ describe.only("AavePolygonStrategy", async function () {
     const incentiveControler = "0x357D51124f59836DeD84c8a1730D72B749d8BC23"
 
     before(async function () {
-
         fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
@@ -61,12 +59,12 @@ describe.only("AavePolygonStrategy", async function () {
     })
 
     it("claims rewards", async function () {
-        const oldWmaticBalance = await this.wmatic.balanceOf(this.aaveStrategy.address);
+        const oldWmaticBalance = await this.wmatic.balanceOf(this.aaveStrategy.address)
         await advanceTimeAndBlock(1209600, ethers) // 2 weeks of yield
-        await this.aaveStrategy.safeHarvest(0, true, 0, true);
-        const newWmaticBalance = await this.wmatic.balanceOf(this.aaveStrategy.address);
+        await this.aaveStrategy.safeHarvest(0, true, 0, true)
+        const newWmaticBalance = await this.wmatic.balanceOf(this.aaveStrategy.address)
         expect(oldWmaticBalance.lt(newWmaticBalance))
-    });
+    })
 
     it("reports a profit", async function () {
         const oldBalance = (await this.bentoBox.totals(_usdc)).elastic

@@ -32,16 +32,19 @@ interface ILendingPool {
         address onBehalfOf,
         uint16 referralCode
     ) external;
+
     function withdraw(
         address asset,
         uint256 amount,
         address to
     ) external returns (uint256);
+
     function getReserveData(address asset) external view returns (DataTypes.ReserveData memory);
 }
 
 interface IAaveIncentivesController {
     function getRewardsBalance(address[] calldata assets, address user) external view returns (uint256);
+
     function claimRewards(
         address[] calldata assets,
         uint256 amount,
@@ -50,7 +53,6 @@ interface IAaveIncentivesController {
 }
 
 contract AavePolygonStrategy is BaseStrategy {
-    
     ILendingPool public immutable aaveLendingPool;
     IERC20 public immutable aToken;
     IAaveIncentivesController public immutable incentiveController;

@@ -13,14 +13,10 @@ interface ISafeStrategy {
         bool harvestRewards
     ) external;
 
-    function swapExactTokensForUnderlying(
-        uint256 amountOutMin,
-        address inputToken
-    ) external;
+    function swapExactTokensForUnderlying(uint256 amountOutMin, address inputToken) external;
 }
 
 contract CombineHarvester is BoringOwnable {
-    
     function sellRewardTokens(
         ISafeStrategy[] memory strategies,
         uint256[] memory minOutAmounts,

@@ -112,7 +112,6 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         uint256 maxChangeAmount,
         bool harvestRewards
     ) external onlyExecutor {
-        
         if (harvestRewards) {
             _harvestRewards();
         }
@@ -120,7 +119,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         if (maxBalance > 0) {
             maxBentoBoxBalance = maxBalance;
         }
-        
+
         bentoBox.harvest(address(token), rebalance, maxChangeAmount);
     }
 
@@ -129,14 +128,12 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     @dev Ensures that (1) the caller was this contract (called through the safeHarvest function)
         and (2) that we are not being frontrun by a large BentoBox deposit when harvesting profits. */
     function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256) {
-        
         /** @dev Don't revert if conditions aren't met in order to allow
             BentoBox to continiue execution as it might need to do a rebalance. */
 
         if (sender == address(this) && IBentoBoxMinimal(bentoBox).totals(address(token)).elastic <= maxBentoBoxBalance) {
-            
             int256 amount = _harvest(balance);
-            
+
             /** @dev Since harvesting of rewards is accounted for seperately we might also have
             some underlying tokens in the contract that the _harvest call doesn't report. 
             E.g. reward tokens that have been sold into the underlying tokens which are now sitting in the contract.
@@ -146,15 +143,14 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
 
             if (amount >= 0) {
                 // _harvest reported a profit
-                
+
                 if (contractBalance > 0) {
                     token.safeTransfer(address(bentoBox), contractBalance);
                 }
                 return int256(contractBalance);
-
             } else if (contractBalance > 0) {
                 // _harvest reported a loss but we have some tokens sitting in the contract
-                
+
                 int256 diff = amount + int256(contractBalance);
 
                 if (diff > 0) {
@@ -169,7 +165,6 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
                     return diff;
                 }
             } else {
-                
                 // we made a loss
                 return amount;
             }
@@ -210,21 +205,17 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     }
 
     /// @notice Swap some tokens in the contract for the underlying and deposits them to address(this)
-    function swapExactTokensForUnderlying(
-        uint256 amountOutMin,
-        address inputToken
-    ) public onlyExecutor returns (uint256 amountOut) {
-        
+    function swapExactTokensForUnderlying(uint256 amountOutMin, address inputToken) public onlyExecutor returns (uint256 amountOut) {
         require(inputToken != address(token), "BentoBox Strategy: invalid swap");
 
         ///@dev Construct a path array consisting of the input (reward token),
         /// underlying token and a potential bridge token
         bool useBridge = bridgeToken != address(0);
 
-        address[] memory path = new address[](useBridge  ? 3 : 2);
-        
+        address[] memory path = new address[](useBridge ? 3 : 2);
+
         path[0] = inputToken;
-        
+
         if (useBridge) {
             path[1] = bridgeToken;
         }
@@ -232,15 +223,15 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         path[path.length - 1] = address(token);
 
         uint256 amountIn = IERC20(path[0]).safeBalanceOf(address(this));
-        
+
         uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
 
         amountOut = amounts[amounts.length - 1];
-        
+
         require(amountOut >= amountOutMin, "BentoBox Strategy: insufficient output");
 
         IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]);
-        
+
         _swap(amounts, path, address(this));
 
         emit LogConvert(msg.sender, inputToken, address(token), amountIn, amountOut);

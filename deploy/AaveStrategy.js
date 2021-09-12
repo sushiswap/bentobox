@@ -32,8 +32,10 @@ module.exports = async function (hre) {
 
   if (chainId == 137) { // polygon
     params = polygon;
-  } else {
+  } else if (chainId == 42) {
     params = kovan;
+  } else {
+    return;
   }
 
   const strategy = await hre.deployments.deploy("AavePolygonStrategy", {
