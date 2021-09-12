@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "./BaseStrategy.sol";
+import "../BaseStrategy.sol";
 
 interface ISushiBar is IERC20 {
     function enter(uint256 _amount) external;
@@ -14,12 +14,9 @@ interface ISushiBar is IERC20 {
 contract SushiStrategy is BaseStrategy {
     ISushiBar public immutable sushiBar;
 
-    constructor(
-        ISushiBar _sushiBar,
-        BaseStrategyParams memory baseStrategyParams
-    ) public BaseStrategy(baseStrategyParams) {
+    constructor(ISushiBar _sushiBar, BaseStrategyParams memory baseStrategyParams) public BaseStrategy(baseStrategyParams) {
         sushiBar = _sushiBar;
-        baseStrategyParams.underlying.approve(address(_sushiBar), type(uint256).max);
+        baseStrategyParams.token.approve(address(_sushiBar), type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {
@@ -46,7 +43,7 @@ contract SushiStrategy is BaseStrategy {
 
     function toShare(uint256 amount) internal view returns (uint256) {
         uint256 totalShares = sushiBar.totalSupply();
-        uint256 totalSushi = underlying.safeBalanceOf(address(sushiBar));
+        uint256 totalSushi = token.safeBalanceOf(address(sushiBar));
         return amount.mul(totalShares) / totalSushi;
     }
 }

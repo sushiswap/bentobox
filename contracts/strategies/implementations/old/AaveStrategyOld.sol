@@ -3,8 +3,8 @@
 pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
-import "../../interfaces/IStrategy.sol";
-import "../../interfaces/IBentoBoxMinimal.sol";
+import "../../../interfaces/IStrategy.sol";
+import "../../../interfaces/IBentoBoxMinimal.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";

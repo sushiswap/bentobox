@@ -18,14 +18,14 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     using BoringERC20 for IERC20;
 
     struct BaseStrategyParams {
-        IERC20 underlying;
+        IERC20 token;
         IBentoBoxMinimal bentoBox;
         address strategyExecutor;
         address factory;
         address bridgeToken;
     }
 
-    IERC20 public immutable underlying;
+    IERC20 public immutable token;
     IBentoBoxMinimal public immutable bentoBox;
     address public immutable factory;
     address public immutable bridgeToken;
@@ -37,13 +37,13 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     event LogConvert(address indexed server, address indexed token0, address indexed token1, uint256 amount0, uint256 amount1);
     event LogSetStrategyExecutor(address indexed executor, bool allowed);
 
-    /** @param baseStrategyParams.underlying Token the strategy invests.
+    /** @param baseStrategyParams.token Address of the underlying token the strategy invests.
         @param baseStrategyParams.bentoBox BentoBox address.
         @param baseStrategyParams.strategyExecutor EOA that will execute the safeHarvest function.
         @param baseStrategyParams.factory SushiSwap factory.
         @param baseStrategyParams.bridgeToken An intermedieary token for swapping any rewards into the underlying token.*/
     constructor(BaseStrategyParams memory baseStrategyParams) public {
-        underlying = baseStrategyParams.underlying;
+        token = baseStrategyParams.token;
         bentoBox = baseStrategyParams.bentoBox;
         strategyExecutors[baseStrategyParams.strategyExecutor] = true;
         factory = baseStrategyParams.factory;
@@ -64,10 +64,6 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @dev amountAdded shouldn't reflect any rewards the strategy received.
     function _harvest(uint256 balance) internal virtual returns (int256 amountAdded);
 
-    /// @notice Claim any rewards reward tokens and optionally sell them for the underlying token.
-    /// @dev Doesn't need to be implemented if we don't expect any rewards.
-    function _harvestRewards() internal virtual {}
-
     /// @dev Withdraw the requested amount of the underlying tokens to address(this).
     /// @param amount The requested amount we want to withdraw.
     function _withdraw(uint256 amount) internal virtual;
@@ -75,6 +71,10 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @notice Withdraw the maximum amount of the invested assets to address(this).
     /// @dev This shouldn't revert (use try catch).
     function _exit() internal virtual;
+
+    /// @notice Claim any rewards reward tokens and optionally sell them for the underlying token.
+    /// @dev Doesn't need to be implemented if we don't expect any rewards.
+    function _harvestRewards() internal virtual {}
 
     //** End strategy implementation */
 
@@ -103,7 +103,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @param maxBalance The maximum balance of the underlying token that is allowed to be in BentoBox.
     /// @param rebalance Whether BentoBox should rebalance the strategy assets to acheive it's target allocation.
     /// @param maxChangeAmount When rebalancing - the maximum amount that will be deposited to or withdrawn from a strategy.
-    /// @param harvestRewards Whether we should also harvest any rewards for the strategy;
+    /// @param harvestRewards If we want to claim any accrued reward tokens
     /// @dev maxBalance can be set to 0 to keep the previous value.
     /// @dev maxChangeAmount can be set to 0 to allow for full rebalancing.
     function safeHarvest(
@@ -112,9 +112,16 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         uint256 maxChangeAmount,
         bool harvestRewards
     ) external onlyExecutor {
-        if (harvestRewards) _harvestRewards();
-        if (maxBalance > 0) maxBentoBoxBalance = maxBalance;
-        bentoBox.harvest(address(underlying), rebalance, maxChangeAmount);
+        
+        if (harvestRewards) {
+            _harvestRewards();
+        }
+
+        if (maxBalance > 0) {
+            maxBentoBoxBalance = maxBalance;
+        }
+        
+        bentoBox.harvest(address(token), rebalance, maxChangeAmount);
     }
 
     /** @inheritdoc IStrategy
@@ -122,28 +129,39 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     @dev Ensures that (1) the caller was this contract (called through the safeHarvest function)
         and (2) that we are not being frontrun by a large BentoBox deposit when harvesting profits. */
     function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256) {
+        
         /** @dev Don't revert if conditions aren't met in order to allow
             BentoBox to continiue execution as it might need to do a rebalance. */
-        if (sender == address(this) && IBentoBoxMinimal(bentoBox).totals(address(underlying)).elastic <= maxBentoBoxBalance) {
-            
-            /** We might also have some underlying tokens in the contract (e.g. bought from any received reward tokens)
-                so the amount returned by the internal _harvest function isn't necessary the final profit/loss amount */
-            int256 amount = _harvest(balance);
 
-            uint256 contractBalance = IERC20(underlying).safeBalanceOf(address(this));
+        if (sender == address(this) && IBentoBoxMinimal(bentoBox).totals(address(token)).elastic <= maxBentoBoxBalance) {
+            
+            int256 amount = _harvest(balance);
+            
+            /** @dev Since harvesting of rewards is accounted for seperately we might also have
+            some underlying tokens in the contract that the _harvest call doesn't report. 
+            E.g. reward tokens that have been sold into the underlying tokens which are now sitting in the contract.
+            Meaning the amount returned by the internal _harvest function isn't necessary the final profit/loss amount */
+
+            uint256 contractBalance = token.safeBalanceOf(address(this));
 
             if (amount >= 0) {
-                // strategy made some profit
-                if (contractBalance > 0) IERC20(underlying).safeTransfer(address(bentoBox), contractBalance);
+                // _harvest reported a profit
+                
+                if (contractBalance > 0) {
+                    token.safeTransfer(address(bentoBox), contractBalance);
+                }
                 return int256(contractBalance);
+
             } else if (contractBalance > 0) {
-                // strategy made a loss
+                // _harvest reported a loss but we have some tokens sitting in the contract
+                
                 int256 diff = amount + int256(contractBalance);
 
                 if (diff > 0) {
-                    // we still made some profit due to rewards
+                    // we still made some profit
+                    // send the profit to BentoBox and reinvest the rest
+                    token.safeTransfer(address(bentoBox), uint256(diff));
                     _skim(uint256(-amount));
-                    IERC20(underlying).safeTransfer(address(bentoBox), uint256(diff));
                     return diff;
                 } else {
                     // we made a loss but we have some tokens we can reinvest
@@ -151,6 +169,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
                     return diff;
                 }
             } else {
+                
                 // we made a loss
                 return amount;
             }
@@ -162,19 +181,19 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     function withdraw(uint256 amount) external override onlyBentobox returns (uint256 actualAmount) {
         _withdraw(amount);
         /// @dev Make sure we send and report the exact same amount of tokens by using balanceOf.
-        actualAmount = IERC20(underlying).safeBalanceOf(address(this));
-        IERC20(underlying).safeTransfer(address(bentoBox), actualAmount);
+        actualAmount = token.safeBalanceOf(address(this));
+        token.safeTransfer(address(bentoBox), actualAmount);
     }
 
     /// @inheritdoc IStrategy
     function exit(uint256 balance) external override onlyBentobox returns (int256 amountAdded) {
         _exit();
         /// @dev Check balance of token on the contract.
-        uint256 actualBalance = IERC20(underlying).safeBalanceOf(address(this));
+        uint256 actualBalance = token.safeBalanceOf(address(this));
         /// @dev Calculate tokens added (or lost).
         amountAdded = int256(actualBalance) - int256(balance);
         /// @dev Transfer all tokens to bentoBox.
-        underlying.safeTransfer(address(bentoBox), actualBalance);
+        token.safeTransfer(address(bentoBox), actualBalance);
         /// @dev Flag as exited, allowing the owner to manually deal with any amounts available later.
         exited = true;
     }
@@ -190,22 +209,41 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         (success, ) = to.call{value: value}(data);
     }
 
-    /// @notice Swap some tokens in the contract for the underlying
-    function swapExactTokensForUnderlying(uint256 amountOutMin, address reward, bool useBridge) public onlyExecutor returns (uint256[] memory amounts) {
+    /// @notice Swap some tokens in the contract for the underlying and deposits them to address(this)
+    function swapExactTokensForUnderlying(
+        uint256 amountOutMin,
+        address inputToken
+    ) public onlyExecutor returns (uint256 amountOut) {
         
-        address[] memory path = new address[](useBridge ? 3 : 2);
-        path[0] = reward;
-        if (useBridge) path[1] = bridgeToken;
-        path[path.length - 1] = address(underlying);
+        require(inputToken != address(token), "BentoBox Strategy: invalid swap");
+
+        ///@dev Construct a path array consisting of the input (reward token),
+        /// underlying token and a potential bridge token
+        bool useBridge = bridgeToken != address(0);
+
+        address[] memory path = new address[](useBridge  ? 3 : 2);
+        
+        path[0] = inputToken;
+        
+        if (useBridge) {
+            path[1] = bridgeToken;
+        }
+
+        path[path.length - 1] = address(token);
 
         uint256 amountIn = IERC20(path[0]).safeBalanceOf(address(this));
-        amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, "BentoBox Strategy: insufficient output");
+        
+        uint256[] memory amounts = UniswapV2Library.getAmountsOut(factory, amountIn, path);
+
+        amountOut = amounts[amounts.length - 1];
+        
+        require(amountOut >= amountOutMin, "BentoBox Strategy: insufficient output");
 
         IERC20(path[0]).safeTransfer(UniswapV2Library.pairFor(factory, path[0], path[1]), amounts[0]);
+        
         _swap(amounts, path, address(this));
 
-        emit LogConvert(msg.sender, path[0], path[path.length - 1], amountIn, amounts[amounts.length - 1]);
+        emit LogConvert(msg.sender, inputToken, address(token), amountIn, amountOut);
     }
 
     /// @dev requires the initial amount to have already been sent to the first pair
