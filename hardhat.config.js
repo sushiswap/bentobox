@@ -11,7 +11,6 @@ require("hardhat-spdx-license-identifier")
 require("hardhat-watcher")
 require("solidity-coverage")
 require("hardhat-docgen")
-require("./scripts/aaveStrategy")
 
 if (process.env.BUILD_ARTIFACTS) {
     require("hardhat-abi-exporter")
