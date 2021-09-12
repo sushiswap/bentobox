@@ -4,7 +4,7 @@ const { ethers } = require("hardhat")
 
 let cmd, fixture
 
-describe.only("StrategyManager", function () {
+describe("StrategyManager", function () {
     before(async function () {
         fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("sushi", "RevertingERC20Mock", "SUSHI", "SUSHI", 18, getBigNumber("10000000"))
