@@ -16,7 +16,7 @@ contract SushiStrategy is BaseStrategy {
 
     constructor(ISushiBar _sushiBar, BaseStrategyParams memory baseStrategyParams) public BaseStrategy(baseStrategyParams) {
         sushiBar = _sushiBar;
-        baseStrategyParams.token.approve(address(_sushiBar), type(uint256).max);
+        IERC20(baseStrategyParams.token).approve(address(_sushiBar), type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {

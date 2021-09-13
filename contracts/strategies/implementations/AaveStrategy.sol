@@ -68,7 +68,7 @@ contract AaveStrategy is BaseStrategy {
         aaveLendingPool = _aaveLendingPool;
         incentiveController = _incentiveController;
         aToken = IERC20(_aaveLendingPool.getReserveData(address(baseStrategyParams.token)).aTokenAddress);
-        baseStrategyParams.token.approve(address(_aaveLendingPool), type(uint256).max);
+        IERC20(baseStrategyParams.token).approve(address(_aaveLendingPool), type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {

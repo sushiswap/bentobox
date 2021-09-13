@@ -18,8 +18,8 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     using BoringERC20 for IERC20;
 
     struct BaseStrategyParams {
-        IERC20 token;
-        IBentoBoxMinimal bentoBox;
+        address token;
+        address bentoBox;
         address strategyExecutor;
         address factory;
         address bridgeToken;
@@ -43,8 +43,8 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
         @param baseStrategyParams.factory SushiSwap factory.
         @param baseStrategyParams.bridgeToken An intermedieary token for swapping any rewards into the underlying token.*/
     constructor(BaseStrategyParams memory baseStrategyParams) public {
-        strategyToken = baseStrategyParams.token;
-        bentoBox = baseStrategyParams.bentoBox;
+        strategyToken = IERC20(baseStrategyParams.token);
+        bentoBox = IBentoBoxMinimal(baseStrategyParams.bentoBox);
         strategyExecutors[baseStrategyParams.strategyExecutor] = true;
         factory = baseStrategyParams.factory;
         bridgeToken = baseStrategyParams.bridgeToken;

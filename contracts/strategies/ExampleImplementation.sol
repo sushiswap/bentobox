@@ -13,7 +13,7 @@ contract ExampleImplementation is BaseStrategy {
     // BaseStrategy initializes a immutable storage variable 'strategyToken' of type IERC20 we can use
 
     constructor(address investmentContract, BaseStrategy.BaseStrategyParams memory baseStrategyParams) public BaseStrategy(baseStrategyParams) {
-        baseStrategyParams.token.approve(investmentContract, type(uint256).max);
+        IERC20(baseStrategyParams.token).approve(investmentContract, type(uint256).max);
     }
 
     function _skim(uint256 amount) internal override {
