@@ -52,19 +52,19 @@ interface IAaveIncentivesController {
     ) external returns (uint256);
 }
 
-contract AavePolygonStrategy is BaseStrategy {
+contract AaveStrategy is BaseStrategy {
+    IERC20 public immutable rewardToken;
     ILendingPool public immutable aaveLendingPool;
-    IERC20 public immutable aToken;
     IAaveIncentivesController public immutable incentiveController;
-    IERC20 public immutable wmatic;
+    IERC20 public immutable aToken;
 
     constructor(
-        IERC20 _wmatic,
+        IERC20 _rewardToken,
         ILendingPool _aaveLendingPool,
         IAaveIncentivesController _incentiveController,
         BaseStrategyParams memory baseStrategyParams
     ) public BaseStrategy(baseStrategyParams) {
-        wmatic = _wmatic;
+        rewardToken = _rewardToken;
         aaveLendingPool = _aaveLendingPool;
         incentiveController = _incentiveController;
         aToken = IERC20(_aaveLendingPool.getReserveData(address(baseStrategyParams.token)).aTokenAddress);

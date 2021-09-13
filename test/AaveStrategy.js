@@ -4,8 +4,7 @@ const { ethers, network } = require("hardhat")
 
 let cmd, fixture
 
-// !! forking must be set to polygon
-describe.skip("AavePolygonStrategy", async function () {
+describe("AaveStrategy", async function () {
     // polygon addresses
     const lendingPool = "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf"
     const factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4"
@@ -16,10 +15,25 @@ describe.skip("AavePolygonStrategy", async function () {
     const incentiveControler = "0x357D51124f59836DeD84c8a1730D72B749d8BC23"
 
     before(async function () {
+
+        this.timeout(30000);
+
+        await network.provider.request({
+            method: "hardhat_reset",
+            params: [
+                {
+                    forking: {
+                        jsonRpcUrl: `https://polygon-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+                        blockNumber: 19001343,
+                    },
+                },
+            ],
+        });
+
         fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
             await cmd.deploy("bentoBox", "BentoBoxMock", this.weth9.address)
-            await cmd.deploy("aaveStrategy", "AavePolygonStrategy", _wmatic, lendingPool, incentiveControler, [
+            await cmd.deploy("aaveStrategy", "AaveStrategy", _wmatic, lendingPool, incentiveControler, [
                 _usdc,
                 this.bentoBox.address,
                 this.alice.address,
@@ -36,7 +50,6 @@ describe.skip("AavePolygonStrategy", async function () {
 
         const usdcWhale = "0xBA12222222228d8Ba445958a75a0704d566BF2C8"
         await network.provider.request({ method: "hardhat_impersonateAccount", params: [usdcWhale] })
-        await network.provider.send("hardhat_setBalance", [usdcWhale, "0x1000000000000000000"])
         const signer = await ethers.getSigner(usdcWhale)
         await this.usdc.connect(signer).transfer(this.alice.address, getBigNumber(5000000, 6)) // 100k usdc
         await this.usdc.approve(this.bentoBox.address, getBigNumber(5000000, 6))
@@ -56,7 +69,7 @@ describe.skip("AavePolygonStrategy", async function () {
         expect((await this.bentoBox.strategyData(_usdc)).balance).to.be.equal(0)
         await this.bentoBox.harvest(_usdc, true, 0)
         expect((await this.bentoBox.strategyData(_usdc)).balance).to.be.equal(getBigNumber(4000000, 6))
-    })
+    }).timeout(30000)
 
     it("claims rewards", async function () {
         const oldWmaticBalance = await this.wmatic.balanceOf(this.aaveStrategy.address)
@@ -86,7 +99,7 @@ describe.skip("AavePolygonStrategy", async function () {
     })
 
     it("exits", async function () {
-        await cmd.deploy("aaveStrategy2", "AavePolygonStrategy", _wmatic, lendingPool, incentiveControler, [
+        await cmd.deploy("aaveStrategy2", "AaveStrategy", _wmatic, lendingPool, incentiveControler, [
             _usdc,
             this.bentoBox.address,
             this.alice.address,
