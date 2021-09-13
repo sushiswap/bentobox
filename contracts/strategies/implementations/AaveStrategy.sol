@@ -72,28 +72,28 @@ contract AaveStrategy is BaseStrategy {
     }
 
     function _skim(uint256 amount) internal override {
-        aaveLendingPool.deposit(address(token), amount, address(this), 0);
+        aaveLendingPool.deposit(address(strategyToken), amount, address(this), 0);
     }
 
     function _harvest(uint256 balance) internal override returns (int256 amountAdded) {
         uint256 currentBalance = IERC20(aToken).safeBalanceOf(address(this));
         amountAdded = int256(currentBalance) - int256(balance);
-        if (amountAdded > 0) aaveLendingPool.withdraw(address(token), currentBalance - balance, address(this));
+        if (amountAdded > 0) aaveLendingPool.withdraw(address(strategyToken), currentBalance - balance, address(this));
     }
 
     function _withdraw(uint256 amount) internal override {
-        aaveLendingPool.withdraw(address(token), amount, address(this));
+        aaveLendingPool.withdraw(address(strategyToken), amount, address(this));
     }
 
     function _exit() internal override {
         uint256 tokenBalance = aToken.safeBalanceOf(address(this));
-        uint256 available = token.safeBalanceOf(address(aToken));
+        uint256 available = strategyToken.safeBalanceOf(address(aToken));
         if (tokenBalance <= available) {
             /// @dev If there are more tokens available than our full position, take all based on aToken balance (continue if unsuccessful).
-            try aaveLendingPool.withdraw(address(token), tokenBalance, address(this)) {} catch {}
+            try aaveLendingPool.withdraw(address(strategyToken), tokenBalance, address(this)) {} catch {}
         } else {
             /// @dev Otherwise redeem all available and take a loss on the missing amount (continue if unsuccessful).
-            try aaveLendingPool.withdraw(address(token), available, address(this)) {} catch {}
+            try aaveLendingPool.withdraw(address(strategyToken), available, address(this)) {} catch {}
         }
     }
 

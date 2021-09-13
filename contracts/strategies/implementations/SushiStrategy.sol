@@ -43,7 +43,7 @@ contract SushiStrategy is BaseStrategy {
 
     function toShare(uint256 amount) internal view returns (uint256) {
         uint256 totalShares = sushiBar.totalSupply();
-        uint256 totalSushi = token.safeBalanceOf(address(sushiBar));
+        uint256 totalSushi = strategyToken.safeBalanceOf(address(sushiBar));
         return amount.mul(totalShares) / totalSushi;
     }
 }
