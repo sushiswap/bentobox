@@ -206,6 +206,7 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
 
     /// @notice Swap some tokens in the contract for the underlying and deposits them to address(this)
     function swapExactTokensForUnderlying(uint256 amountOutMin, address inputToken) public onlyExecutor returns (uint256 amountOut) {
+        require(factory != address(0), "BentoBox Strategy: cannot swap");
         require(inputToken != address(token), "BentoBox Strategy: invalid swap");
 
         ///@dev Construct a path array consisting of the input (reward token),

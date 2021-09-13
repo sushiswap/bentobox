@@ -15,8 +15,7 @@ describe("AaveStrategy", async function () {
     const incentiveControler = "0x357D51124f59836DeD84c8a1730D72B749d8BC23"
 
     before(async function () {
-
-        this.timeout(30000);
+        this.timeout(30000)
 
         await network.provider.request({
             method: "hardhat_reset",
@@ -28,7 +27,7 @@ describe("AaveStrategy", async function () {
                     },
                 },
             ],
-        });
+        })
 
         fixture = await createFixture(deployments, this, async (cmd) => {
             await cmd.deploy("weth9", "WETH9Mock")
