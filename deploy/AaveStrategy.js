@@ -19,7 +19,7 @@ module.exports = async function (hre) {
   const kovan = {
     incentiveToken: "0x0000000000000000000000000000000000000000", // no incentives
     incentiveControler: "0x0000000000000000000000000000000000000000", // no incentives
-    bentoBox: "0xd1037B0485aDAdA2C0169bBe53b0395309D21fD2",
+    bentoBox: "0xc381a85ed7C7448Da073b7d6C9d4cBf1Cbf576f0",
     lendingPool: "0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe",
     factory: "0x0000000000000000000000000000000000000000",
     bridgeToken: "0x0000000000000000000000000000000000000000", // bridge token for rewards
@@ -45,7 +45,7 @@ module.exports = async function (hre) {
       [
         params.token,
         params.bentoBox,
-        "0x123B749C6aAE8761c4907a784bB8845e67991594",
+        "0x123A06e1d15189d02f9d073F10f5c3107342f3A2",
         params.factory,
         params.bridgeToken
       ]

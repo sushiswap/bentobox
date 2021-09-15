@@ -61,7 +61,9 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     /// @param balance The amount of tokens that have been invested.
     /// @return amountAdded The delta (+profit or -loss) that occured in contrast to `balance`.
     /// @dev amountAdded can be left at 0 when reporting profits (gas savings).
-    /// @dev amountAdded shouldn't reflect any rewards the strategy received.
+    /// amountAdded should not reflect any rewards or tokens the strategy received.
+    /// Calcualte the amount added based on what the current deposit is worth.
+    /// (The Base Strategy harvest function accounts for rewards).
     function _harvest(uint256 balance) internal virtual returns (int256 amountAdded);
 
     /// @dev Withdraw the requested amount of the underlying tokens to address(this).
