@@ -4,7 +4,7 @@ const { ethers, network } = require("hardhat")
 
 let cmd, fixture
 
-describe("AaveStrategy", async function () {
+describe.only("AaveStrategy", async function () {
     // polygon addresses
     const lendingPool = "0x8dff5e27ea6b7ac08ebfdf9eb090f32ee9a30fcf"
     const factory = "0xc35DADB65012eC5796536bD9864eD8773aBc74C4"

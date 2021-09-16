@@ -183,7 +183,8 @@ abstract contract BaseStrategy is IStrategy, BoringOwnable {
     }
 
     /// @inheritdoc IStrategy
-    function exit(uint256 balance) external override onlyBentobox returns (int256 amountAdded) {
+    function exit(uint256 balance) external override returns (int256 amountAdded) {
+        require(msg.sender == address(bentoBox), "BaseStrategy: only BentoBox");
         _exit();
         /// @dev Check balance of token on the contract.
         uint256 actualBalance = strategyToken.safeBalanceOf(address(this));
