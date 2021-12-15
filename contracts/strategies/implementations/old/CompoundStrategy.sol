@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
-import "../interfaces/IStrategy.sol";
+import "../../../interfaces/IStrategy.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
@@ -81,7 +81,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         token_.approve(address(cToken_), type(uint256).max);
     }
 
-    modifier onlyBentobox {
+    modifier onlyBentobox() {
         // Only the bentobox can call harvest on this strategy
         require(msg.sender == bentobox, "CompoundStrategy: only bento");
         require(!exited, "CompoundStrategy: exited");

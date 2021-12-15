@@ -27,11 +27,11 @@ const test_accounts = {
     accountsBalance: "990000000000000000000",
 }
 
-const accounts =
+/* const accounts =
     process.env.MNEMONIC && process.env.FUNDER_MNEMONIC
         ? [ethers.Wallet.fromMnemonic(process.env.MNEMONIC).privateKey, ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).privateKey]
-        : []
-
+        : [] */
+const accounts = { mnemonic: process.env.MNEMONIC }
 /*console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.MNEMONIC).address)
 console.log("Wallet:", ethers.Wallet.fromMnemonic(process.env.FUNDER_MNEMONIC).address)
 
@@ -106,7 +106,7 @@ module.exports = {
                 test_accounts,
             },
             process.env.ALCHEMY_API_KEY
-                ? { forking: { url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, blockNumber: 11829739 } }
+                ? { forking: { url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`, blockNumber: 12993600 } }
                 : {}
         ),
         mainnet: {

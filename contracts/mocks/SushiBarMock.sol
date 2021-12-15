@@ -10,7 +10,7 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 contract SushiBarMock is ERC20 {
     using BoringMath for uint256;
     ERC20 public sushi;
-    uint256 public totalSupply;
+    uint256 public override totalSupply;
     string public constant name = "SushiBar";
     string public constant symbol = "xSushi";
 
