@@ -34,7 +34,7 @@ describe("HelloWorld", function () {
 
     it("should allow deposit", async function () {
         await this.helloWorld.deposit(APPROVAL_AMOUNT)
-        assert.equal((await this.helloWorld.balance()).toString(), APPROVAL_AMOUNT.toString())
+        assert.equal((await this.helloWorld.balance()).toString(), (APPROVAL_AMOUNT - 1000).toString())
     })
 
     it("should allow withdraw", async function () {

@@ -185,8 +185,6 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         IERC20 token = token_ == USE_ETHEREUM ? wethToken : token_;
         Rebase memory total = totals[token];
 
-        // If a new token gets added, the tokenSupply call checks that this is a deployed contract. Needed for security.
-        require(total.elastic != 0 || token.totalSupply() > 0, "BentoBox: No tokens");
         if (share == 0) {
             // value of the share may be lower than the amount due to rounding, that's ok
             share = total.toBase(amount, false);
@@ -207,9 +205,13 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             "BentoBox: Skim too much"
         );
 
-        balanceOf[token][to] = balanceOf[token][to].add(share);
         total.base = total.base.add(share.to128());
+        if (total.elastic == 0) {
+            // Upon the first deposit permanently lock the MINIMUM_SHARE_BALANCE amount of tokens
+            share = share.sub(MINIMUM_SHARE_BALANCE);
+        }
         total.elastic = total.elastic.add(amount.to128());
+        balanceOf[token][to] = balanceOf[token][to].add(share);
         totals[token] = total;
 
         // Interactions
@@ -258,8 +260,6 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         balanceOf[token][from] = balanceOf[token][from].sub(share);
         total.elastic = total.elastic.sub(amount.to128());
         total.base = total.base.sub(share.to128());
-        // There have to be at least 1000 shares left to prevent reseting the share/amount ratio (unless it's fully emptied)
-        require(total.base >= MINIMUM_SHARE_BALANCE || total.base == 0, "BentoBox: cannot empty");
         totals[token] = total;
 
         // Interactions

@@ -34,7 +34,7 @@ describe("DummyStrategyMock", function () {
     it("check balances of BentoBox", async function () {
         assert.equal(
             (await this.bentoBox.balanceOf(this.tokenA.address, this.alice.address)).toString(),
-            getBigNumber(DEPOSIT_AMOUNT, await this.tokenA.decimals()).toString(),
+            getBigNumber(DEPOSIT_AMOUNT, await this.tokenA.decimals()).sub(1000).toString(),
             "should match deposit amount"
         )
 

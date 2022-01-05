@@ -55,7 +55,7 @@ describe("BentoBox", function () {
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(100))
                 .to.emit(this.bentoBox, "LogDeposit")
-                .withArgs(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), getBigNumber(100))
+                .withArgs(this.a.address, this.fred.address, this.fred.address, getBigNumber(100), getBigNumber(100).sub(1000))
 
             this.bentoBox.connect(this.fred).addProfit(this.a.address, getBigNumber(30))
 
@@ -64,7 +64,7 @@ describe("BentoBox", function () {
                 .to.emit(this.b, "Transfer")
                 .withArgs(this.fred.address, this.bentoBox.address, getBigNumber(200, 6))
                 .to.emit(this.bentoBox, "LogDeposit")
-                .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), getBigNumber(200, 6))
+                .withArgs(this.b.address, this.fred.address, this.fred.address, getBigNumber(200, 6), getBigNumber(200, 6).sub(1000))
 
             this.bentoBox.connect(this.fred).addProfit(this.b.address, getBigNumber(200, 6))
 
@@ -249,19 +249,21 @@ describe("BentoBox", function () {
                 .to.emit(this.weth9, "Deposit")
                 .withArgs(this.bentoBox.address, "1000")
                 .to.emit(this.bentoBox, "LogDeposit")
-                .withArgs(this.weth9.address, this.bob.address, this.bob.address, "1000", "1000")
+                .withArgs(this.weth9.address, this.bob.address, this.bob.address, "1000", "0")
 
             expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.be.equal(1000)
+            expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "bob shouldn't have weth").to.be.equal(0)
+            await this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1000, 0, { value: 1000 })
             expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "bob should have weth").to.be.equal(1000)
         })
 
-        it("Reverts if TotalSupply of token is Zero or if token isn't a token", async function () {
+        it("Reverts if token isn't a token", async function () {
+            // await expect(
+            //     this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1, 0, { value: 1 })
+            // ).to.be.revertedWith("BentoBox: No tokens")
             await expect(
-                this.bentoBox.connect(this.bob).deposit(ADDRESS_ZERO, this.bob.address, this.bob.address, 1, 0, { value: 1 })
-            ).to.be.revertedWith("BentoBox: No tokens")
-            await expect(
-                this.bentoBox.connect(this.bob).deposit(this.bentoBox.address, this.bob.address, this.bob.address, 1, 0, { value: 1 })
-            ).to.be.revertedWith("Transaction reverted: function selector was not recognized and there's no fallback function")
+                this.bentoBox.connect(this.bob).deposit(this.bentoBox.address, this.bob.address, this.bob.address, 1000, 0)
+            ).to.be.revertedWith("VM Exception while processing transaction: revert BoringERC20: TransferFrom failed")
         })
 
         it("Mutates balanceOf and totalSupply for two deposits correctly", async function () {
@@ -327,7 +329,7 @@ describe("BentoBox", function () {
 
         it("should not allow grieving attack with deposit of Share", async function () {
             await this.c.approve(this.bentoBox.address, 1000000000000)
-            await this.bentoBox.deposit(this.c.address, this.alice.address, this.alice.address, 0, 1)
+            await this.bentoBox.deposit(this.c.address, this.alice.address, this.c.address, 0, 1000)
             await this.bentoBox.addProfit(this.c.address, 1)
             let amount = 2
             for (let i = 0; i < 20; i++) {
@@ -335,7 +337,7 @@ describe("BentoBox", function () {
                 amount += amount - 1
             }
             const ratio =
-                (await this.bentoBox.totals(this.c.address)).elastic / (await this.bentoBox.balanceOf(this.c.address, this.alice.address))
+                (await this.bentoBox.totals(this.c.address)).elastic.sub(1000) / (await this.bentoBox.balanceOf(this.c.address, this.alice.address))
             expect(ratio).to.be.lessThan(5)
         })
     })
@@ -374,10 +376,10 @@ describe("BentoBox", function () {
                 .to.emit(this.a, "Transfer")
                 .withArgs(this.alice.address, this.bento.address, "1000")
                 .to.emit(this.bento, "LogDeposit")
-                .withArgs(this.a.address, this.alice.address, this.alice.address, "1000", "1000")
+                .withArgs(this.a.address, this.alice.address, this.alice.address, "1000", "0")
 
-            await expect(this.bento.withdraw(this.a.address, this.alice.address, this.alice.address, 0, 2)).to.be.revertedWith(
-                "BentoBox: cannot empty"
+            await expect(this.bento.withdraw(this.a.address, this.alice.address, this.alice.address, 0, 1)).to.be.revertedWith(
+                "VM Exception while processing transaction: revert BoringMath: Underflow"
             )
         })
 
@@ -447,7 +449,7 @@ describe("BentoBox", function () {
                     from: this.bob.address,
                 })
 
-            expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "token should be withdrawn").to.be.equal(100000)
+            expect(await this.bentoBox.balanceOf(this.weth9.address, this.bob.address), "token should be withdrawn").to.be.equal(100000 - 1000)
         })
 
         it("Reverts if ETH transfer fails", async function () {
@@ -714,20 +716,20 @@ describe("BentoBox", function () {
     describe("Skim ETH", function () {
         it("Skims ether to from address", async function () {
             await this.weth9.connect(this.alice).deposit({
-                value: 1000,
+                value: 2000,
             })
 
             await this.bentoBox.batch([], true, {
-                value: 1000,
+                value: 2000,
             })
 
-            await this.bentoBox.deposit(ADDRESS_ZERO, this.bentoBox.address, this.alice.address, 1000, 0)
+            await this.bentoBox.deposit(ADDRESS_ZERO, this.bentoBox.address, this.alice.address, 2000, 0)
 
             amount = await this.bentoBox.balanceOf(this.weth9.address, this.alice.address)
 
             expect(amount, "alice should have weth").to.equal(1000)
 
-            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.equal(1000)
+            expect(await this.weth9.balanceOf(this.bentoBox.address), "BentoBox should hold WETH").to.equal(2000)
         })
     })
 
