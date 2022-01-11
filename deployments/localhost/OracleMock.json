@@ -1,0 +1,172 @@
+{
+  "address": "0x12603F6751472Ea923A9644Fc51eF357AcA65061",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "get",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getDataParameter",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "name",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "peek",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "rate_",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "set",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "symbol",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x8b1525c0cca306e82fd994dd6a7b5b63efc4ce0c48a5b2c219f799593c838646",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "contractAddress": null,
+    "transactionIndex": 0,
+    "gasUsed": "237752",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x9c05df0b1604801e286c041bcca5ea5359194a51a1bfbd2fb15c53b5dd73fc8f",
+    "transactionHash": "0x8b1525c0cca306e82fd994dd6a7b5b63efc4ce0c48a5b2c219f799593c838646",
+    "logs": [],
+    "blockNumber": 6,
+    "cumulativeGasUsed": "237752",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "solcInputHash": "49dd10c21142f3de1d4cf3403c661c8c",
+  "metadata": "{\"compiler\":{\"version\":\"0.6.12+commit.27d51765\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"get\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getDataParameter\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"peek\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"rate_\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"set\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/mocks/OracleMock.sol\":\"OracleMock\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"@bartjman/boring-solidity/contracts/libraries/BoringMath.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\r\\npragma solidity 0.6.12;\\r\\n// a library for performing overflow-safe math, updated with awesomeness from of DappHub (https://github.com/dapphub/ds-math)\\r\\nlibrary BoringMath {\\r\\n    function add(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a + b) >= b, \\\"BoringMath: Add Overflow\\\");}\\r\\n    function sub(uint256 a, uint256 b) internal pure returns (uint256 c) {require((c = a - b) <= a, \\\"BoringMath: Underflow\\\");}\\r\\n    function mul(uint256 a, uint256 b) internal pure returns (uint256 c) {require(b == 0 || (c = a * b)/b == a, \\\"BoringMath: Mul Overflow\\\");}\\r\\n    function to128(uint256 a) internal pure returns (uint128 c) {\\r\\n        require(a <= uint128(-1), \\\"BoringMath: uint128 Overflow\\\");\\r\\n        c = uint128(a);\\r\\n    }\\r\\n}\\r\\n\\r\\nlibrary BoringMath128 {\\r\\n    function add(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a + b) >= b, \\\"BoringMath: Add Overflow\\\");}\\r\\n    function sub(uint128 a, uint128 b) internal pure returns (uint128 c) {require((c = a - b) <= a, \\\"BoringMath: Underflow\\\");}\\r\\n}\",\"keccak256\":\"0x7fd07387abfcf6627a8fc6ab5d5e1238ae0832923fbc1065c2039161ac949e4f\",\"license\":\"MIT\"},\"contracts/interfaces/IOracle.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\r\\npragma solidity 0.6.12;\\r\\n\\r\\ninterface IOracle {\\r\\n    // Get the latest exchange rate, if no valid (recent) rate is available, return false\\r\\n    function get(bytes calldata data) external returns (bool, uint256);\\r\\n    function peek(bytes calldata data) external view returns (bool, uint256);\\r\\n    function symbol(bytes calldata data) external view returns (string memory);\\r\\n    function name(bytes calldata data) external view returns (string memory);\\r\\n}\",\"keccak256\":\"0x60bb8536600c28737b55ed10f538518c788d15e8066c9e45e15c5278d1ad902a\",\"license\":\"MIT\"},\"contracts/mocks/OracleMock.sol\":{\"content\":\"// SPDX-License-Identifier: UNLICENSED\\n\\npragma solidity 0.6.12;\\nimport \\\"@bartjman/boring-solidity/contracts/libraries/BoringMath.sol\\\";\\nimport \\\"../interfaces/IOracle.sol\\\";\\n\\n// WARNING: This oracle is only for testing, please use PeggedOracle for a fixed value oracle\\ncontract OracleMock is IOracle {\\n\\tusing BoringMath for uint256;\\n\\n\\tuint256 rate;\\n\\n\\tfunction set(uint256 rate_, address) public {\\n\\t\\t// The rate can be updated.\\n\\t\\trate = rate_;\\n\\t}\\n\\n\\tfunction getDataParameter() public pure returns (bytes memory) {\\n\\t\\treturn abi.encode(\\\"0x0\\\");\\n\\t}\\n\\n\\t// Get the latest exchange rate\\n\\tfunction get(bytes calldata) public override returns (bool, uint256) {\\n\\t\\treturn (true, rate);\\n\\t}\\n\\n\\t// Check the last exchange rate without any state changes\\n\\tfunction peek(bytes calldata) public view override returns (bool, uint256) {\\n\\t\\treturn (true, rate);\\n\\t}\\n\\n\\tfunction name(bytes calldata) public view override returns (string memory) {\\n\\t\\treturn \\\"Test\\\";\\n\\t}\\n\\n\\tfunction symbol(bytes calldata) public view override returns (string memory) {\\n\\t\\treturn \\\"TEST\\\";\\n\\t}\\n}\\n\",\"keccak256\":\"0x47c0dc7b2c755faf1f622156fabd4b49008d1448b477b2eb3b6575f3e3f27424\",\"license\":\"UNLICENSED\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610355806100206000396000f3fe608060405234801561001057600080fd5b50600436106100725760003560e01c8063d568866c11610050578063d568866c1461019f578063d6d7d5251461020f578063eeb8a8d31461020f57610072565b80632b39febd146100775780632f30c6f6146100f4578063c699c4d61461012f575b600080fd5b61007f61029a565b6040805160208082528351818301528351919283929083019185019080838360005b838110156100b95781810151838201526020016100a1565b50505050905090810190601f1680156100e65780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b61012d6004803603604081101561010a57600080fd5b508035906020013573ffffffffffffffffffffffffffffffffffffffff166102cf565b005b61007f6004803603602081101561014557600080fd5b81019060208101813564010000000081111561016057600080fd5b82018360208201111561017257600080fd5b8035906020019184600183028401116401000000008311171561019457600080fd5b5090925090506102d5565b61007f600480360360208110156101b557600080fd5b8101906020810181356401000000008111156101d057600080fd5b8201836020820111156101e257600080fd5b8035906020019184600183028401116401000000008311171561020457600080fd5b5090925090506102f5565b61027f6004803603602081101561022557600080fd5b81019060208101813564010000000081111561024057600080fd5b82018360208201111561025257600080fd5b8035906020019184600183028401116401000000008311171561027457600080fd5b509092509050610315565b60408051921515835260208301919091528051918290030190f35b604080516020808201526003818301526203078360ec1b60608281019190915282518083039091018152608090910190915290565b50600055565b5050604080518082019091526004815263151154d560e21b602082015290565b505060408051808201909152600481526315195cdd60e21b602082015290565b505060005460019156fea26469706673582212206b69a83dc03de29357b0a0aefe3f70a0bf4b7e818dc3e8979f1184dcf12a2f7964736f6c634300060c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100725760003560e01c8063d568866c11610050578063d568866c1461019f578063d6d7d5251461020f578063eeb8a8d31461020f57610072565b80632b39febd146100775780632f30c6f6146100f4578063c699c4d61461012f575b600080fd5b61007f61029a565b6040805160208082528351818301528351919283929083019185019080838360005b838110156100b95781810151838201526020016100a1565b50505050905090810190601f1680156100e65780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b61012d6004803603604081101561010a57600080fd5b508035906020013573ffffffffffffffffffffffffffffffffffffffff166102cf565b005b61007f6004803603602081101561014557600080fd5b81019060208101813564010000000081111561016057600080fd5b82018360208201111561017257600080fd5b8035906020019184600183028401116401000000008311171561019457600080fd5b5090925090506102d5565b61007f600480360360208110156101b557600080fd5b8101906020810181356401000000008111156101d057600080fd5b8201836020820111156101e257600080fd5b8035906020019184600183028401116401000000008311171561020457600080fd5b5090925090506102f5565b61027f6004803603602081101561022557600080fd5b81019060208101813564010000000081111561024057600080fd5b82018360208201111561025257600080fd5b8035906020019184600183028401116401000000008311171561027457600080fd5b509092509050610315565b60408051921515835260208301919091528051918290030190f35b604080516020808201526003818301526203078360ec1b60608281019190915282518083039091018152608090910190915290565b50600055565b5050604080518082019091526004815263151154d560e21b602082015290565b505060408051808201909152600481526315195cdd60e21b602082015290565b505060005460019156fea26469706673582212206b69a83dc03de29357b0a0aefe3f70a0bf4b7e818dc3e8979f1184dcf12a2f7964736f6c634300060c0033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 8080,
+        "contract": "contracts/mocks/OracleMock.sol:OracleMock",
+        "label": "rate",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

@@ -15,3 +15,4 @@ yarn-error.log
 .last_confs/*
 .certora_config/*
 .certora_*.json
+types

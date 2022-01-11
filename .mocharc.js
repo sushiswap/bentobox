@@ -1,4 +1,5 @@
 module.exports = {
-    require: "hardhat/register",
+    require: "ts-node/register/transpile-only",
     timeout: 20000,
+    parallel: true,
 }
