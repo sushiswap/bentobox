@@ -1,20 +1,42 @@
+
 name: Test
 
 on: 
   push:
-    branches: [canary]
+    branches: [master, canary]
   pull_request:
   workflow_dispatch:
 
 jobs:
-  build:
+  test-coverage:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v2
       with:
         node-version: '16'
-        registry-url: 'https://npm.pkg.github.com'
+        registry-url: 'https://registry.npmjs.org'
+        scope: '@sushiswap'
+        cache: 'yarn'
+    - name: Yarn
+      run: yarn --frozen-lockfile
+    - name: Compile
+      run: yarn build
+    - name: Test Coverage
+      run: yarn test:coverage
+    - name: Coveralls
+      uses: coverallsapp/github-action@master
+      continue-on-error: true
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+  test-gas:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with:
+        node-version: '16'
+        registry-url: 'https://registry.npmjs.org'
         scope: '@sushiswap'
         cache: 'yarn'
     - name: Yarn
@@ -23,18 +45,12 @@ jobs:
       run: yarn build
     - name: Test Gas
       run: yarn test
-    - name: Codechecks
-      run: npx codechecks
       env:
         CI: true
         REPORT_GAS: true
         ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
         COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+    - name: Codechecks
+      run: npx codechecks
+      env:
         CC_SECRET: ${{ secrets.CC_SECRET }}
-    - name: Test Coverage
-      run: yarn test:coverage
-    - name: Coveralls
-      uses: coverallsapp/github-action@master
-      continue-on-error: true
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
