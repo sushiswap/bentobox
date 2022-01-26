@@ -35,10 +35,16 @@ const config: HardhatUserConfig = {
     apiKey: process.env.ETHERSCAN_API_KEY,
   },
   gasReporter: {
-    enabled: process.env.REPORT_GAS ? true : false,
-    currency: 'USD',
     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    excludeContracts: ['contracts/mocks/', 'contracts/libraries/'],
+    currency: 'USD',
+    enabled: process.env.REPORT_GAS === 'true',
+    excludeContracts: [
+      'contracts/flat/',
+      'contracts/interfaces/',
+      'contracts/libraries/',
+      'contracts/mocks/',
+      'contracts/samples/',
+    ],
   },
   namedAccounts: {
     deployer: {
