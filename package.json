@@ -19,12 +19,6 @@
         "exports",
         "types"
     ],
-    "publishConfig": {
-        "registry": "https://npm.pkg.github.com"
-    },
-    "directories": {
-        "test": "test"
-    },
     "scripts": {
         "build": "TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
         "console": "hardhat console",
