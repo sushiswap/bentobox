@@ -22,7 +22,7 @@ We solve these issues by having a platform with:
 ## Security
 
 An early version was audited by PeckShield and partially by Quantstamp. The thoroughness wasn't overwhelming,
-which led to the creation of an internal audit checklist (see checks.txt in the docs folder).
+which led to the creation of an internal audit checklist (see CHECKLIST.MD in the docs folder).
 
 Contracts are covered 100% by tests.
 
