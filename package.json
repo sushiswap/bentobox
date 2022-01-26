@@ -65,7 +65,7 @@
         "test": "hardhat test",
         "test:debug": "mocha --inspect-brk",
         "test:trace": "yarn test --logs",
-        "test:coverage": "hardhat coverage",
+        "test:coverage": "hardhat coverage --testfiles \"{test/*.test.ts,test/harness/*.test.ts}\"",
         "test:gas": "cross-env REPORT_GAS=true yarn test",
         "docgen": "hardhat compile && hardhat docgen",
         "prettier": "prettier --write 'test/**/*.{js,ts}' && prettier --write contracts/**/*.sol",
