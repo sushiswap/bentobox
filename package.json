@@ -87,6 +87,7 @@
         "*.md": "prettier --write"
     },
     "devDependencies": {
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#8f2b54f645a7844ae266cc50dc3ae4c125c7b9fc",
         "@codechecks/client": "^0.1.12",
         "@nomiclabs/hardhat-ethers": "yarn:hardhat-deploy-ethers",
         "@nomiclabs/hardhat-etherscan": "^3.0.0",
@@ -131,8 +132,5 @@
         "ts-node": "^10.4.0",
         "typechain": "^6.1.0",
         "typescript": "^4.5.4"
-    },
-    "dependencies": {
-        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#8f2b54f645a7844ae266cc50dc3ae4c125c7b9fc"
     }
 }
