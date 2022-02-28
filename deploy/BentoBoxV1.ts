@@ -8,7 +8,6 @@ const deployFunction: DeployFunction = async function ({
   getNamedAccounts,
   ethers,
 }: HardhatRuntimeEnvironment) {
-  console.log('Running PointList deploy script')
   const { deploy } = deployments
   const chainId = parseInt(await getChainId())
   const { deployer } = await getNamedAccounts()

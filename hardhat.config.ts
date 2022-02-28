@@ -263,6 +263,13 @@ const config: HardhatUserConfig = {
       saveDeployments: true,
       tags: ['staging'],
     },
+    moonbeam: {
+      url: 'https://rpc.api.moonbeam.network',
+      accounts,
+      chainId: 1284,
+      live: true,
+      saveDeployments: true,
+    },
   },
   paths: {
     artifacts: 'artifacts',
