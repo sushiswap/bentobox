@@ -15,9 +15,9 @@ We solve these issues by having a platform with:
 
 ## Docs
 
-[Development](documentation/DEVELOPMENT.md)
+[Development](docs/DEVELOPMENT.md)
 
-[Deployment](documentation/DEPLOYMENT.md)
+[Deployment](docs/DEPLOYMENT.md)
 
 ## Security
 
