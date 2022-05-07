@@ -22,6 +22,7 @@
   "scripts": {
     "build": "TS_NODE_TRANSPILE_ONLY=1 hardhat compile",
     "console": "hardhat console",
+    "typechain": "npx typechain --discriminate-types --target ethers-v5 \"out/**/*.json\"",
     "testnet:deploy": "yarn ropsten:deploy && yarn rinkeby:deploy && yarn goerli:deploy && yarn kovan:deploy && yarn moonbase:deploy && yarn arbitrum:deploy",
     "mainnet:deploy": "hardhat --network mainnet deploy",
     "mainnet:export": "hardhat --network mainnet export --export exports/mainnet.json",
