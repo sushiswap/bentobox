@@ -81,7 +81,7 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         token_.approve(address(cToken_), type(uint256).max);
     }
 
-    modifier onlyBentobox {
+    modifier onlyBentobox() {
         // Only the bentobox can call harvest on this strategy
         require(msg.sender == bentobox, "CompoundStrategy: only bento");
         require(!exited, "CompoundStrategy: exited");
@@ -117,14 +117,22 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
 
     // Harvest any profits made converted to the asset and pass them to the caller
     /// @inheritdoc IStrategy
-    function harvest(uint256 balance, address sender) external override onlyBentobox returns (int256 amountAdded) {
+    function harvest(uint256 balance, address sender)
+        external
+        override
+        onlyBentobox
+        returns (int256 amountAdded)
+    {
         // To prevent anyone from using flash loans to 'steal' part of the profits, only EOA is allowed to call harvest
         require(sender == tx.origin, "CompoundStrategy: EOA only");
         // Get the amount of tokens that the cTokens currently represent
         uint256 tokenBalance = cToken.balanceOfUnderlying(address(this));
         // Convert enough cToken to take out the profit
         // If the amount is negative due to rounding (near impossible), just revert. Should be positive soon enough.
-        require(cToken.redeemUnderlying(tokenBalance.sub(balance)) == 0, "CompoundStrategy: profit fail");
+        require(
+            cToken.redeemUnderlying(tokenBalance.sub(balance)) == 0,
+            "CompoundStrategy: profit fail"
+        );
 
         // Find out how much has been added (+ sitting on the contract from harvestCOMP)
         uint256 amountAdded_ = token.balanceOf(address(this));
@@ -144,7 +152,12 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
 
     // Withdraw assets.
     /// @inheritdoc IStrategy
-    function withdraw(uint256 amount) external override onlyBentobox returns (uint256 actualAmount) {
+    function withdraw(uint256 amount)
+        external
+        override
+        onlyBentobox
+        returns (uint256 actualAmount)
+    {
         // Convert enough cToken to take out 'amount' tokens
         require(cToken.redeemUnderlying(amount) == 0, "CompoundStrategy: redeem fail");
 
@@ -188,6 +201,6 @@ contract CompoundStrategy is IStrategy, BoringOwnable {
         // After exited, the owner can perform ANY call. This is to rescue any funds that didn't get released during exit or
         // got earned afterwards due to vesting or airdrops, etc.
         require(exited, "CompoundStrategy: Not exited");
-        (success, ) = to.call{value: value}(data);
+        (success, ) = to.call{ value: value }(data);
     }
 }

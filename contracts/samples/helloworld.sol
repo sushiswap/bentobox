@@ -21,7 +21,13 @@ contract HelloWorld {
     // assigned to the user in bentoBoxShares.
     // Don't deposit twice, you'll lose the first deposit ;)
     function deposit(uint256 amount) public {
-        (, bentoBoxShares[msg.sender]) = bentoBox.deposit(token, msg.sender, address(this), amount, 0);
+        (, bentoBoxShares[msg.sender]) = bentoBox.deposit(
+            token,
+            msg.sender,
+            address(this),
+            amount,
+            0
+        );
     }
 
     // This will return the current value in amount of the BentoBox shares.

@@ -46,7 +46,11 @@ contract ReturnFalseERC20Mock {
         address to,
         uint256 amount
     ) public returns (bool success) {
-        if (balanceOf[from] >= amount && allowance[from][msg.sender] >= amount && balanceOf[to] + amount >= balanceOf[to]) {
+        if (
+            balanceOf[from] >= amount &&
+            allowance[from][msg.sender] >= amount &&
+            balanceOf[to] + amount >= balanceOf[to]
+        ) {
             balanceOf[from] -= amount;
             allowance[from][msg.sender] -= amount;
             balanceOf[to] += amount;
@@ -69,7 +73,14 @@ contract ReturnFalseERC20Mock {
         assembly {
             chainId := chainid()
         }
-        return keccak256(abi.encode(keccak256("EIP712Domain(uint256 chainId,address verifyingContract)"), chainId, address(this)));
+        return
+            keccak256(
+                abi.encode(
+                    keccak256("EIP712Domain(uint256 chainId,address verifyingContract)"),
+                    chainId,
+                    address(this)
+                )
+            );
     }
 
     function permit(
@@ -82,23 +93,22 @@ contract ReturnFalseERC20Mock {
         bytes32 s
     ) external {
         require(block.timestamp < deadline, "ReturnFalseERC20: Expired");
-        bytes32 digest =
-            keccak256(
-                abi.encodePacked(
-                    "\x19\x01",
-                    DOMAIN_SEPARATOR(),
-                    keccak256(
-                        abi.encode(
-                            0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
-                            owner,
-                            spender,
-                            value,
-                            nonces[owner]++,
-                            deadline
-                        )
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR(),
+                keccak256(
+                    abi.encode(
+                        0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9,
+                        owner,
+                        spender,
+                        value,
+                        nonces[owner]++,
+                        deadline
                     )
                 )
-            );
+            )
+        );
         address recoveredAddress = ecrecover(digest, v, r, s);
         require(recoveredAddress == owner, "ReturnFalseERC20: Invalid Sig");
         allowance[owner][spender] = value;

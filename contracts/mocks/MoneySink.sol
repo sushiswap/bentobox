@@ -36,7 +36,12 @@ contract MoneySink is IStrategy, BoringOwnable {
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
+    function harvest(uint256 balance, address)
+        external
+        override
+        onlyOwner
+        returns (int256 amountAdded)
+    {
         uint256 realBalance = sushi.balanceOf(address(this));
         if (realBalance < balance) {
             amountAdded = -int256(balance.sub(realBalance));

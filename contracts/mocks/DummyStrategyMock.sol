@@ -47,7 +47,12 @@ contract DummyStrategyMock is IStrategy {
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
-    function withdraw(uint256 amount) external override onlyBentoBox returns (uint256 actualAmount) {
+    function withdraw(uint256 amount)
+        external
+        override
+        onlyBentoBox
+        returns (uint256 actualAmount)
+    {
         actualAmount = token.balanceOf(address(this));
         if (amount > actualAmount) {
             actualAmount = amount;

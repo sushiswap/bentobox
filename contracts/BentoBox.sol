@@ -42,11 +42,34 @@ contract BentoBox is MasterContractManager, BoringBatchable {
     // *** EVENTS *** //
     // ************** //
 
-    event LogDeposit(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
-    event LogWithdraw(IERC20 indexed token, address indexed from, address indexed to, uint256 amount, uint256 share);
-    event LogTransfer(IERC20 indexed token, address indexed from, address indexed to, uint256 share);
+    event LogDeposit(
+        IERC20 indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 share
+    );
+    event LogWithdraw(
+        IERC20 indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 share
+    );
+    event LogTransfer(
+        IERC20 indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 share
+    );
 
-    event LogFlashLoan(address indexed borrower, IERC20 indexed token, uint256 amount, uint256 feeAmount, address indexed receiver);
+    event LogFlashLoan(
+        address indexed borrower,
+        IERC20 indexed token,
+        uint256 amount,
+        uint256 feeAmount,
+        address indexed receiver
+    );
 
     event LogStrategyTargetPercentage(IERC20 indexed token, uint256 targetPercentage);
     event LogStrategyQueued(IERC20 indexed token, IStrategy indexed strategy);
@@ -118,7 +141,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             // From is sender or you are skimming
             address masterContract = masterContractOf[msg.sender];
             require(masterContract != address(0), "BentoBox: no masterContract");
-            require(masterContractApproved[masterContract][from], "BentoBox: Transfer not approved");
+            require(
+                masterContractApproved[masterContract][from],
+                "BentoBox: Transfer not approved"
+            );
         }
         _;
     }
@@ -203,7 +229,9 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         // For ETH, the full balance is available, so no need to check.
         // During flashloans the _tokenBalanceOf is lower than 'reality', so skimming deposits will mostly fail during a flashloan.
         require(
-            from != address(this) || token_ == USE_ETHEREUM || amount <= _tokenBalanceOf(token).sub(total.elastic),
+            from != address(this) ||
+                token_ == USE_ETHEREUM ||
+                amount <= _tokenBalanceOf(token).sub(total.elastic),
             "BentoBox: Skim too much"
         );
 
@@ -217,7 +245,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
         if (token_ == USE_ETHEREUM) {
             // X2 - If there is an error, could it cause a DoS. Like balanceOf causing revert. (SWC-113)
             // X2: If the WETH implementation is faulty or malicious, it will block adding ETH (but we know the WETH implementation)
-            IWETH(address(wethToken)).deposit{value: amount}();
+            IWETH(address(wethToken)).deposit{ value: amount }();
         } else if (from != address(this)) {
             // X2 - If there is an error, could it cause a DoS. Like balanceOf causing revert. (SWC-113)
             // X2: If the token implementation is faulty or malicious, it may block adding tokens. Good.
@@ -267,7 +295,7 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             // X2, X3: A revert or big gas usage in the WETH contract could block withdrawals, but WETH9 is fine.
             IWETH(address(wethToken)).withdraw(amount);
             // X2, X3: A revert or big gas usage could block, however, the to address is under control of the caller.
-            (bool success, ) = to.call{value: amount}("");
+            (bool success, ) = to.call{ value: amount }("");
             require(success, "BentoBox: ETH transfer failed");
         } else {
             // X2, X3: A malicious token could block withdrawal of just THAT token.
@@ -353,7 +381,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
 
         borrower.onFlashLoan(msg.sender, token, amount, fee, data);
 
-        require(_tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()), "BentoBox: Wrong amount");
+        require(
+            _tokenBalanceOf(token) >= totals[token].addElastic(fee.to128()),
+            "BentoBox: Wrong amount"
+        );
         emit LogFlashLoan(address(borrower), token, amount, fee, receiver);
     }
 
@@ -388,7 +419,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
 
         for (uint256 i = 0; i < len; i++) {
             IERC20 token = tokens[i];
-            require(_tokenBalanceOf(token) >= totals[token].addElastic(fees[i].to128()), "BentoBox: Wrong amount");
+            require(
+                _tokenBalanceOf(token) >= totals[token].addElastic(fees[i].to128()),
+                "BentoBox: Wrong amount"
+            );
             emit LogFlashLoan(address(borrower), token, amounts[i], fees[i], receivers[i]);
         }
     }
@@ -426,7 +460,10 @@ contract BentoBox is MasterContractManager, BoringBatchable {
             data.strategyStartDate = (block.timestamp + STRATEGY_DELAY).to64();
             emit LogStrategyQueued(token, newStrategy);
         } else {
-            require(data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate, "StrategyManager: Too early");
+            require(
+                data.strategyStartDate != 0 && block.timestamp >= data.strategyStartDate,
+                "StrategyManager: Too early"
+            );
             if (address(strategy[token]) != address(0)) {
                 int256 balanceChange = strategy[token].exit(data.balance);
                 // Effects

@@ -30,13 +30,23 @@ contract SimpleStrategyMock is IStrategy {
     }
 
     // Harvest any profits made converted to the asset and pass them to the caller
-    function harvest(uint256 balance, address) external override onlyBentoBox returns (int256 amountAdded) {
+    function harvest(uint256 balance, address)
+        external
+        override
+        onlyBentoBox
+        returns (int256 amountAdded)
+    {
         amountAdded = int256(token.balanceOf(address(this)).sub(balance));
         token.safeTransfer(bentoBox, uint256(amountAdded)); // Add as profit
     }
 
     // Withdraw assets. The returned amount can differ from the requested amount due to rounding or if the request was more than there is.
-    function withdraw(uint256 amount) external override onlyBentoBox returns (uint256 actualAmount) {
+    function withdraw(uint256 amount)
+        external
+        override
+        onlyBentoBox
+        returns (uint256 actualAmount)
+    {
         token.safeTransfer(bentoBox, uint256(amount)); // Add as profit
         actualAmount = amount;
     }
