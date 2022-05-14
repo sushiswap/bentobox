@@ -1,0 +1,132 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "init",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "/Users/sbacha/bentobox/node_modules/@boringcrypto/boring-solidity/contracts/interfaces/IMasterContract.sol",
+    "id": 8718,
+    "exportedSymbols": {
+      "IMasterContract": [
+        8717
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:375:18",
+    "nodes": [
+      {
+        "id": 8710,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:18",
+        "literals": [
+          "solidity",
+          "0.6",
+          ".12"
+        ]
+      },
+      {
+        "id": 8717,
+        "nodeType": "ContractDefinition",
+        "src": "57:349:18",
+        "nodes": [
+          {
+            "id": 8716,
+            "nodeType": "FunctionDefinition",
+            "src": "352:52:18",
+            "body": null,
+            "documentation": {
+              "id": 8711,
+              "nodeType": "StructuredDocumentation",
+              "src": "89:258:18",
+              "text": "@notice Init function that gets called from `BoringFactory.deploy`.\n Also kown as the constructor for cloned contracts.\n Any ETH send to `BoringFactory.deploy` ends up here.\n @param data Can be abi encoded arguments or anything else."
+            },
+            "functionSelector": "4ddf47d4",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "init",
+            "overrides": null,
+            "parameters": {
+              "id": 8714,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 8713,
+                  "mutability": "mutable",
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 8716,
+                  "src": "366:19:18",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 8712,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "366:5:18",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "365:21:18"
+            },
+            "returnParameters": {
+              "id": 8715,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "403:0:18"
+            },
+            "scope": 8717,
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": null,
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          8717
+        ],
+        "name": "IMasterContract",
+        "scope": 8718
+      }
+    ],
+    "license": "MIT"
+  }
+}

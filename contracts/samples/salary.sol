@@ -106,7 +106,13 @@ contract Salary is BoringBatchable {
             // Fund this salary with ERC20 tokens
             // This is a potential reentrancy target, funds in this contract could be higher than the total of salaries during this call
             // Since this contract doesn't have a skim function, this is ok
-            (, shares) = bentoBox.deposit(token, mode == MODE_ERC20_SKIM ? address(bentoBox) : msg.sender, address(this), amount, 0);
+            (, shares) = bentoBox.deposit(
+                token,
+                mode == MODE_ERC20_SKIM ? address(bentoBox) : msg.sender,
+                address(this),
+                amount,
+                0
+            );
         }
 
         salaryId = salaries.length;
@@ -120,7 +126,16 @@ contract Salary is BoringBatchable {
         salaries.push(salary);
         funder.push(msg.sender);
 
-        emit LogCreate(msg.sender, recipient, token, cliffTimestamp, endTimestamp, cliffPercent, shares.to128(), salaryId);
+        emit LogCreate(
+            msg.sender,
+            recipient,
+            token,
+            cliffTimestamp,
+            endTimestamp,
+            cliffPercent,
+            shares.to128(),
+            salaryId
+        );
     }
 
     function _available(UserSalary memory salary) internal view returns (uint256 shares) {
@@ -193,7 +208,9 @@ contract Salary is BoringBatchable {
         address to,
         bool toBentoBox
     ) public onlyFunder(salaryId) {
-        uint256 sharesLeft = uint256(salaries[salaryId].shares).sub(salaries[salaryId].withdrawnShares);
+        uint256 sharesLeft = uint256(salaries[salaryId].shares).sub(
+            salaries[salaryId].withdrawnShares
+        );
         if (toBentoBox) {
             bentoBox.transfer(salaries[salaryId].token, address(this), to, sharesLeft);
         } else {

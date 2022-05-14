@@ -1,0 +1,1375 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "contract BentoBox",
+          "name": "_bentoBox",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "_token",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "balance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "bentoBox",
+      "outputs": [
+        {
+          "internalType": "contract BentoBox",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "name": "bentoBoxShares",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "deposit",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "token",
+      "outputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "withdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x608060405234801561001057600080fd5b506040516104d23803806104d28339818101604052604081101561003357600080fd5b508051602090910151600080546001600160a01b038085166001600160a01b031992831617808455600180548387169416939093179092556040805163577268d960e11b81529051929091169263aee4d1b29260048084019382900301818387803b1580156100a157600080fd5b505af11580156100b5573d6000803e3d6000fd5b505050505050610408806100ca6000396000f3fe608060405234801561001057600080fd5b50600436106100725760003560e01c8063b6b55f2511610050578063b6b55f25146100cc578063faff58fd146100e9578063fc0c546a1461011c57610072565b80633ccfd60b146100775780636b2ace8714610081578063b69ef8a8146100b2575b600080fd5b61007f610124565b005b6100896101f2565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b6100ba61020e565b60408051918252519081900360200190f35b61007f600480360360208110156100e257600080fd5b50356102cf565b6100ba600480360360208110156100ff57600080fd5b503573ffffffffffffffffffffffffffffffffffffffff166103a4565b6100896103b6565b6000805460015433808452600260205260408085205481517f97da6d3000000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff94851660048201523060248201526044810193909352606483018690526084830152805192909316936397da6d309360a48084019491939192918390030190829087803b1580156101c457600080fd5b505af11580156101d8573d6000803e3d6000fd5b505050506040513d60408110156101ee57600080fd5b5050565b60005473ffffffffffffffffffffffffffffffffffffffff1681565b600080546001543383526002602090815260408085205481517f5662311800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff94851660048201526024810191909152604481018690529051929093169263566231189260648083019392829003018186803b15801561029e57600080fd5b505afa1580156102b2573d6000803e3d6000fd5b505050506040513d60208110156102c857600080fd5b5051905090565b60008054600154604080517f02b9446c00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff92831660048201523360248201523060448201526064810186905260848101859052815192909316936302b9446c9360a48082019492918390030190829087803b15801561035f57600080fd5b505af1158015610373573d6000803e3d6000fd5b505050506040513d604081101561038957600080fd5b50602090810151336000908152600290925260409091205550565b60026020526000908152604090205481565b60015473ffffffffffffffffffffffffffffffffffffffff168156fea2646970667358221220b9369af655d84b3bc2f5199cdc4720401483733d42393ed9309bb0e4315b6fee64736f6c634300060c0033",
+    "sourceMap": "309:1239:10:-:0;;;391:152;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-1:-1:-1;391:152:10;;;;;;;455:8;:20;;-1:-1:-1;;;;;455:20:10;;;-1:-1:-1;;;;;;455:20:10;;;;;;;;485:14;;;;;;;;;;;;;;391:152;509:27;;-1:-1:-1;;;509:27:10;;;;:8;;;;;:25;;:27;;;;;;;;;;455:8;509;:27;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;391:152;;309:1239;;;;;;",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x608060405234801561001057600080fd5b50600436106100725760003560e01c8063b6b55f2511610050578063b6b55f25146100cc578063faff58fd146100e9578063fc0c546a1461011c57610072565b80633ccfd60b146100775780636b2ace8714610081578063b69ef8a8146100b2575b600080fd5b61007f610124565b005b6100896101f2565b6040805173ffffffffffffffffffffffffffffffffffffffff9092168252519081900360200190f35b6100ba61020e565b60408051918252519081900360200190f35b61007f600480360360208110156100e257600080fd5b50356102cf565b6100ba600480360360208110156100ff57600080fd5b503573ffffffffffffffffffffffffffffffffffffffff166103a4565b6100896103b6565b6000805460015433808452600260205260408085205481517f97da6d3000000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff94851660048201523060248201526044810193909352606483018690526084830152805192909316936397da6d309360a48084019491939192918390030190829087803b1580156101c457600080fd5b505af11580156101d8573d6000803e3d6000fd5b505050506040513d60408110156101ee57600080fd5b5050565b60005473ffffffffffffffffffffffffffffffffffffffff1681565b600080546001543383526002602090815260408085205481517f5662311800000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff94851660048201526024810191909152604481018690529051929093169263566231189260648083019392829003018186803b15801561029e57600080fd5b505afa1580156102b2573d6000803e3d6000fd5b505050506040513d60208110156102c857600080fd5b5051905090565b60008054600154604080517f02b9446c00000000000000000000000000000000000000000000000000000000815273ffffffffffffffffffffffffffffffffffffffff92831660048201523360248201523060448201526064810186905260848101859052815192909316936302b9446c9360a48082019492918390030190829087803b15801561035f57600080fd5b505af1158015610373573d6000803e3d6000fd5b505050506040513d604081101561038957600080fd5b50602090810151336000908152600290925260409091205550565b60026020526000908152604090205481565b60015473ffffffffffffffffffffffffffffffffffffffff168156fea2646970667358221220b9369af655d84b3bc2f5199cdc4720401483733d42393ed9309bb0e4315b6fee64736f6c634300060c0033",
+    "sourceMap": "309:1239:10:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1420:126;;;:::i;:::-;;335:24;;;:::i;:::-;;;;;;;;;;;;;;;;;;;1207:139;;;:::i;:::-;;;;;;;;;;;;;;;;824:221;;;;;;;;;;;;;;;;-1:-1:-1;824:221:10;;:::i;549:49::-;;;;;;;;;;;;;;;;-1:-1:-1;549:49:10;;;;:::i;365:19::-;;;:::i;1420:126::-;1457:8;;;;1475:5;1497:10;1512:26;;;:14;:26;;;;;;;1457:82;;;;;:8;1475:5;;;1457:82;;;;1490:4;1457:82;;;;;;;;;;;;;;;;;;;;;;;:8;;;;;:17;;:82;;;;;1512:26;;1457:82;;;;;;;;;;:8;:82;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-1:-1:-1;;1420:126:10:o;335:24::-;;;;;;:::o;1207:139::-;1247:14;1280:8;;;1298:5;1320:10;1305:26;;:14;:26;;;;;;;;;1280:59;;;;;:8;1298:5;;;1280:59;;;;;;;;;;;;;;;;;;;:8;;;;;:17;;:59;;;;;1305:26;1280:59;;;;;:8;:59;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-1:-1:-1;1280:59:10;;-1:-1:-1;1207:139:10;:::o;824:221::-;907:8;;;;937:5;907:131;;;;;;:8;937:5;;;907:131;;;;956:10;907:131;;;;988:4;907:131;;;;;;;;;;;;;;;;;;:8;;;;;:16;;:131;;;;;;;;;;;;;;:8;:131;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;-1:-1:-1;907:131:10;;;;;892:10;877:26;;;;:14;:26;;;907:131;877:26;;;874:164;-1:-1:-1;824:221:10:o;549:49::-;;;;;;;;;;;;;:::o;365:19::-;;;;;;:::o",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "/Users/sbacha/bentobox/contracts/samples/helloworld.sol",
+    "id": 6822,
+    "exportedSymbols": {
+      "HelloWorld": [
+        6821
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:1517:10",
+    "nodes": [
+      {
+        "id": 6728,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:10",
+        "literals": [
+          "solidity",
+          "0.6",
+          ".12"
+        ]
+      },
+      {
+        "id": 6729,
+        "nodeType": "ImportDirective",
+        "src": "56:25:10",
+        "absolutePath": "/Users/sbacha/bentobox/contracts/BentoBox.sol",
+        "file": "../BentoBox.sol",
+        "scope": 6822,
+        "sourceUnit": 1550,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 6821,
+        "nodeType": "ContractDefinition",
+        "src": "309:1239:10",
+        "nodes": [
+          {
+            "id": 6731,
+            "nodeType": "VariableDeclaration",
+            "src": "335:24:10",
+            "constant": false,
+            "functionSelector": "6b2ace87",
+            "mutability": "mutable",
+            "name": "bentoBox",
+            "overrides": null,
+            "scope": 6821,
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_contract$_BentoBox_$1549",
+              "typeString": "contract BentoBox"
+            },
+            "typeName": {
+              "contractScope": null,
+              "id": 6730,
+              "name": "BentoBox",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 1549,
+              "src": "335:8:10",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_BentoBox_$1549",
+                "typeString": "contract BentoBox"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "id": 6733,
+            "nodeType": "VariableDeclaration",
+            "src": "365:19:10",
+            "constant": false,
+            "functionSelector": "fc0c546a",
+            "mutability": "mutable",
+            "name": "token",
+            "overrides": null,
+            "scope": 6821,
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_contract$_IERC20_$8708",
+              "typeString": "contract IERC20"
+            },
+            "typeName": {
+              "contractScope": null,
+              "id": 6732,
+              "name": "IERC20",
+              "nodeType": "UserDefinedTypeName",
+              "referencedDeclaration": 8708,
+              "src": "365:6:10",
+              "typeDescriptions": {
+                "typeIdentifier": "t_contract$_IERC20_$8708",
+                "typeString": "contract IERC20"
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "id": 6754,
+            "nodeType": "FunctionDefinition",
+            "src": "391:152:10",
+            "body": {
+              "id": 6753,
+              "nodeType": "Block",
+              "src": "445:98:10",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 6742,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 6740,
+                      "name": "bentoBox",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 6731,
+                      "src": "455:8:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_BentoBox_$1549",
+                        "typeString": "contract BentoBox"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 6741,
+                      "name": "_bentoBox",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 6735,
+                      "src": "466:9:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_BentoBox_$1549",
+                        "typeString": "contract BentoBox"
+                      }
+                    },
+                    "src": "455:20:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_BentoBox_$1549",
+                      "typeString": "contract BentoBox"
+                    }
+                  },
+                  "id": 6743,
+                  "nodeType": "ExpressionStatement",
+                  "src": "455:20:10"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 6746,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "id": 6744,
+                      "name": "token",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 6733,
+                      "src": "485:5:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_IERC20_$8708",
+                        "typeString": "contract IERC20"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "id": 6745,
+                      "name": "_token",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 6737,
+                      "src": "493:6:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_IERC20_$8708",
+                        "typeString": "contract IERC20"
+                      }
+                    },
+                    "src": "485:14:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$8708",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "id": 6747,
+                  "nodeType": "ExpressionStatement",
+                  "src": "485:14:10"
+                },
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [],
+                    "expression": {
+                      "argumentTypes": [],
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 6748,
+                        "name": "bentoBox",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 6731,
+                        "src": "509:8:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_BentoBox_$1549",
+                          "typeString": "contract BentoBox"
+                        }
+                      },
+                      "id": 6750,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "registerProtocol",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 1685,
+                      "src": "509:25:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_nonpayable$__$returns$__$",
+                        "typeString": "function () external"
+                      }
+                    },
+                    "id": 6751,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "509:27:10",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 6752,
+                  "nodeType": "ExpressionStatement",
+                  "src": "509:27:10"
+                }
+              ]
+            },
+            "documentation": null,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "overrides": null,
+            "parameters": {
+              "id": 6738,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6735,
+                  "mutability": "mutable",
+                  "name": "_bentoBox",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6754,
+                  "src": "403:18:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_BentoBox_$1549",
+                    "typeString": "contract BentoBox"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 6734,
+                    "name": "BentoBox",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 1549,
+                    "src": "403:8:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_BentoBox_$1549",
+                      "typeString": "contract BentoBox"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6737,
+                  "mutability": "mutable",
+                  "name": "_token",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6754,
+                  "src": "423:13:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$8708",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 6736,
+                    "name": "IERC20",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 8708,
+                    "src": "423:6:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$8708",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "402:35:10"
+            },
+            "returnParameters": {
+              "id": 6739,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "445:0:10"
+            },
+            "scope": 6821,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "id": 6758,
+            "nodeType": "VariableDeclaration",
+            "src": "549:49:10",
+            "constant": false,
+            "functionSelector": "faff58fd",
+            "mutability": "mutable",
+            "name": "bentoBoxShares",
+            "overrides": null,
+            "scope": 6821,
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+              "typeString": "mapping(address => uint256)"
+            },
+            "typeName": {
+              "id": 6757,
+              "keyType": {
+                "id": 6755,
+                "name": "address",
+                "nodeType": "ElementaryTypeName",
+                "src": "557:7:10",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_address",
+                  "typeString": "address"
+                }
+              },
+              "nodeType": "Mapping",
+              "src": "549:27:10",
+              "typeDescriptions": {
+                "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                "typeString": "mapping(address => uint256)"
+              },
+              "valueType": {
+                "id": 6756,
+                "name": "uint256",
+                "nodeType": "ElementaryTypeName",
+                "src": "568:7:10",
+                "typeDescriptions": {
+                  "typeIdentifier": "t_uint256",
+                  "typeString": "uint256"
+                }
+              }
+            },
+            "value": null,
+            "visibility": "public"
+          },
+          {
+            "id": 6783,
+            "nodeType": "FunctionDefinition",
+            "src": "824:221:10",
+            "body": {
+              "id": 6782,
+              "nodeType": "Block",
+              "src": "864:181:10",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "id": 6780,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "argumentTypes": null,
+                      "components": [
+                        null,
+                        {
+                          "argumentTypes": null,
+                          "baseExpression": {
+                            "argumentTypes": null,
+                            "id": 6763,
+                            "name": "bentoBoxShares",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": 6758,
+                            "src": "877:14:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                              "typeString": "mapping(address => uint256)"
+                            }
+                          },
+                          "id": 6766,
+                          "indexExpression": {
+                            "argumentTypes": null,
+                            "expression": {
+                              "argumentTypes": null,
+                              "id": 6764,
+                              "name": "msg",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": -15,
+                              "src": "892:3:10",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_magic_message",
+                                "typeString": "msg"
+                              }
+                            },
+                            "id": 6765,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": false,
+                            "lValueRequested": false,
+                            "memberName": "sender",
+                            "nodeType": "MemberAccess",
+                            "referencedDeclaration": null,
+                            "src": "892:10:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_address_payable",
+                              "typeString": "address payable"
+                            }
+                          },
+                          "isConstant": false,
+                          "isLValue": true,
+                          "isPure": false,
+                          "lValueRequested": true,
+                          "nodeType": "IndexAccess",
+                          "src": "877:26:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        }
+                      ],
+                      "id": 6767,
+                      "isConstant": false,
+                      "isInlineArray": false,
+                      "isLValue": true,
+                      "isPure": false,
+                      "lValueRequested": true,
+                      "nodeType": "TupleExpression",
+                      "src": "874:30:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$__$_t_uint256_$",
+                        "typeString": "tuple(,uint256)"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "argumentTypes": null,
+                      "arguments": [
+                        {
+                          "argumentTypes": null,
+                          "id": 6770,
+                          "name": "token",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6733,
+                          "src": "937:5:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_contract$_IERC20_$8708",
+                            "typeString": "contract IERC20"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "expression": {
+                            "argumentTypes": null,
+                            "id": 6771,
+                            "name": "msg",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": -15,
+                            "src": "956:3:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_magic_message",
+                              "typeString": "msg"
+                            }
+                          },
+                          "id": 6772,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "sender",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": null,
+                          "src": "956:10:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address_payable",
+                            "typeString": "address payable"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "arguments": [
+                            {
+                              "argumentTypes": null,
+                              "id": 6775,
+                              "name": "this",
+                              "nodeType": "Identifier",
+                              "overloadedDeclarations": [],
+                              "referencedDeclaration": -28,
+                              "src": "988:4:10",
+                              "typeDescriptions": {
+                                "typeIdentifier": "t_contract$_HelloWorld_$6821",
+                                "typeString": "contract HelloWorld"
+                              }
+                            }
+                          ],
+                          "expression": {
+                            "argumentTypes": [
+                              {
+                                "typeIdentifier": "t_contract$_HelloWorld_$6821",
+                                "typeString": "contract HelloWorld"
+                              }
+                            ],
+                            "id": 6774,
+                            "isConstant": false,
+                            "isLValue": false,
+                            "isPure": true,
+                            "lValueRequested": false,
+                            "nodeType": "ElementaryTypeNameExpression",
+                            "src": "980:7:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_type$_t_address_$",
+                              "typeString": "type(address)"
+                            },
+                            "typeName": {
+                              "id": 6773,
+                              "name": "address",
+                              "nodeType": "ElementaryTypeName",
+                              "src": "980:7:10",
+                              "typeDescriptions": {
+                                "typeIdentifier": null,
+                                "typeString": null
+                              }
+                            }
+                          },
+                          "id": 6776,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "kind": "typeConversion",
+                          "lValueRequested": false,
+                          "names": [],
+                          "nodeType": "FunctionCall",
+                          "src": "980:13:10",
+                          "tryCall": false,
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "id": 6777,
+                          "name": "amount",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6760,
+                          "src": "1007:6:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        {
+                          "argumentTypes": null,
+                          "hexValue": "30",
+                          "id": 6778,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "kind": "number",
+                          "lValueRequested": false,
+                          "nodeType": "Literal",
+                          "src": "1027:1:10",
+                          "subdenomination": null,
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_rational_0_by_1",
+                            "typeString": "int_const 0"
+                          },
+                          "value": "0"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": [
+                          {
+                            "typeIdentifier": "t_contract$_IERC20_$8708",
+                            "typeString": "contract IERC20"
+                          },
+                          {
+                            "typeIdentifier": "t_address_payable",
+                            "typeString": "address payable"
+                          },
+                          {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          },
+                          {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          },
+                          {
+                            "typeIdentifier": "t_rational_0_by_1",
+                            "typeString": "int_const 0"
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 6768,
+                          "name": "bentoBox",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6731,
+                          "src": "907:8:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_contract$_BentoBox_$1549",
+                            "typeString": "contract BentoBox"
+                          }
+                        },
+                        "id": 6769,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "deposit",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": 510,
+                        "src": "907:16:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_function_external_payable$_t_contract$_IERC20_$8708_$_t_address_$_t_address_$_t_uint256_$_t_uint256_$returns$_t_uint256_$_t_uint256_$",
+                          "typeString": "function (contract IERC20,address,address,uint256,uint256) payable external returns (uint256,uint256)"
+                        }
+                      },
+                      "id": 6779,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "kind": "functionCall",
+                      "lValueRequested": false,
+                      "names": [],
+                      "nodeType": "FunctionCall",
+                      "src": "907:131:10",
+                      "tryCall": false,
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_tuple$_t_uint256_$_t_uint256_$",
+                        "typeString": "tuple(uint256,uint256)"
+                      }
+                    },
+                    "src": "874:164:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 6781,
+                  "nodeType": "ExpressionStatement",
+                  "src": "874:164:10"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "b6b55f25",
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deposit",
+            "overrides": null,
+            "parameters": {
+              "id": 6761,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6760,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6783,
+                  "src": "841:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 6759,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "841:7:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "840:16:10"
+            },
+            "returnParameters": {
+              "id": 6762,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "864:0:10"
+            },
+            "scope": 6821,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "id": 6799,
+            "nodeType": "FunctionDefinition",
+            "src": "1207:139:10",
+            "body": {
+              "id": 6798,
+              "nodeType": "Block",
+              "src": "1263:83:10",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 6790,
+                        "name": "token",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 6733,
+                        "src": "1298:5:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_IERC20_$8708",
+                          "typeString": "contract IERC20"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 6791,
+                          "name": "bentoBoxShares",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6758,
+                          "src": "1305:14:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                            "typeString": "mapping(address => uint256)"
+                          }
+                        },
+                        "id": 6794,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "expression": {
+                            "argumentTypes": null,
+                            "id": 6792,
+                            "name": "msg",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": -15,
+                            "src": "1320:3:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_magic_message",
+                              "typeString": "msg"
+                            }
+                          },
+                          "id": 6793,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "sender",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": null,
+                          "src": "1320:10:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address_payable",
+                            "typeString": "address payable"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1305:26:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "66616c7365",
+                        "id": 6795,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "bool",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1333:5:10",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        },
+                        "value": "false"
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_contract$_IERC20_$8708",
+                          "typeString": "contract IERC20"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        {
+                          "typeIdentifier": "t_bool",
+                          "typeString": "bool"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 6788,
+                        "name": "bentoBox",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 6731,
+                        "src": "1280:8:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_BentoBox_$1549",
+                          "typeString": "contract BentoBox"
+                        }
+                      },
+                      "id": 6789,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "toAmount",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 292,
+                      "src": "1280:17:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_view$_t_contract$_IERC20_$8708_$_t_uint256_$_t_bool_$returns$_t_uint256_$",
+                        "typeString": "function (contract IERC20,uint256,bool) view external returns (uint256)"
+                      }
+                    },
+                    "id": 6796,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1280:59:10",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 6787,
+                  "id": 6797,
+                  "nodeType": "Return",
+                  "src": "1273:66:10"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "b69ef8a8",
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "balance",
+            "overrides": null,
+            "parameters": {
+              "id": 6784,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1223:2:10"
+            },
+            "returnParameters": {
+              "id": 6787,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6786,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6799,
+                  "src": "1247:14:10",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 6785,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1247:7:10",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1246:16:10"
+            },
+            "scope": 6821,
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "id": 6820,
+            "nodeType": "FunctionDefinition",
+            "src": "1420:126:10",
+            "body": {
+              "id": 6819,
+              "nodeType": "Block",
+              "src": "1447:99:10",
+              "statements": [
+                {
+                  "expression": {
+                    "argumentTypes": null,
+                    "arguments": [
+                      {
+                        "argumentTypes": null,
+                        "id": 6805,
+                        "name": "token",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 6733,
+                        "src": "1475:5:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_IERC20_$8708",
+                          "typeString": "contract IERC20"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "arguments": [
+                          {
+                            "argumentTypes": null,
+                            "id": 6808,
+                            "name": "this",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": -28,
+                            "src": "1490:4:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_contract$_HelloWorld_$6821",
+                              "typeString": "contract HelloWorld"
+                            }
+                          }
+                        ],
+                        "expression": {
+                          "argumentTypes": [
+                            {
+                              "typeIdentifier": "t_contract$_HelloWorld_$6821",
+                              "typeString": "contract HelloWorld"
+                            }
+                          ],
+                          "id": 6807,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": true,
+                          "lValueRequested": false,
+                          "nodeType": "ElementaryTypeNameExpression",
+                          "src": "1482:7:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_type$_t_address_$",
+                            "typeString": "type(address)"
+                          },
+                          "typeName": {
+                            "id": 6806,
+                            "name": "address",
+                            "nodeType": "ElementaryTypeName",
+                            "src": "1482:7:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": null,
+                              "typeString": null
+                            }
+                          }
+                        },
+                        "id": 6809,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "kind": "typeConversion",
+                        "lValueRequested": false,
+                        "names": [],
+                        "nodeType": "FunctionCall",
+                        "src": "1482:13:10",
+                        "tryCall": false,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "expression": {
+                          "argumentTypes": null,
+                          "id": 6810,
+                          "name": "msg",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": -15,
+                          "src": "1497:3:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_magic_message",
+                            "typeString": "msg"
+                          }
+                        },
+                        "id": 6811,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "memberName": "sender",
+                        "nodeType": "MemberAccess",
+                        "referencedDeclaration": null,
+                        "src": "1497:10:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address_payable",
+                          "typeString": "address payable"
+                        }
+                      },
+                      {
+                        "argumentTypes": null,
+                        "hexValue": "30",
+                        "id": 6812,
+                        "isConstant": false,
+                        "isLValue": false,
+                        "isPure": true,
+                        "kind": "number",
+                        "lValueRequested": false,
+                        "nodeType": "Literal",
+                        "src": "1509:1:10",
+                        "subdenomination": null,
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_rational_0_by_1",
+                          "typeString": "int_const 0"
+                        },
+                        "value": "0"
+                      },
+                      {
+                        "argumentTypes": null,
+                        "baseExpression": {
+                          "argumentTypes": null,
+                          "id": 6813,
+                          "name": "bentoBoxShares",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 6758,
+                          "src": "1512:14:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_mapping$_t_address_$_t_uint256_$",
+                            "typeString": "mapping(address => uint256)"
+                          }
+                        },
+                        "id": 6816,
+                        "indexExpression": {
+                          "argumentTypes": null,
+                          "expression": {
+                            "argumentTypes": null,
+                            "id": 6814,
+                            "name": "msg",
+                            "nodeType": "Identifier",
+                            "overloadedDeclarations": [],
+                            "referencedDeclaration": -15,
+                            "src": "1527:3:10",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_magic_message",
+                              "typeString": "msg"
+                            }
+                          },
+                          "id": 6815,
+                          "isConstant": false,
+                          "isLValue": false,
+                          "isPure": false,
+                          "lValueRequested": false,
+                          "memberName": "sender",
+                          "nodeType": "MemberAccess",
+                          "referencedDeclaration": null,
+                          "src": "1527:10:10",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address_payable",
+                            "typeString": "address payable"
+                          }
+                        },
+                        "isConstant": false,
+                        "isLValue": true,
+                        "isPure": false,
+                        "lValueRequested": false,
+                        "nodeType": "IndexAccess",
+                        "src": "1512:26:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_contract$_IERC20_$8708",
+                          "typeString": "contract IERC20"
+                        },
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_address_payable",
+                          "typeString": "address payable"
+                        },
+                        {
+                          "typeIdentifier": "t_rational_0_by_1",
+                          "typeString": "int_const 0"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "expression": {
+                        "argumentTypes": null,
+                        "id": 6802,
+                        "name": "bentoBox",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 6731,
+                        "src": "1457:8:10",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_contract$_BentoBox_$1549",
+                          "typeString": "contract BentoBox"
+                        }
+                      },
+                      "id": 6804,
+                      "isConstant": false,
+                      "isLValue": false,
+                      "isPure": false,
+                      "lValueRequested": false,
+                      "memberName": "withdraw",
+                      "nodeType": "MemberAccess",
+                      "referencedDeclaration": 690,
+                      "src": "1457:17:10",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_external_nonpayable$_t_contract$_IERC20_$8708_$_t_address_$_t_address_$_t_uint256_$_t_uint256_$returns$_t_uint256_$_t_uint256_$",
+                        "typeString": "function (contract IERC20,address,address,uint256,uint256) external returns (uint256,uint256)"
+                      }
+                    },
+                    "id": 6817,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1457:82:10",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$_t_uint256_$_t_uint256_$",
+                      "typeString": "tuple(uint256,uint256)"
+                    }
+                  },
+                  "id": 6818,
+                  "nodeType": "ExpressionStatement",
+                  "src": "1457:82:10"
+                }
+              ]
+            },
+            "documentation": null,
+            "functionSelector": "3ccfd60b",
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdraw",
+            "overrides": null,
+            "parameters": {
+              "id": 6800,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1437:2:10"
+            },
+            "returnParameters": {
+              "id": 6801,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1447:0:10"
+            },
+            "scope": 6821,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "documentation": null,
+        "fullyImplemented": true,
+        "linearizedBaseContracts": [
+          6821
+        ],
+        "name": "HelloWorld",
+        "scope": 6822
+      }
+    ],
+    "license": "MIT"
+  }
+}

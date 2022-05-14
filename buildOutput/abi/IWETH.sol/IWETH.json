@@ -1,0 +1,163 @@
+{
+  "abi": [
+    {
+      "inputs": [],
+      "name": "deposit",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "/Users/sbacha/bentobox/contracts/interfaces/IWETH.sol",
+    "id": 6150,
+    "exportedSymbols": {
+      "IWETH": [
+        6149
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:128:6",
+    "nodes": [
+      {
+        "id": 6140,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:6",
+        "literals": [
+          "solidity",
+          "0.6",
+          ".12"
+        ]
+      },
+      {
+        "id": 6149,
+        "nodeType": "ContractDefinition",
+        "src": "57:102:6",
+        "nodes": [
+          {
+            "id": 6143,
+            "nodeType": "FunctionDefinition",
+            "src": "79:36:6",
+            "body": null,
+            "documentation": null,
+            "functionSelector": "d0e30db0",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "deposit",
+            "overrides": null,
+            "parameters": {
+              "id": 6141,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "95:2:6"
+            },
+            "returnParameters": {
+              "id": 6142,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "114:0:6"
+            },
+            "scope": 6149,
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "id": 6148,
+            "nodeType": "FunctionDefinition",
+            "src": "121:36:6",
+            "body": null,
+            "documentation": null,
+            "functionSelector": "2e1a7d4d",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdraw",
+            "overrides": null,
+            "parameters": {
+              "id": 6146,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6145,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6148,
+                  "src": "139:7:6",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 6144,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "139:7:6",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "138:9:6"
+            },
+            "returnParameters": {
+              "id": 6147,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "156:0:6"
+            },
+            "scope": 6149,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": null,
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          6149
+        ],
+        "name": "IWETH",
+        "scope": 6150
+      }
+    ],
+    "license": "MIT"
+  }
+}

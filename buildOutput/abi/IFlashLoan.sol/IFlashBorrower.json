@@ -1,0 +1,516 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "fee",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "onFlashLoan",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "deployedBytecode": {
+    "object": "0x",
+    "sourceMap": "",
+    "linkReferences": {}
+  },
+  "ast": {
+    "absolutePath": "/Users/sbacha/bentobox/contracts/interfaces/IFlashLoan.sol",
+    "id": 6104,
+    "exportedSymbols": {
+      "IBatchFlashBorrower": [
+        6103
+      ],
+      "IFlashBorrower": [
+        6085
+      ]
+    },
+    "nodeType": "SourceUnit",
+    "src": "32:1578:4",
+    "nodes": [
+      {
+        "id": 6068,
+        "nodeType": "PragmaDirective",
+        "src": "32:23:4",
+        "literals": [
+          "solidity",
+          "0.6",
+          ".12"
+        ]
+      },
+      {
+        "id": 6069,
+        "nodeType": "PragmaDirective",
+        "src": "56:33:4",
+        "literals": [
+          "experimental",
+          "ABIEncoderV2"
+        ]
+      },
+      {
+        "id": 6070,
+        "nodeType": "ImportDirective",
+        "src": "90:71:4",
+        "absolutePath": "/Users/sbacha/bentobox/node_modules/@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol",
+        "file": "@boringcrypto/boring-solidity/contracts/interfaces/IERC20.sol",
+        "scope": 6104,
+        "sourceUnit": 8709,
+        "symbolAliases": [],
+        "unitAlias": ""
+      },
+      {
+        "id": 6085,
+        "nodeType": "ContractDefinition",
+        "src": "163:669:4",
+        "nodes": [
+          {
+            "id": 6084,
+            "nodeType": "FunctionDefinition",
+            "src": "674:156:4",
+            "body": null,
+            "documentation": {
+              "id": 6071,
+              "nodeType": "StructuredDocumentation",
+              "src": "194:475:4",
+              "text": "@notice The flashloan callback. `amount` + `fee` needs to repayed to msg.sender before this call returns.\n @param sender The address of the invoker of this flashloan.\n @param token The address of the token that is loaned.\n @param amount of the `token` that is loaned.\n @param fee The fee that needs to be paid on top for this loan. Needs to be the same as `token`.\n @param data Additional data that was passed to the flashloan function."
+            },
+            "functionSelector": "23e30c8b",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "onFlashLoan",
+            "overrides": null,
+            "parameters": {
+              "id": 6082,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6073,
+                  "mutability": "mutable",
+                  "name": "sender",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6084,
+                  "src": "704:14:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 6072,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "704:7:4",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6075,
+                  "mutability": "mutable",
+                  "name": "token",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6084,
+                  "src": "728:12:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_contract$_IERC20_$8708",
+                    "typeString": "contract IERC20"
+                  },
+                  "typeName": {
+                    "contractScope": null,
+                    "id": 6074,
+                    "name": "IERC20",
+                    "nodeType": "UserDefinedTypeName",
+                    "referencedDeclaration": 8708,
+                    "src": "728:6:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_contract$_IERC20_$8708",
+                      "typeString": "contract IERC20"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6077,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6084,
+                  "src": "750:14:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 6076,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "750:7:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6079,
+                  "mutability": "mutable",
+                  "name": "fee",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6084,
+                  "src": "774:11:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 6078,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "774:7:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6081,
+                  "mutability": "mutable",
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6084,
+                  "src": "795:19:4",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 6080,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "795:5:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "694:126:4"
+            },
+            "returnParameters": {
+              "id": 6083,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "829:0:4"
+            },
+            "scope": 6085,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": null,
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          6085
+        ],
+        "name": "IFlashBorrower",
+        "scope": 6104
+      },
+      {
+        "id": 6103,
+        "nodeType": "ContractDefinition",
+        "src": "834:775:4",
+        "nodes": [
+          {
+            "id": 6102,
+            "nodeType": "FunctionDefinition",
+            "src": "1410:197:4",
+            "body": null,
+            "documentation": {
+              "id": 6086,
+              "nodeType": "StructuredDocumentation",
+              "src": "870:535:4",
+              "text": "@notice The callback for batched flashloans. Every amount + fee needs to repayed to msg.sender before this call returns.\n @param sender The address of the invoker of this flashloan.\n @param tokens Array of addresses for ERC-20 tokens that is loaned.\n @param amounts A one-to-one map to `tokens` that is loaned.\n @param fees A one-to-one map to `tokens` that needs to be paid on top for each loan. Needs to be the same token.\n @param data Additional data that was passed to the flashloan function."
+            },
+            "functionSelector": "d9d17623",
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "onBatchFlashLoan",
+            "overrides": null,
+            "parameters": {
+              "id": 6100,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 6088,
+                  "mutability": "mutable",
+                  "name": "sender",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6102,
+                  "src": "1445:14:4",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 6087,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1445:7:4",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6091,
+                  "mutability": "mutable",
+                  "name": "tokens",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6102,
+                  "src": "1469:24:4",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_contract$_IERC20_$8708_$dyn_calldata_ptr",
+                    "typeString": "contract IERC20[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "contractScope": null,
+                      "id": 6089,
+                      "name": "IERC20",
+                      "nodeType": "UserDefinedTypeName",
+                      "referencedDeclaration": 8708,
+                      "src": "1469:6:4",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_contract$_IERC20_$8708",
+                        "typeString": "contract IERC20"
+                      }
+                    },
+                    "id": 6090,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1469:8:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_contract$_IERC20_$8708_$dyn_storage_ptr",
+                      "typeString": "contract IERC20[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6094,
+                  "mutability": "mutable",
+                  "name": "amounts",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6102,
+                  "src": "1503:26:4",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_calldata_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 6092,
+                      "name": "uint256",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1503:7:4",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 6093,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1503:9:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6097,
+                  "mutability": "mutable",
+                  "name": "fees",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6102,
+                  "src": "1539:23:4",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_calldata_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 6095,
+                      "name": "uint256",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1539:7:4",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 6096,
+                    "length": null,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1539:9:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 6099,
+                  "mutability": "mutable",
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "overrides": null,
+                  "scope": 6102,
+                  "src": "1572:19:4",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_calldata_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 6098,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1572:5:4",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "value": null,
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1435:162:4"
+            },
+            "returnParameters": {
+              "id": 6101,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1606:0:4"
+            },
+            "scope": 6103,
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": null,
+        "fullyImplemented": false,
+        "linearizedBaseContracts": [
+          6103
+        ],
+        "name": "IBatchFlashBorrower",
+        "scope": 6104
+      }
+    ],
+    "license": "MIT"
+  }
+}

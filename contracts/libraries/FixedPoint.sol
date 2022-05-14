@@ -38,7 +38,11 @@ library FixedPoint {
 
     // returns a UQ112x112 which represents the ratio of the numerator to the denominator
     // lossy if either numerator or denominator is greater than 112 bits
-    function fraction(uint256 numerator, uint256 denominator) internal pure returns (uq112x112 memory) {
+    function fraction(uint256 numerator, uint256 denominator)
+        internal
+        pure
+        returns (uq112x112 memory)
+    {
         require(denominator > 0, "FixedPoint::fraction: div by 0");
         if (numerator == 0) return FixedPoint.uq112x112(0);
 

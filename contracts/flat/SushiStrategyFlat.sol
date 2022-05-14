@@ -222,7 +222,9 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (string) Token symbol.
     function safeSymbol(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_SYMBOL));
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(SIG_SYMBOL)
+        );
         return success ? returnDataToString(data) : "???";
     }
 
@@ -230,7 +232,9 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (string) Token name.
     function safeName(IERC20 token) internal view returns (string memory) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_NAME));
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(SIG_NAME)
+        );
         return success ? returnDataToString(data) : "???";
     }
 
@@ -238,7 +242,9 @@ library BoringERC20 {
     /// @param token The address of the ERC-20 token contract.
     /// @return (uint8) Token decimals.
     function safeDecimals(IERC20 token) internal view returns (uint8) {
-        (bool success, bytes memory data) = address(token).staticcall(abi.encodeWithSelector(SIG_DECIMALS));
+        (bool success, bytes memory data) = address(token).staticcall(
+            abi.encodeWithSelector(SIG_DECIMALS)
+        );
         return success && data.length == 32 ? abi.decode(data, (uint8)) : 18;
     }
 
@@ -252,8 +258,13 @@ library BoringERC20 {
         address to,
         uint256 amount
     ) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(SIG_TRANSFER, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: Transfer failed");
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(SIG_TRANSFER, to, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "BoringERC20: Transfer failed"
+        );
     }
 
     /// @notice Provides a safe ERC20.transferFrom version for different ERC-20 implementations.
@@ -268,8 +279,13 @@ library BoringERC20 {
         address to,
         uint256 amount
     ) internal {
-        (bool success, bytes memory data) = address(token).call(abi.encodeWithSelector(SIG_TRANSFER_FROM, from, to, amount));
-        require(success && (data.length == 0 || abi.decode(data, (bool))), "BoringERC20: TransferFrom failed");
+        (bool success, bytes memory data) = address(token).call(
+            abi.encodeWithSelector(SIG_TRANSFER_FROM, from, to, amount)
+        );
+        require(
+            success && (data.length == 0 || abi.decode(data, (bool))),
+            "BoringERC20: TransferFrom failed"
+        );
     }
 }
 
@@ -303,7 +319,12 @@ contract SushiStrategyV1 is IStrategy, BoringOwnable {
 
     // Harvest any profits made converted to the asset and pass them to the caller
     /// @inheritdoc IStrategy
-    function harvest(uint256 balance, address) external override onlyOwner returns (int256 amountAdded) {
+    function harvest(uint256 balance, address)
+        external
+        override
+        onlyOwner
+        returns (int256 amountAdded)
+    {
         uint256 share = bar.balanceOf(address(this));
         uint256 totalShares = bar.totalSupply();
         uint256 totalSushi = sushi.balanceOf(address(bar));
